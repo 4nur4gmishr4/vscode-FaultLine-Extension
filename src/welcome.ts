@@ -35,7 +35,7 @@ export class WelcomePanel {
 
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
-            message => {
+            async message => {
                 switch (message.command) {
                     case 'test':
                         vscode.commands.executeCommand('fahh.test');
@@ -45,6 +45,12 @@ export class WelcomePanel {
                         return;
                     case 'error':
                         vscode.window.showErrorMessage(message.text);
+                        return;
+                    case 'setSound':
+                        if (message.sound) {
+                            const soundPath = vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', message.sound).fsPath;
+                            await vscode.workspace.getConfiguration('fahh').update('soundPath', soundPath, vscode.ConfigurationTarget.Global);
+                        }
                         return;
                 }
             },
@@ -66,7 +72,7 @@ export class WelcomePanel {
 
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
         const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh-logo.jpeg'));
-        const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh.mp3'));
+        const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'fahh.mp3'));
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'welcome-client.js'));
         const nonce = generateNonce();
 
@@ -123,6 +129,42 @@ export class WelcomePanel {
         .btn-danger:hover {
             background: var(--danger-color);
             color: var(--bg-color);
+        }
+
+        .sound-selector {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .selector-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.7;
+        }
+
+        .sound-select {
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sound-select:hover {
+            border-color: var(--accent-color);
+        }
+
+        .sound-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
         }
 
         .container {
@@ -277,6 +319,18 @@ export class WelcomePanel {
                 <div class="card-icon">🤖</div>
                 <div class="card-title">AI Insights</div>
             </div>
+        </div>
+
+        <div class="sound-selector">
+            <label for="sound-select" class="selector-label">Choose Your Sound</label>
+            <select id="sound-select" class="sound-select">
+                <option value="fahh.mp3">Fahh (Default)</option>
+                <option value="fahhhard.mp3">Fahh Hard</option>
+                <option value="fartreverb.mp3">Fart Reverb</option>
+                <option value="fahhdeep.mp3">Fahh Deep</option>
+                <option value="fahhbroke.mp3">Fahh Broke</option>
+                <option value="ohshit.mp3">Oh Shit</option>
+            </select>
         </div>
 
         <button id="test-btn" class="btn" type="button">Test Audio Now</button>

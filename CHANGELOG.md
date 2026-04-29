@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.1 - Sound Selection
+### New Features
+- **Sound Selection on Welcome Screen**: Choose your preferred sound effect during initial setup from a curated selection.
+- **Expanded Sound Library**: Added 5 new high-quality sounds (Fahh Hard, Fart Reverb, Fahh Deep, Fahh Broke, Oh Shit).
+
 ## 2.1.0 — Audit, Hardening, Security & Performance
 
 ### Removed
@@ -48,7 +53,9 @@
 
 ## 2.0.0 — The Everything Update
 
-### New Features (44 total)
+### New Features
+- **Sound Selection on Welcome Screen**: Choose your preferred sound effect during initial setup from a curated selection.
+- **Expanded Sound Library**: Added 5 new high-quality sounds (Fahh Hard, Fart Reverb, Fahh Deep, Fahh Broke, Oh Shit).
 - **Per-source sounds**: Different sounds for task, shell, terminal, test, debug, diagnostics, build failures
 - **Sound packs**: Built-in sound packs with quick picker
 - **Random sounds**: Pick random sounds from a folder

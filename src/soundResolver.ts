@@ -3,7 +3,7 @@ import * as path from 'path';
 import { FahhConfig, FailureSource } from './config';
 import { Logger } from './logger';
 
-const DEFAULT_SOUND = 'fahh.mp3';
+const DEFAULT_SOUND = 'packs/default/fahh.mp3';
 
 export class SoundResolver {
     private defaultSoundPath: string;

@@ -5,6 +5,19 @@
     var audio = document.getElementById('fahh-audio');
     var testBtn = document.getElementById('test-btn');
     var resetBtn = document.getElementById('reset-btn');
+    var soundSelect = document.getElementById('sound-select');
+
+    function updateAudioSource() {
+        if (soundSelect && audio) {
+            var selectedSound = soundSelect.value;
+            var currentSrc = audio.src;
+            var newSrc = currentSrc.substring(0, currentSrc.lastIndexOf('/') + 1) + selectedSound;
+            if (currentSrc !== newSrc) {
+                audio.src = newSrc;
+                audio.load(); // Reload the audio element with the new source
+            }
+        }
+    }
 
     function triggerTest() {
         try {
@@ -12,6 +25,7 @@
                 vscodeApi.postMessage({ command: 'error', text: 'Audio element not found.' });
                 return;
             }
+            updateAudioSource();
             audio.currentTime = 0;
             var playPromise = audio.play();
             if (playPromise && typeof playPromise.then === 'function') {
@@ -38,11 +52,22 @@
         }
     }
 
+    function saveSoundSelection() {
+        if (soundSelect) {
+            vscodeApi.postMessage({ command: 'setSound', sound: soundSelect.value });
+        }
+    }
+
     if (testBtn) { testBtn.addEventListener('click', triggerTest); }
     if (resetBtn) { resetBtn.addEventListener('click', triggerReset); }
+    if (soundSelect) { 
+        soundSelect.addEventListener('change', saveSoundSelection);
+        // Initialize audio source on load
+        updateAudioSource();
+    }
 
     // Expose for test harness
     if (typeof window !== 'undefined') {
-        window.__fahhWelcome = { triggerTest: triggerTest, triggerReset: triggerReset };
+        window.__fahhWelcome = { triggerTest: triggerTest, triggerReset: triggerReset, updateAudioSource: updateAudioSource };
     }
 })();
