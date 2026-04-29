@@ -7,14 +7,19 @@ export class Scheduler {
     private perSourceLast: Map<FailureSource, number> = new Map();
     private perMinuteWindow: number[] = [];
     private snoozeDisposable: vscode.Disposable | null = null;
+    private cleanupTimer: NodeJS.Timeout | null = null;
 
     public constructor(private readonly config: () => FahhConfig, private readonly logger: Logger) {
         // Periodically clean old per-minute entries
-        setInterval(() => this.cleanPerMinuteWindow(), 60000).unref?.();
+        this.cleanupTimer = setInterval(() => this.cleanPerMinuteWindow(), 60000);
+        this.cleanupTimer?.unref?.();
     }
 
     public dispose(): void {
         this.snoozeDisposable?.dispose();
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+        }
     }
 
     public isMuted(source: FailureSource): boolean {

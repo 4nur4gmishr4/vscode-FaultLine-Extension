@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { AudioPlayer } from './audioPlayer';
-import { FahhConfig, FailureSource, affectsFahh, readConfig, updateEnabled, updateSoundPath, updateSoundFolder } from './config';
+import { FahhConfig, FailureSource, affectsFahh, readConfig, updateEnabled, updateSoundPath, updateSoundFolder, resetAllSettings } from './config';
 import { registerFailureDetectors, FailureHandler, SuccessHandler } from './failureDetector';
 import { Logger } from './logger';
 import { Scheduler } from './scheduler';
@@ -9,6 +9,7 @@ import { SoundResolver } from './soundResolver';
 import { StatusBarManager } from './statusBar';
 import { HistoryManager, HistoryEntry } from './history';
 import { IntegrationsManager } from './integrations';
+import { WelcomePanel } from './welcome';
 
 class FahhExtension {
     private readonly logger: Logger;
@@ -35,12 +36,20 @@ class FahhExtension {
     }
 
     public start(): void {
-        this.logger.info(`Fahh v2.0 activating on ${process.platform} (VS Code ${vscode.version}).`);
+        this.logger.info(`Fahh v2.1 activating on ${process.platform} (VS Code ${vscode.version}).`);
 
         this.statusBar.refresh();
         this.registerDetectors();
         this.registerCommands();
         this.registerHistoryView();
+
+        // Show welcome screen on first install
+        const version = this.ctx.extension.packageJSON.version;
+        const lastVersion = this.ctx.globalState.get<string>('lastVersion');
+        if (lastVersion !== version) {
+            WelcomePanel.createOrShow(this.ctx.extensionUri);
+            this.ctx.globalState.update('lastVersion', version);
+        }
 
         this.ctx.subscriptions.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
@@ -253,6 +262,37 @@ class FahhExtension {
             }),
             vscode.commands.registerCommand('fahh.showOutput', () => {
                 this.logger.show();
+            }),
+            vscode.commands.registerCommand('fahh.resetSettings', async () => {
+                const confirm = await vscode.window.showWarningMessage(
+                    'Are you sure you want to reset all Fahh settings to default?',
+                    { modal: true },
+                    'Reset'
+                );
+                if (confirm === 'Reset') {
+                    await resetAllSettings();
+                    this.config = readConfig();
+                    this.statusBar.refresh();
+                    void vscode.window.showInformationMessage('Fahh settings have been reset.');
+                }
+            }),
+            vscode.commands.registerCommand('fahh.factoryReset', async () => {
+                const confirm = await vscode.window.showWarningMessage(
+                    'This will reset all settings AND clear your failure history. Proceed?',
+                    { modal: true },
+                    'Factory Reset'
+                );
+                if (confirm === 'Factory Reset') {
+                    await resetAllSettings();
+                    this.history.clear();
+                    this.statusBar.resetCounter();
+                    this.config = readConfig();
+                    this.statusBar.refresh();
+                    void vscode.window.showInformationMessage('Fahh has been factory reset.');
+                }
+            }),
+            vscode.commands.registerCommand('fahh.showWelcome', () => {
+                WelcomePanel.createOrShow(this.ctx.extensionUri);
             })
         ];
         this.ctx.subscriptions.push(...cmds);

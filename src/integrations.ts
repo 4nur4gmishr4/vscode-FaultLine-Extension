@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 import * as https from 'https';
 import { Logger } from './logger';
@@ -25,13 +26,15 @@ export class IntegrationsManager {
             return;
         }
         const platform = process.platform;
+        const safeText = text.slice(0, 200);
         if (platform === 'darwin') {
-            execFile('say', [text.slice(0, 200)], { windowsHide: true }, () => {});
+            execFile('say', [safeText], { windowsHide: true }, () => {});
         } else if (platform === 'win32') {
-            const script = `$s = New-Object -ComObject SAPI.SpVoice; $s.Speak('${text.replace(/'/g, "''").slice(0, 200)}')`;
-            execFile('powershell', ['-Command', script], { windowsHide: true }, () => {});
+            // Use -EncodedCommand to prevent injection
+            const script = `$s = New-Object -ComObject SAPI.SpVoice; $s.Speak([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('${Buffer.from(safeText, 'utf16le').toString('base64')}')))`;
+            execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true }, () => {});
         } else {
-            execFile('espeak', [text.slice(0, 200)], { windowsHide: true }, () => {});
+            execFile('espeak', [safeText], { windowsHide: true }, () => {});
         }
     }
 
@@ -75,16 +78,16 @@ export class IntegrationsManager {
         }
         try {
             // VS Code Language Model API (requires Copilot or compatible extension)
-            const models = await (vscode as any).lm?.selectChatModels?.({});
+            const models = await vscode.lm?.selectChatModels?.({});
             if (!models || models.length === 0) {
                 return null;
             }
             const model = models[0];
             const messages = [
-                (vscode as any).lm.createSystemMessage('You summarize build failures concisely. One sentence only.'),
-                (vscode as any).lm.createUserMessage(`Explain this failure: ${label}`)
+                new (vscode as any).LanguageModelChatMessage((vscode as any).LanguageModelChatMessageRole.System, 'You summarize build failures concisely. One sentence only.'),
+                new (vscode as any).LanguageModelChatMessage((vscode as any).LanguageModelChatMessageRole.User, `Explain this failure: ${label}`)
             ];
-            const response = await model.sendRequest(messages, {}, new (vscode as any).CancellationTokenSource().token);
+            const response = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
             let text = '';
             for await (const chunk of response.text) {
                 text += chunk;
@@ -136,6 +139,9 @@ export class IntegrationsManager {
         if (!cfg.dailySummary) {
             return;
         }
+        if (this.dailyTimer) {
+            clearTimeout(this.dailyTimer);
+        }
         const now = new Date();
         const target = new Date(now);
         target.setHours(18, 0, 0, 0);
@@ -151,6 +157,3 @@ export class IntegrationsManager {
         }, ms);
     }
 }
-
-// Minimal shim for vscode namespace in this module
-declare const vscode: any;

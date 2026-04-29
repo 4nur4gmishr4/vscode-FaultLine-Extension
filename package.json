@@ -2,7 +2,7 @@
     "name": "fahh",
     "displayName": "Fahh",
     "description": "Plays a sound whenever a task, build, or terminal command fails.",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "publisher": "4nur4gmishr4",
     "author": "Anurag Mishra",
     "license": "MIT",
@@ -39,7 +39,7 @@
         "workspace"
     ],
     "activationEvents": [
-        "onStartupFinished"
+        "*"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -57,7 +57,10 @@
             { "command": "fahh.clearHistory", "title": "%command.fahh.clearHistory%" },
             { "command": "fahh.replayLast", "title": "%command.fahh.replayLast%" },
             { "command": "fahh.showHistory", "title": "%command.fahh.showHistory%" },
-            { "command": "fahh.showOutput", "title": "%command.fahh.showOutput%" }
+            { "command": "fahh.showOutput", "title": "%command.fahh.showOutput%" },
+            { "command": "fahh.resetSettings", "title": "%command.fahh.resetSettings%" },
+            { "command": "fahh.factoryReset", "title": "%command.fahh.factoryReset%" },
+            { "command": "fahh.showWelcome", "title": "%command.fahh.showWelcome%" }
         ],
         "views": {
             "explorer": [
@@ -161,9 +164,9 @@
                     },
                     "uniqueItems": true
                 },
-                "fahh.cooldownMs": { "type": "number", "default": 1500, "minimum": 0, "maximum": 60000, "description": "%config.fahh.cooldownMs%" },
+                "fahh.cooldownMs": { "type": "number", "default": 10, "minimum": 0, "maximum": 60000, "description": "%config.fahh.cooldownMs%" },
                 "fahh.cooldownPerSource": { "type": "boolean", "default": false, "description": "%config.fahh.cooldownPerSource%" },
-                "fahh.maxPerMinute": { "type": "number", "default": 10, "minimum": 0, "maximum": 120, "description": "%config.fahh.maxPerMinute%" },
+                "fahh.maxPerMinute": { "type": "number", "default": 0, "minimum": 0, "maximum": 120, "description": "%config.fahh.maxPerMinute%" },
                 "fahh.ignorePatterns": { "type": "array", "default": [], "description": "%config.fahh.ignorePatterns%", "items": { "type": "string" } },
                 "fahh.showStatusBar": { "type": "boolean", "default": true, "description": "%config.fahh.showStatusBar%" },
                 "fahh.statusBarCounter": { "type": "boolean", "default": true, "description": "%config.fahh.statusBarCounter%" },

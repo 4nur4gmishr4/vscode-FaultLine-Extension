@@ -116,9 +116,9 @@ export function readConfig(): FahhConfig {
         showNotification: cfg.get<boolean>('showNotification', true),
         notificationLevel: cfg.get<NotificationLevel>('notificationLevel', 'warning'),
         sources,
-        cooldownMs: clamp(cfg.get<number>('cooldownMs', 1500), 0, 60000),
+        cooldownMs: clamp(cfg.get<number>('cooldownMs', 10), 0, 60000),
         cooldownPerSource: cfg.get<boolean>('cooldownPerSource', false),
-        maxPerMinute: clamp(cfg.get<number>('maxPerMinute', 10), 0, 120),
+        maxPerMinute: clamp(cfg.get<number>('maxPerMinute', 0), 0, 120),
         ignorePatterns,
         showStatusBar: cfg.get<boolean>('showStatusBar', true),
         statusBarCounter: cfg.get<boolean>('statusBarCounter', true),
@@ -158,6 +158,25 @@ export async function updateSoundFolder(path: string): Promise<void> {
 
 export function affectsFahh(event: vscode.ConfigurationChangeEvent): boolean {
     return event.affectsConfiguration(SECTION);
+}
+
+export async function resetAllSettings(): Promise<void> {
+    const cfg = vscode.workspace.getConfiguration(SECTION);
+    const info = cfg.inspect('');
+    if (!info) { return; }
+
+    const keys = [
+        ...Object.keys(info.globalValue || {}),
+        ...Object.keys(info.workspaceValue || {}),
+        ...Object.keys(info.workspaceFolderValue || {})
+    ];
+
+    const uniqueKeys = Array.from(new Set(keys));
+    for (const key of uniqueKeys) {
+        await cfg.update(key, undefined, vscode.ConfigurationTarget.Global);
+        await cfg.update(key, undefined, vscode.ConfigurationTarget.Workspace);
+        await cfg.update(key, undefined, vscode.ConfigurationTarget.WorkspaceFolder);
+    }
 }
 
 function compilePatterns(patterns: string[]): RegExp[] {

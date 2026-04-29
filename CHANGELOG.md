@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.1.0 — Security & Performance Update
+
+### Security Fixes
+- **Command Injection Hardening**: Secured voice synthesis (TTS) on Windows by using Base64 encoding for PowerShell commands, preventing arbitrary command execution via failure labels.
+- **Improved Windows Playback**: Hardened PowerShell audio playback script to prevent injection via sound file paths.
+
+### Performance & Stability
+- **Diagnostics Optimization**: Debounced diagnostics listener (500ms) and optimized error counting to prevent UI lag in large workspaces.
+- **Memory Leak Fixes**: 
+    - Fixed unmanaged `setInterval` in `Scheduler` and `IntegrationsManager`.
+    - Implemented TTL (Time-To-Live) for task tracking to prevent memory growth over time.
+- **Audio Reliability**: Fixed a bug where sound playback could fail or hang after installation by improving the Windows Media Player lifecycle in PowerShell.
+
+### UX & Configuration
+- **Reduced Default Latency**: Default sound cooldown reduced to **10ms** for more responsive audio feedback.
+- **Simplified Setup**: Refined configuration options for easier onboarding of non-technical users.
+- **Better Type Safety**: Removed internal `any` usage for VS Code APIs, ensuring better stability.
+
 ## 2.0.0 — The Everything Update
 
 ### New Features (44 total)

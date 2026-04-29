@@ -18,7 +18,11 @@ export class AudioPlayer {
             this.logger.debug('Audio play skipped: already playing.');
             return;
         }
-        if (!filePath || !fs.existsSync(filePath)) {
+        if (!filePath) {
+            this.logger.error('Audio play failed: No file path provided.');
+            return;
+        }
+        if (!fs.existsSync(filePath)) {
             this.logger.error(`Audio file not found: ${filePath}`);
             return;
         }
@@ -35,7 +39,10 @@ export class AudioPlayer {
         try {
             this.spawn(filePath, options, done);
         } catch (e) {
-            done(e instanceof Error ? e : new Error(String(e)));
+            this.playing = false;
+            this.currentChild = null;
+            const error = e instanceof Error ? e : new Error(String(e));
+            this.handleError(error);
         }
     }
 
@@ -79,19 +86,20 @@ export class AudioPlayer {
     }
 
     private playWindows(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
-        // Path and volume are passed as $args — no string interpolation, no quoting bugs.
+        // Use Base64 encoding for the script and path to prevent any injection
         const script = [
             "$ErrorActionPreference = 'Stop'",
             'Add-Type -AssemblyName PresentationCore',
-            '$path = $args[0]',
-            '$volume = [double]$args[1]',
+            `$path = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('${Buffer.from(filePath, 'utf16le').toString('base64')}'))`,
+            `$volume = ${volume01.toFixed(3)}`,
             '$player = New-Object System.Windows.Media.MediaPlayer',
             '$player.Volume = $volume',
             '$opened = $false',
             '$failed = $false',
             '$null = Register-ObjectEvent $player MediaOpened -Action { $script:opened = $true }',
             '$null = Register-ObjectEvent $player MediaFailed -Action { $script:failed = $true }',
-            '$player.Open([Uri]$path)',
+            // Use New-Object System.Uri for more robust path handling
+            '$player.Open((New-Object System.Uri($path, [System.UriKind]::Absolute)))',
             '$deadline = (Get-Date).AddSeconds(5)',
             'while (-not $opened -and -not $failed -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 50 }',
             'if ($opened -and $player.NaturalDuration.HasTimeSpan) {',
@@ -102,6 +110,8 @@ export class AudioPlayer {
             '$player.Close()'
         ].join('; ');
 
+        const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
+
         return execFile(
             'powershell.exe',
             [
@@ -109,10 +119,7 @@ export class AudioPlayer {
                 '-NonInteractive',
                 '-ExecutionPolicy', 'Bypass',
                 '-WindowStyle', 'Hidden',
-                '-Command', script,
-                '--',
-                filePath,
-                volume01.toFixed(3)
+                '-EncodedCommand', encodedScript
             ],
             { windowsHide: true },
             (err) => done(err)

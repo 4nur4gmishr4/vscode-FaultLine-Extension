@@ -12,6 +12,7 @@ interface TaskStartInfo {
 }
 
 const taskStarts = new Map<string, TaskStartInfo>();
+const TASK_START_TTL_MS = 1000 * 60 * 60; // 1 hour TTL for task starts to prevent memory leaks
 
 export function registerFailureDetectors(
     config: () => FahhConfig,
@@ -20,6 +21,17 @@ export function registerFailureDetectors(
     logger: Logger
 ): vscode.Disposable {
     const disposables: vscode.Disposable[] = [];
+
+    // Periodic cleanup of taskStarts to prevent memory leaks
+    const cleanupInterval = setInterval(() => {
+        const now = Date.now();
+        for (const [id, info] of taskStarts.entries()) {
+            if (now - info.startTime > TASK_START_TTL_MS) {
+                taskStarts.delete(id);
+            }
+        }
+    }, 1000 * 60 * 15); // Every 15 minutes
+    disposables.push({ dispose: () => clearInterval(cleanupInterval) });
 
     // Task process end (handles task, build, longTask)
     disposables.push(
@@ -115,19 +127,24 @@ export function registerFailureDetectors(
 
     // Diagnostics listener
     let lastDiagnosticCount = 0;
+    let diagTimeout: NodeJS.Timeout | null = null;
     disposables.push(
         vscode.languages.onDidChangeDiagnostics(() => {
-            const cfg = config();
-            if (!cfg.sources.has('diagnostics')) { return; }
-            const all = vscode.languages.getDiagnostics();
-            const errorCount = all.reduce((sum, [, diags]) => sum + diags.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length, 0);
-            if (errorCount > lastDiagnosticCount && errorCount >= cfg.diagnosticsThreshold) {
-                const newErrors = errorCount - lastDiagnosticCount;
-                onFailure({ source: 'diagnostics', label: `${newErrors} new error(s) detected` });
-            }
-            lastDiagnosticCount = errorCount;
+            if (diagTimeout) { clearTimeout(diagTimeout); }
+            diagTimeout = setTimeout(() => {
+                const cfg = config();
+                if (!cfg.sources.has('diagnostics')) { return; }
+                const all = vscode.languages.getDiagnostics();
+                const errorCount = all.reduce((sum, [, diags]) => sum + diags.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length, 0);
+                if (errorCount > lastDiagnosticCount && errorCount >= cfg.diagnosticsThreshold) {
+                    const newErrors = errorCount - lastDiagnosticCount;
+                    onFailure({ source: 'diagnostics', label: `${newErrors} new error(s) detected` });
+                }
+                lastDiagnosticCount = errorCount;
+            }, 500); // Debounce 500ms
         })
     );
+    disposables.push({ dispose: () => { if (diagTimeout) { clearTimeout(diagTimeout); } } });
 
     // Debug session listener (if API available)
     if (vscode.debug) {
