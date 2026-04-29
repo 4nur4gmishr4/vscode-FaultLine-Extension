@@ -1,5 +1,49 @@
 # Changelog
 
+## 2.0.0 — The Everything Update
+
+### New Features (44 total)
+- **Per-source sounds**: Different sounds for task, shell, terminal, test, debug, diagnostics, build failures
+- **Sound packs**: Built-in sound packs with quick picker
+- **Random sounds**: Pick random sounds from a folder
+- **Success sounds**: Optional sound on successful builds/tests
+- **Volume per source**: Individual volume control for each failure type
+- **Volume curves**: Linear or logarithmic (perceptually natural)
+- **Quiet hours**: Configurable time ranges when sounds are muted
+- **Mute when focused**: Silence when VS Code window is active
+- **Snooze**: Temporary mute for X minutes
+- **Max per minute**: Rate limiting to prevent sound spam
+- **Cooldown per source**: Independent cooldown tracking per failure type
+- **Status bar counter**: Shows today's failure count
+- **Status bar flashing**: Red flash while sound plays
+- **Failure history**: Tree view of recent failures with replay
+- **Voice synthesis**: Speaks failure labels (Win: SAPI, Mac: say, Linux: espeak)
+- **Webhook notifications**: POST failures to any URL
+- **AI summaries**: Uses VS Code Language Model API (Copilot) for failure explanations
+- **Daily summary**: 6 PM summary of daily failures
+- **Streak counter**: Tracks consecutive successes
+- **Boss fight mode**: HP bar that drops on failures, defeat at 0 HP
+- **New detection sources**: Tests, debug sessions, diagnostics, build-specific, long-running tasks
+- **WSL detection**: Routes audio to Windows host when in WSL
+- **14 commands**: Including test success, toggle workspace, snooze, history, replay
+- **Walkthrough**: Onboarding guide for new users
+- **Localization**: All strings externalized to package.nls.json
+
+### Improvements
+- Extension kind changed to `["ui", "workspace"]` for proper remote support
+- Per-workspace toggle command
+- Notification level selection (info/warning/error/none)
+- Diagnostics threshold setting
+- Long task threshold setting
+- History max size setting
+- 8 new failure detection sources
+- Success detection for builds, tests, shell commands, long tasks
+
+### Bug Fixes
+- All v1.1 issues resolved
+- Fixed extensionKind order for remote/SSH/Codespaces
+- Fixed workspace vs global configuration targets
+
 ## 1.1.0
 
 - Detect signal-killed processes (previously missed when `exitCode` was undefined).

@@ -2,7 +2,7 @@
     "name": "fahh",
     "displayName": "Fahh",
     "description": "Plays a sound whenever a task, build, or terminal command fails.",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "publisher": "4nur4gmishr4",
     "author": "Anurag Mishra",
     "license": "MIT",
@@ -35,8 +35,8 @@
         "theme": "dark"
     },
     "extensionKind": [
-        "workspace",
-        "ui"
+        "ui",
+        "workspace"
     ],
     "activationEvents": [
         "onStartupFinished"
@@ -44,78 +44,145 @@
     "main": "./out/extension.js",
     "contributes": {
         "commands": [
-            { "command": "fahh.test", "title": "Fahh: Play Test Sound" },
-            { "command": "fahh.toggle", "title": "Fahh: Toggle Enable / Disable" },
-            { "command": "fahh.selectSound", "title": "Fahh: Select Custom Sound File\u2026" },
-            { "command": "fahh.resetSound", "title": "Fahh: Reset Sound to Default" },
-            { "command": "fahh.stop", "title": "Fahh: Stop Currently Playing Sound" },
-            { "command": "fahh.showOutput", "title": "Fahh: Show Output Log" }
+            { "command": "fahh.test", "title": "%command.fahh.test%" },
+            { "command": "fahh.testSuccess", "title": "%command.fahh.testSuccess%" },
+            { "command": "fahh.toggle", "title": "%command.fahh.toggle%" },
+            { "command": "fahh.toggleWorkspace", "title": "%command.fahh.toggleWorkspace%" },
+            { "command": "fahh.selectSound", "title": "%command.fahh.selectSound%" },
+            { "command": "fahh.selectSoundFolder", "title": "%command.fahh.selectSoundFolder%" },
+            { "command": "fahh.resetSound", "title": "%command.fahh.resetSound%" },
+            { "command": "fahh.pickSoundPack", "title": "%command.fahh.pickSoundPack%" },
+            { "command": "fahh.stop", "title": "%command.fahh.stop%" },
+            { "command": "fahh.snooze", "title": "%command.fahh.snooze%" },
+            { "command": "fahh.clearHistory", "title": "%command.fahh.clearHistory%" },
+            { "command": "fahh.replayLast", "title": "%command.fahh.replayLast%" },
+            { "command": "fahh.showHistory", "title": "%command.fahh.showHistory%" },
+            { "command": "fahh.showOutput", "title": "%command.fahh.showOutput%" }
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "fahh.history",
+                    "name": "%view.fahh.history%",
+                    "when": "fahh.historyEnabled",
+                    "icon": "$(output)"
+                }
+            ]
+        },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "fahh",
+                    "title": "%viewContainer.fahh%",
+                    "icon": "$(unmute)"
+                }
+            ]
+        },
+        "walkthroughs": [
+            {
+                "id": "fahh.welcome",
+                "title": "%walkthrough.fahh.title%",
+                "description": "%walkthrough.fahh.description%",
+                "steps": [
+                    {
+                        "id": "fahh.welcome.test",
+                        "title": "%walkthrough.fahh.step1.title%",
+                        "description": "%walkthrough.fahh.step1.description%",
+                        "media": { "markdown": "media/step1.md" }
+                    },
+                    {
+                        "id": "fahh.welcome.sound",
+                        "title": "%walkthrough.fahh.step2.title%",
+                        "description": "%walkthrough.fahh.step2.description%",
+                        "media": { "markdown": "media/step2.md" }
+                    },
+                    {
+                        "id": "fahh.welcome.configure",
+                        "title": "%walkthrough.fahh.step3.title%",
+                        "description": "%walkthrough.fahh.step3.description%",
+                        "media": { "image": "media/settings.png", "altText": "Fahh settings" }
+                    }
+                ]
+            }
         ],
         "configuration": {
-            "title": "Fahh",
+            "title": "%config.fahh.title%",
             "properties": {
                 "fahh.enabled": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Master switch for Fahh. When disabled, no sounds or notifications are produced."
+                    "description": "%config.fahh.enabled%"
                 },
                 "fahh.soundPath": {
                     "type": "string",
                     "default": "",
-                    "description": "Absolute path to a custom sound file (.mp3 / .wav). Leave empty to use the bundled Fahhh.mp3.",
+                    "description": "%config.fahh.soundPath%",
                     "scope": "machine-overridable"
                 },
-                "fahh.showNotification": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show a warning notification when a failure is detected."
+                "fahh.soundFolder": {
+                    "type": "string",
+                    "default": "",
+                    "description": "%config.fahh.soundFolder%",
+                    "scope": "machine-overridable"
                 },
+                "fahh.sounds.task": { "type": "string", "default": "", "description": "%config.fahh.sounds.task%", "scope": "machine-overridable" },
+                "fahh.sounds.shell": { "type": "string", "default": "", "description": "%config.fahh.sounds.shell%", "scope": "machine-overridable" },
+                "fahh.sounds.terminal": { "type": "string", "default": "", "description": "%config.fahh.sounds.terminal%", "scope": "machine-overridable" },
+                "fahh.sounds.test": { "type": "string", "default": "", "description": "%config.fahh.sounds.test%", "scope": "machine-overridable" },
+                "fahh.sounds.debug": { "type": "string", "default": "", "description": "%config.fahh.sounds.debug%", "scope": "machine-overridable" },
+                "fahh.sounds.diagnostics": { "type": "string", "default": "", "description": "%config.fahh.sounds.diagnostics%", "scope": "machine-overridable" },
+                "fahh.sounds.build": { "type": "string", "default": "", "description": "%config.fahh.sounds.build%", "scope": "machine-overridable" },
+                "fahh.successEnabled": { "type": "boolean", "default": false, "description": "%config.fahh.successEnabled%" },
+                "fahh.successSound": { "type": "string", "default": "", "description": "%config.fahh.successSound%", "scope": "machine-overridable" },
+                "fahh.volumes.task": { "type": "number", "default": -1, "minimum": -1, "maximum": 100, "description": "%config.fahh.volumes.task%" },
+                "fahh.volumes.shell": { "type": "number", "default": -1, "minimum": -1, "maximum": 100, "description": "%config.fahh.volumes.shell%" },
+                "fahh.volumes.terminal": { "type": "number", "default": -1, "minimum": -1, "maximum": 100, "description": "%config.fahh.volumes.terminal%" },
+                "fahh.volume": { "type": "number", "default": 100, "minimum": 0, "maximum": 100, "description": "%config.fahh.volume%" },
+                "fahh.volumeCurve": { "type": "string", "default": "linear", "enum": ["linear", "log"], "description": "%config.fahh.volumeCurve%" },
+                "fahh.showNotification": { "type": "boolean", "default": true, "description": "%config.fahh.showNotification%" },
+                "fahh.notificationLevel": { "type": "string", "default": "warning", "enum": ["info", "warning", "error", "none"], "description": "%config.fahh.notificationLevel%" },
                 "fahh.sources": {
                     "type": "array",
                     "default": ["task", "shell", "terminal"],
-                    "description": "Which failure sources to listen to.",
+                    "description": "%config.fahh.sources%",
                     "items": {
                         "type": "string",
-                        "enum": ["task", "shell", "terminal"],
+                        "enum": ["task", "shell", "terminal", "test", "debug", "diagnostics", "build", "longTask"],
                         "enumDescriptions": [
-                            "VS Code tasks (build, test, custom)",
-                            "Shell commands inside the integrated terminal (requires shell integration)",
-                            "Terminal sessions exiting with a non-zero code"
+                            "%config.fahh.sources.task%",
+                            "%config.fahh.sources.shell%",
+                            "%config.fahh.sources.terminal%",
+                            "%config.fahh.sources.test%",
+                            "%config.fahh.sources.debug%",
+                            "%config.fahh.sources.diagnostics%",
+                            "%config.fahh.sources.build%",
+                            "%config.fahh.sources.longTask%"
                         ]
                     },
                     "uniqueItems": true
                 },
-                "fahh.volume": {
-                    "type": "number",
-                    "default": 100,
-                    "minimum": 0,
-                    "maximum": 100,
-                    "description": "Playback volume (0-100). Honoured on Windows and Linux; macOS uses system volume."
-                },
-                "fahh.cooldownMs": {
-                    "type": "number",
-                    "default": 1500,
-                    "minimum": 0,
-                    "maximum": 60000,
-                    "description": "Minimum time (ms) between two consecutive sounds; suppresses duplicate events from overlapping sources."
-                },
-                "fahh.ignorePatterns": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Regular expressions; if any matches the failure label, the sound is suppressed.",
-                    "items": { "type": "string" }
-                },
-                "fahh.showStatusBar": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show the Fahh status bar item."
-                },
-                "fahh.logLevel": {
-                    "type": "string",
-                    "default": "warn",
-                    "enum": ["off", "error", "warn", "info", "debug"],
-                    "description": "Verbosity of the Fahh output channel."
-                }
+                "fahh.cooldownMs": { "type": "number", "default": 1500, "minimum": 0, "maximum": 60000, "description": "%config.fahh.cooldownMs%" },
+                "fahh.cooldownPerSource": { "type": "boolean", "default": false, "description": "%config.fahh.cooldownPerSource%" },
+                "fahh.maxPerMinute": { "type": "number", "default": 10, "minimum": 0, "maximum": 120, "description": "%config.fahh.maxPerMinute%" },
+                "fahh.ignorePatterns": { "type": "array", "default": [], "description": "%config.fahh.ignorePatterns%", "items": { "type": "string" } },
+                "fahh.showStatusBar": { "type": "boolean", "default": true, "description": "%config.fahh.showStatusBar%" },
+                "fahh.statusBarCounter": { "type": "boolean", "default": true, "description": "%config.fahh.statusBarCounter%" },
+                "fahh.flashStatusBar": { "type": "boolean", "default": true, "description": "%config.fahh.flashStatusBar%" },
+                "fahh.quietHours.enabled": { "type": "boolean", "default": false, "description": "%config.fahh.quietHours.enabled%" },
+                "fahh.quietHours.from": { "type": "string", "default": "22:00", "pattern": "^([01]?[0-9]|2[0-3]):([0-5][0-9])$", "description": "%config.fahh.quietHours.from%" },
+                "fahh.quietHours.to": { "type": "string", "default": "08:00", "pattern": "^([01]?[0-9]|2[0-3]):([0-5][0-9])$", "description": "%config.fahh.quietHours.to%" },
+                "fahh.muteWhenFocused": { "type": "boolean", "default": false, "description": "%config.fahh.muteWhenFocused%" },
+                "fahh.snoozeMinutes": { "type": "number", "default": 10, "minimum": 1, "maximum": 1440, "description": "%config.fahh.snoozeMinutes%" },
+                "fahh.diagnosticsThreshold": { "type": "number", "default": 1, "minimum": 1, "maximum": 100, "description": "%config.fahh.diagnosticsThreshold%" },
+                "fahh.longTaskThresholdMs": { "type": "number", "default": 60000, "minimum": 1000, "maximum": 3600000, "description": "%config.fahh.longTaskThresholdMs%" },
+                "fahh.logLevel": { "type": "string", "default": "warn", "enum": ["off", "error", "warn", "info", "debug"], "description": "%config.fahh.logLevel%" },
+                "fahh.historyMax": { "type": "number", "default": 50, "minimum": 10, "maximum": 500, "description": "%config.fahh.historyMax%" },
+                "fahh.speakLabel": { "type": "boolean", "default": false, "description": "%config.fahh.speakLabel%" },
+                "fahh.webhookUrl": { "type": "string", "default": "", "description": "%config.fahh.webhookUrl%" },
+                "fahh.aiSummary.enabled": { "type": "boolean", "default": false, "description": "%config.fahh.aiSummary.enabled%" },
+                "fahh.dailySummary": { "type": "boolean", "default": false, "description": "%config.fahh.dailySummary%" },
+                "fahh.streakCounter": { "type": "boolean", "default": false, "description": "%config.fahh.streakCounter%" },
+                "fahh.bossFightMode": { "type": "boolean", "default": false, "description": "%config.fahh.bossFightMode%" }
             }
         }
     },

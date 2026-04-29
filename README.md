@@ -1,75 +1,126 @@
 # Fahh
 
-> Plays a sound when things go wrong.
+> Plays a sound when things go wrong (and can celebrate when they go right).
 
-Fahh monitors your VS Code tasks and terminal sessions. When something exits with a non-zero code, it plays `Fahhh.mp3` so you know immediately — even if you're looking away from the screen.
+Fahh monitors your VS Code tasks, terminal sessions, tests, builds, and more. When something fails, it plays a sound so you know immediately — even if you're looking away from the screen. With 44 features and extensive customization, Fahh is the most configurable failure notification extension for VS Code.
 
-## What it catches
+## What it catches (8 sources)
 
-| Source | How |
-|---|---|
-| Tasks (build, test, custom) | `onDidEndTaskProcess` — fires when any task process exits |
-| Shell commands | `onDidEndTerminalShellExecution` — fires per command in the integrated terminal |
-| Terminal crashes | `onDidCloseTerminal` — fires when a terminal session closes with a non-zero exit status |
+| Source | How | Configurable |
+|---|---|---|
+| Tasks | `onDidEndTaskProcess` — any task that exits non-zero | ✅ |
+| Shell commands | `onDidEndTerminalShellExecution` — per command | ✅ |
+| Terminal crashes | `onDidCloseTerminal` — session exits non-zero | ✅ |
+| Test failures | VS Code Test API — any failed test | ✅ |
+| Debug crashes | Debug session terminations | ✅ |
+| Diagnostics | New lint/build errors crossing threshold | ✅ |
+| Build failures | Build group tasks specifically | ✅ |
+| Long tasks | Tasks exceeding duration threshold | ✅ |
 
-## Setup
+## Quick Start
 
-Install from the Marketplace or from a `.vsix` file. Fahh activates on startup and runs silently until something fails. No configuration is required, but plenty is available.
+1. Install from Marketplace or `.vsix`
+2. Run `Fahh: Play Test Sound` to verify audio
+3. Let it run — Fahh works automatically
 
-## Commands
+## All 14 Commands
 
 | Command | Description |
 |---|---|
-| `Fahh: Play Test Sound` | Plays the current sound for testing. |
-| `Fahh: Toggle Enable / Disable` | Master switch (also clickable from the status bar). |
-| `Fahh: Select Custom Sound File…` | Pick a custom `.mp3`/`.wav`/`.ogg`/`.flac`. |
-| `Fahh: Reset Sound to Default` | Restore the bundled `Fahhh.mp3`. |
-| `Fahh: Stop Currently Playing Sound` | Kill the playing audio process. |
-| `Fahh: Show Output Log` | Open the Fahh output channel. |
+| `Fahh: Play Test Sound` | Test failure sound |
+| `Fahh: Play Test Success Sound` | Test success sound |
+| `Fahh: Toggle Enable / Disable` | Global master switch |
+| `Fahh: Toggle (This Workspace)` | Workspace-only toggle |
+| `Fahh: Select Custom Sound File…` | Pick your own MP3/WAV/OGG/FLAC |
+| `Fahh: Select Sound Folder (Random)` | Random sounds from folder |
+| `Fahh: Reset Sound to Default` | Back to bundled Fahhh.mp3 |
+| `Fahh: Pick Sound Pack` | Choose from bundled packs |
+| `Fahh: Stop Currently Playing Sound` | Kill audio immediately |
+| `Fahh: Snooze for Configured Minutes` | Temporary silence |
+| `Fahh: Clear Failure History` | Wipe history |
+| `Fahh: Replay Last Failure Sound` | Play last sound again |
+| `Fahh: Show Failure History` | Open history view |
+| `Fahh: Show Output Log` | Open output channel |
 
-## Settings
+## Key Settings
 
+### Basic
 | Key | Default | Description |
 |---|---|---|
-| `fahh.enabled` | `true` | Master switch. |
-| `fahh.soundPath` | `""` | Absolute path to a custom sound file. |
-| `fahh.showNotification` | `true` | Show a warning toast on failure. |
-| `fahh.sources` | `["task","shell","terminal"]` | Which failure sources to listen to. |
-| `fahh.volume` | `100` | Playback volume 0-100 (Windows/Linux). |
-| `fahh.cooldownMs` | `1500` | Minimum gap between consecutive sounds. |
-| `fahh.ignorePatterns` | `[]` | Regular expressions; matched failure labels are suppressed. |
-| `fahh.showStatusBar` | `true` | Show the Fahh status-bar toggle. |
-| `fahh.logLevel` | `"warn"` | `off`/`error`/`warn`/`info`/`debug`. |
+| `fahh.enabled` | `true` | Master switch |
+| `fahh.soundPath` | `""` | Custom sound file |
+| `fahh.volume` | `100` | 0-100 (Win/Linux) |
+| `fahh.sources` | `["task","shell","terminal"]` | Which events to catch |
 
-## Platform notes
+### Per-Source Sounds & Volumes
+| Key | Description |
+|---|---|
+| `fahh.sounds.task` | Sound for task failures |
+| `fahh.sounds.shell` | Sound for shell command failures |
+| `fahh.sounds.terminal` | Sound for terminal exits |
+| `fahh.sounds.test` | Sound for test failures |
+| `fahh.sounds.debug` | Sound for debug crashes |
+| `fahh.sounds.diagnostics` | Sound for lint errors |
+| `fahh.sounds.build` | Sound for build failures |
+| `fahh.volumes.task` | Volume (-1 = use global) |
+| `fahh.volumes.shell` | Volume (-1 = use global) |
+| `fahh.volumes.terminal` | Volume (-1 = use global) |
 
-- **Windows** — uses `System.Windows.Media.MediaPlayer` via PowerShell (built-in, no extra installs).
-- **macOS** — uses `afplay`.
-- **Linux** — tries `ffplay` (install via `sudo apt install ffmpeg`), then `paplay`, then `aplay`.
+### Smart Muting
+| Key | Default | Description |
+|---|---|---|
+| `fahh.quietHours.enabled` | `false` | Enable quiet hours |
+| `fahh.quietHours.from` | `"22:00"` | Start time (24h) |
+| `fahh.quietHours.to` | `"08:00"` | End time (24h) |
+| `fahh.muteWhenFocused` | `false` | Mute when VS Code focused |
+| `fahh.snoozeMinutes` | `10` | Snooze duration |
 
-## Packaging & publishing
+### Rate Limiting
+| Key | Default | Description |
+|---|---|---|
+| `fahh.cooldownMs` | `1500` | Min gap between sounds (ms) |
+| `fahh.cooldownPerSource` | `false` | Separate cooldowns per source |
+| `fahh.maxPerMinute` | `10` | Hard cap per minute |
 
-### Build the `.vsix`
+### Advanced Features
+| Key | Default | Description |
+|---|---|---|
+| `fahh.successEnabled` | `false` | Play sound on success |
+| `fahh.successSound` | `""` | Success sound file |
+| `fahh.soundFolder` | `""` | Random sounds from folder |
+| `fahh.volumeCurve` | `"linear"` | `linear` or `log` |
+| `fahh.notificationLevel` | `"warning"` | `info`/`warning`/`error`/`none` |
+| `fahh.diagnosticsThreshold` | `1` | Errors needed to trigger |
+| `fahh.longTaskThresholdMs` | `60000` | Long task duration (ms) |
+| `fahh.statusBarCounter` | `true` | Show failure count |
+| `fahh.flashStatusBar` | `true` | Red flash on failure |
+| `fahh.historyMax` | `50` | History entries to keep |
+| `fahh.speakLabel` | `false` | TTS the failure label |
+| `fahh.webhookUrl` | `""` | POST failures to URL |
+| `fahh.aiSummary.enabled` | `false` | AI failure summaries |
+| `fahh.dailySummary` | `false` | 6 PM daily report |
+| `fahh.streakCounter` | `false` | Track success streaks |
+| `fahh.bossFightMode` | `false` | Gamified HP system |
 
-```sh
+## Platform Notes
+
+- **Windows** — PowerShell + WPF MediaPlayer (built-in)
+- **macOS** — `afplay` (built-in)
+- **Linux** — `ffplay` → `paplay` → `aplay` (ffplay requires ffmpeg)
+- **WSL** — Automatically routes audio to Windows host
+
+## Remote Development
+
+Fahh works with Remote-SSH, Dev Containers, and WSL. Set `extensionKind` to `["ui", "workspace"]` ensures audio plays on your local machine (where the speakers are).
+
+## Building
+
+```bash
 npm install
+npm run compile
 npx @vscode/vsce package
-```
-
-This produces `fahh-1.0.0.vsix`. Install it locally through **Extensions → ⋯ → Install from VSIX**.
-
-### Publish to the Marketplace
-
-1. Create a publisher at https://marketplace.visualstudio.com/manage.
-2. Update `"publisher"` in `package.json` to match your publisher ID.
-3. Generate a Personal Access Token (PAT) from Azure DevOps.
-4. Run:
-
-```sh
-npx @vscode/vsce login <publisher-id>
-npx @vscode/vsce publish
 ```
 
 ## License
 
-MIT
+MIT © Anurag Mishra

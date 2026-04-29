@@ -1,134 +1,191 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
 import { AudioPlayer } from './audioPlayer';
-import { FahhConfig, affectsFahh, readConfig, updateEnabled, updateSoundPath } from './config';
-import { registerFailureDetectors } from './failureDetector';
+import { FahhConfig, FailureSource, affectsFahh, readConfig, updateEnabled, updateSoundPath, updateSoundFolder } from './config';
+import { registerFailureDetectors, FailureHandler, SuccessHandler } from './failureDetector';
 import { Logger } from './logger';
-
-const DEFAULT_SOUND_FILENAME = 'Fahhh.mp3';
+import { Scheduler } from './scheduler';
+import { SoundResolver } from './soundResolver';
+import { StatusBarManager } from './statusBar';
+import { HistoryManager, HistoryEntry } from './history';
+import { IntegrationsManager } from './integrations';
 
 class FahhExtension {
     private readonly logger: Logger;
     private readonly player: AudioPlayer;
-    private readonly defaultSoundPath: string;
+    private readonly scheduler: Scheduler;
+    private readonly soundResolver: SoundResolver;
+    private readonly statusBar: StatusBarManager;
+    private readonly history: HistoryManager;
+    private readonly integrations: IntegrationsManager;
     private config: FahhConfig;
-    private statusBar: vscode.StatusBarItem | null = null;
     private detectors: vscode.Disposable | null = null;
-    private lastFailureAt = 0;
+    private historyView: vscode.TreeView<unknown> | null = null;
 
     public constructor(private readonly ctx: vscode.ExtensionContext) {
         this.logger = new Logger('Fahh');
         this.player = new AudioPlayer(this.logger);
-        this.defaultSoundPath = path.join(ctx.extensionPath, DEFAULT_SOUND_FILENAME);
         this.config = readConfig();
         this.logger.setLevel(this.config.logLevel);
+        this.scheduler = new Scheduler(() => this.config, this.logger);
+        this.soundResolver = new SoundResolver(ctx.extensionPath, () => this.config, this.logger);
+        this.statusBar = new StatusBarManager(() => this.config, this.logger);
+        this.history = new HistoryManager(() => this.config, this.logger);
+        this.integrations = new IntegrationsManager(() => this.config, this.logger);
     }
 
     public start(): void {
-        this.logger.info(`Fahh activating on ${process.platform} (VS Code ${vscode.version}).`);
+        this.logger.info(`Fahh v2.0 activating on ${process.platform} (VS Code ${vscode.version}).`);
 
-        if (!fs.existsSync(this.defaultSoundPath)) {
-            this.logger.error(`Default sound file missing: ${this.defaultSoundPath}`);
-            void vscode.window.showErrorMessage(
-                `Fahh: bundled sound "${DEFAULT_SOUND_FILENAME}" is missing. Reinstall the extension.`
-            );
-        }
-
-        this.refreshStatusBar();
+        this.statusBar.refresh();
         this.registerDetectors();
         this.registerCommands();
+        this.registerHistoryView();
 
         this.ctx.subscriptions.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
                 if (!affectsFahh(event)) { return; }
                 this.config = readConfig();
                 this.logger.setLevel(this.config.logLevel);
-                this.refreshStatusBar();
+                this.statusBar.refresh();
                 this.logger.debug('Configuration reloaded.');
             }),
             this.player,
             this.logger,
-            { dispose: () => this.statusBar?.dispose() },
-            { dispose: () => this.detectors?.dispose() }
+            this.scheduler,
+            this.statusBar,
+            this.history,
+            this.integrations,
+            { dispose: () => this.detectors?.dispose() },
+            { dispose: () => this.historyView?.dispose() }
         );
     }
 
     private registerDetectors(): void {
-        this.detectors = registerFailureDetectors(
-            () => this.config,
-            (event) => this.handleFailure(event.label),
-            this.logger
-        );
+        const onFailure: FailureHandler = (event) => this.handleFailure(event.source, event.label);
+        const onSuccess: SuccessHandler = (event) => this.handleSuccess(event.source, event.label);
+        this.detectors = registerFailureDetectors(() => this.config, onFailure, onSuccess, this.logger);
     }
 
-    private handleFailure(label: string): void {
-        if (!this.config.enabled) {
-            this.logger.debug(`Failure ignored (disabled): ${label}`);
+    private async handleFailure(source: FailureSource, label: string): Promise<void> {
+        if (!this.config.enabled) { return; }
+        if (this.scheduler.isMuted(source)) {
+            this.logger.debug(`Failure muted by scheduler: ${label}`);
             return;
         }
         if (this.config.ignorePatterns.some((re) => re.test(label))) {
-            this.logger.debug(`Failure ignored (pattern match): ${label}`);
+            this.logger.debug(`Failure ignored by pattern: ${label}`);
             return;
         }
-        const now = Date.now();
-        if (now - this.lastFailureAt < this.config.cooldownMs) {
-            this.logger.debug(`Failure suppressed by cooldown: ${label}`);
-            return;
+
+        this.scheduler.record(source);
+        this.statusBar.incrementCounter();
+        this.statusBar.flash();
+
+        this.logger.info(`Failure: [${source}] ${label}`);
+
+        // AI Summary
+        let extraMsg = '';
+        if (this.config.aiSummaryEnabled) {
+            const summary = await this.integrations.getAiSummary(label);
+            if (summary) { extraMsg = ` — ${summary}`; }
         }
-        this.lastFailureAt = now;
 
-        this.logger.info(`Failure: ${label}`);
-
-        if (this.config.showNotification) {
-            void vscode.window.showWarningMessage(`${label} — playing Fahhh`);
+        // Notification
+        if (this.config.showNotification && this.config.notificationLevel !== 'none') {
+            const msg = `${label}${extraMsg}`;
+            switch (this.config.notificationLevel) {
+                case 'info': void vscode.window.showInformationMessage(msg); break;
+                case 'warning': void vscode.window.showWarningMessage(msg); break;
+                case 'error': void vscode.window.showErrorMessage(msg); break;
+            }
         }
 
-        const soundPath = this.resolveSoundPath();
-        this.player.play(soundPath, { volume: this.config.volume });
+        // Sound
+        const soundPath = this.soundResolver.resolveForFailure(source, false);
+        if (soundPath) {
+            const volume = this.applyVolumeCurve(this.soundResolver.getVolume(source));
+            this.player.play(soundPath, { volume });
+        }
+
+        // Voice
+        this.integrations.speak(`${source} failed: ${label}`);
+
+        // Webhook
+        this.integrations.postWebhook(label, source);
+
+        // Boss fight
+        const bossMsg = this.integrations.recordFailure();
+        if (bossMsg) {
+            void vscode.window.showInformationMessage(bossMsg);
+        }
+
+        // History
+        const entry: HistoryEntry = {
+            id: `${Date.now()}-${Math.random()}`,
+            timestamp: Date.now(),
+            source,
+            label,
+            soundPath: soundPath ?? ''
+        };
+        this.history.add(entry);
     }
 
-    private resolveSoundPath(): string {
-        const custom = this.config.soundPath;
-        if (custom && fs.existsSync(custom)) {
-            return custom;
+    private handleSuccess(source: FailureSource, label: string): void {
+        if (!this.config.successEnabled) { return; }
+
+        const soundPath = this.soundResolver.resolveForFailure(source, true);
+        if (soundPath) {
+            const volume = this.applyVolumeCurve(this.soundResolver.getVolume(source));
+            this.player.play(soundPath, { volume });
         }
-        if (custom) {
-            this.logger.warn(`Custom sound path not found, falling back to default: ${custom}`);
+
+        const streakMsg = this.integrations.recordSuccess();
+        if (streakMsg) {
+            void vscode.window.showInformationMessage(streakMsg);
         }
-        return this.defaultSoundPath;
     }
 
-    private refreshStatusBar(): void {
-        if (!this.config.showStatusBar) {
-            this.statusBar?.dispose();
-            this.statusBar = null;
-            return;
+    private applyVolumeCurve(volume: number): number {
+        if (this.config.volumeCurve === 'log') {
+            // Logarithmic curve: perceptually more natural
+            if (volume <= 0) { return 0; }
+            const normalized = volume / 100;
+            const logVal = Math.log10(1 + normalized * 9) / Math.log10(10);
+            return Math.round(logVal * 100);
         }
-        if (!this.statusBar) {
-            this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-            this.statusBar.command = 'fahh.toggle';
-        }
-        if (this.config.enabled) {
-            this.statusBar.text = '$(unmute) Fahh';
-            this.statusBar.tooltip = 'Fahh is enabled — click to disable';
-        } else {
-            this.statusBar.text = '$(mute) Fahh';
-            this.statusBar.tooltip = 'Fahh is disabled — click to enable';
-        }
-        this.statusBar.show();
+        return volume;
+    }
+
+    private registerHistoryView(): void {
+        this.historyView = vscode.window.createTreeView('fahh.history', { treeDataProvider: this.history });
     }
 
     private registerCommands(): void {
-        this.ctx.subscriptions.push(
+        const cmds = [
             vscode.commands.registerCommand('fahh.test', () => {
-                this.logger.info('Manual test sound requested.');
-                this.player.play(this.resolveSoundPath(), { volume: this.config.volume });
+                const soundPath = this.soundResolver.resolveForFailure('task', false);
+                if (soundPath) {
+                    this.player.play(soundPath, { volume: this.config.volume });
+                }
+            }),
+            vscode.commands.registerCommand('fahh.testSuccess', () => {
+                const soundPath = this.soundResolver.resolveForFailure('task', true);
+                if (soundPath) {
+                    this.player.play(soundPath, { volume: this.config.volume });
+                }
             }),
             vscode.commands.registerCommand('fahh.toggle', async () => {
                 const next = !this.config.enabled;
                 await updateEnabled(next);
                 void vscode.window.showInformationMessage(`Fahh ${next ? 'enabled' : 'disabled'}.`);
+                this.statusBar.refresh();
+            }),
+            vscode.commands.registerCommand('fahh.toggleWorkspace', async () => {
+                const next = !this.config.enabled;
+                await updateEnabled(next, vscode.ConfigurationTarget.Workspace);
+                void vscode.window.showInformationMessage(`Fahh ${next ? 'enabled' : 'disabled'} for this workspace.`);
+                this.statusBar.refresh();
             }),
             vscode.commands.registerCommand('fahh.selectSound', async () => {
                 const picked = await vscode.window.showOpenDialog({
@@ -136,24 +193,69 @@ class FahhExtension {
                     canSelectFolders: false,
                     canSelectMany: false,
                     openLabel: 'Use this sound',
-                    filters: { Audio: ['mp3', 'wav', 'ogg', 'flac'] }
+                    filters: { Audio: ['mp3', 'wav', 'ogg', 'flac', 'm4a'] }
                 });
                 if (!picked || picked.length === 0) { return; }
-                const fsPath = picked[0].fsPath;
-                await updateSoundPath(fsPath);
-                void vscode.window.showInformationMessage(`Fahh sound set to ${fsPath}`);
+                await updateSoundPath(picked[0].fsPath);
+                void vscode.window.showInformationMessage('Fahh sound updated.');
+            }),
+            vscode.commands.registerCommand('fahh.selectSoundFolder', async () => {
+                const picked = await vscode.window.showOpenDialog({
+                    canSelectFiles: false,
+                    canSelectFolders: true,
+                    canSelectMany: false,
+                    openLabel: 'Select folder'
+                });
+                if (!picked || picked.length === 0) { return; }
+                await updateSoundFolder(picked[0].fsPath);
+                void vscode.window.showInformationMessage('Fahh sound folder set. Sounds will be random from this folder.');
             }),
             vscode.commands.registerCommand('fahh.resetSound', async () => {
                 await updateSoundPath('');
                 void vscode.window.showInformationMessage('Fahh sound reset to default.');
             }),
+            vscode.commands.registerCommand('fahh.pickSoundPack', async () => {
+                const packs = this.soundResolver.listSoundPacks();
+                if (packs.length === 0) {
+                    void vscode.window.showWarningMessage('No sound packs installed. Use custom sound instead.');
+                    return;
+                }
+                const items = packs.map(p => ({ label: p.name, description: p.id }));
+                const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Select a sound pack' });
+                if (!picked) { return; }
+                const packPath = this.soundResolver.pickFromPack(picked.description);
+                if (packPath) {
+                    await updateSoundPath(packPath);
+                    void vscode.window.showInformationMessage(`Sound pack "${picked.label}" selected.`);
+                }
+            }),
             vscode.commands.registerCommand('fahh.stop', () => {
                 this.player.stop();
+            }),
+            vscode.commands.registerCommand('fahh.snooze', () => {
+                this.scheduler.snooze(this.config.snoozeMinutes);
+                void vscode.window.showInformationMessage(`Fahh snoozed for ${this.config.snoozeMinutes} minutes.`);
+            }),
+            vscode.commands.registerCommand('fahh.clearHistory', () => {
+                this.history.clear();
+                void vscode.window.showInformationMessage('Failure history cleared.');
+            }),
+            vscode.commands.registerCommand('fahh.replayLast', () => {
+                const last = this.history.getLast();
+                if (last && last.soundPath && fs.existsSync(last.soundPath)) {
+                    this.player.play(last.soundPath, { volume: this.config.volume });
+                } else {
+                    void vscode.window.showWarningMessage('No recent failure to replay.');
+                }
+            }),
+            vscode.commands.registerCommand('fahh.showHistory', () => {
+                vscode.commands.executeCommand('fahh.history.focus');
             }),
             vscode.commands.registerCommand('fahh.showOutput', () => {
                 this.logger.show();
             })
-        );
+        ];
+        this.ctx.subscriptions.push(...cmds);
     }
 }
 
@@ -163,5 +265,5 @@ export function activate(ctx: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-    // ctx.subscriptions are auto-disposed by VS Code; nothing further required.
+    // Disposables auto-cleaned by VS Code
 }
