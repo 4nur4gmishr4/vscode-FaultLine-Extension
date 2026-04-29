@@ -324,12 +324,12 @@ export class WelcomePanel {
         <div class="sound-selector">
             <label for="sound-select" class="selector-label">Choose Your Sound</label>
             <select id="sound-select" class="sound-select">
-                <option value="fahh.mp3">Fahh (Default)</option>
-                <option value="fahhhard.mp3">Fahh Hard</option>
-                <option value="fartreverb.mp3">Fart Reverb</option>
-                <option value="fahhdeep.mp3">Fahh Deep</option>
-                <option value="fahhbroke.mp3">Fahh Broke</option>
-                <option value="ohshit.mp3">Oh Shit</option>
+                <option value="fahh.mp3">Classic Fahh (Default)</option>
+                <option value="fahhhard.mp3">Impact Strike</option>
+                <option value="fartreverb.mp3">Reverb Blast</option>
+                <option value="fahhdeep.mp3">Deep Resonance</option>
+                <option value="fahhbroke.mp3">System Crash</option>
+                <option value="ohshit.mp3">Quick Expletive</option>
             </select>
         </div>
 
