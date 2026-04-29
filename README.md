@@ -14,15 +14,38 @@ Fahh monitors your VS Code tasks and terminal sessions. When something exits wit
 
 ## Setup
 
-Install from the Marketplace or from a `.vsix` file. That's it — Fahh activates on startup and runs silently in the background until something fails.
+Install from the Marketplace or from a `.vsix` file. Fahh activates on startup and runs silently until something fails. No configuration is required, but plenty is available.
 
-No configuration needed. No keybindings. No commands.
+## Commands
+
+| Command | Description |
+|---|---|
+| `Fahh: Play Test Sound` | Plays the current sound for testing. |
+| `Fahh: Toggle Enable / Disable` | Master switch (also clickable from the status bar). |
+| `Fahh: Select Custom Sound File…` | Pick a custom `.mp3`/`.wav`/`.ogg`/`.flac`. |
+| `Fahh: Reset Sound to Default` | Restore the bundled `Fahhh.mp3`. |
+| `Fahh: Stop Currently Playing Sound` | Kill the playing audio process. |
+| `Fahh: Show Output Log` | Open the Fahh output channel. |
+
+## Settings
+
+| Key | Default | Description |
+|---|---|---|
+| `fahh.enabled` | `true` | Master switch. |
+| `fahh.soundPath` | `""` | Absolute path to a custom sound file. |
+| `fahh.showNotification` | `true` | Show a warning toast on failure. |
+| `fahh.sources` | `["task","shell","terminal"]` | Which failure sources to listen to. |
+| `fahh.volume` | `100` | Playback volume 0-100 (Windows/Linux). |
+| `fahh.cooldownMs` | `1500` | Minimum gap between consecutive sounds. |
+| `fahh.ignorePatterns` | `[]` | Regular expressions; matched failure labels are suppressed. |
+| `fahh.showStatusBar` | `true` | Show the Fahh status-bar toggle. |
+| `fahh.logLevel` | `"warn"` | `off`/`error`/`warn`/`info`/`debug`. |
 
 ## Platform notes
 
 - **Windows** — uses `System.Windows.Media.MediaPlayer` via PowerShell (built-in, no extra installs).
 - **macOS** — uses `afplay`.
-- **Linux** — uses `ffplay` (install via `sudo apt install ffmpeg` or equivalent).
+- **Linux** — tries `ffplay` (install via `sudo apt install ffmpeg`), then `paplay`, then `aplay`.
 
 ## Packaging & publishing
 

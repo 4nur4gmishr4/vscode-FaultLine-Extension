@@ -1,9 +1,13 @@
 .vscode/**
 .vscode-test/**
+.git/**
+.github/**
 src/**
 out/**/*.map
 node_modules/**
 .gitignore
 tsconfig.json
+package-lock.json
 FahhLogo_original.png
 **/*.ts
+**/*.tsbuildinfo

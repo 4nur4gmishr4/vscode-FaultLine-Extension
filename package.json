@@ -2,7 +2,7 @@
     "name": "fahh",
     "displayName": "Fahh",
     "description": "Plays a sound whenever a task, build, or terminal command fails.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "publisher": "4nur4gmishr4",
     "author": "Anurag Mishra",
     "license": "MIT",
@@ -10,8 +10,12 @@
         "type": "git",
         "url": "https://github.com/4nur4gmishr4/vscode-fahh-Extension"
     },
+    "bugs": {
+        "url": "https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues"
+    },
+    "homepage": "https://github.com/4nur4gmishr4/vscode-fahh-Extension#readme",
     "engines": {
-        "vscode": "^1.80.0"
+        "vscode": "^1.93.0"
     },
     "categories": [
         "Other"
@@ -21,17 +25,100 @@
         "audio",
         "fail",
         "error",
-        "notification"
+        "notification",
+        "build",
+        "terminal"
     ],
     "icon": "FahhLogo.png",
     "galleryBanner": {
         "color": "#1e1e1e",
         "theme": "dark"
     },
+    "extensionKind": [
+        "workspace",
+        "ui"
+    ],
     "activationEvents": [
         "onStartupFinished"
     ],
     "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            { "command": "fahh.test", "title": "Fahh: Play Test Sound" },
+            { "command": "fahh.toggle", "title": "Fahh: Toggle Enable / Disable" },
+            { "command": "fahh.selectSound", "title": "Fahh: Select Custom Sound File\u2026" },
+            { "command": "fahh.resetSound", "title": "Fahh: Reset Sound to Default" },
+            { "command": "fahh.stop", "title": "Fahh: Stop Currently Playing Sound" },
+            { "command": "fahh.showOutput", "title": "Fahh: Show Output Log" }
+        ],
+        "configuration": {
+            "title": "Fahh",
+            "properties": {
+                "fahh.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Master switch for Fahh. When disabled, no sounds or notifications are produced."
+                },
+                "fahh.soundPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Absolute path to a custom sound file (.mp3 / .wav). Leave empty to use the bundled Fahhh.mp3.",
+                    "scope": "machine-overridable"
+                },
+                "fahh.showNotification": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show a warning notification when a failure is detected."
+                },
+                "fahh.sources": {
+                    "type": "array",
+                    "default": ["task", "shell", "terminal"],
+                    "description": "Which failure sources to listen to.",
+                    "items": {
+                        "type": "string",
+                        "enum": ["task", "shell", "terminal"],
+                        "enumDescriptions": [
+                            "VS Code tasks (build, test, custom)",
+                            "Shell commands inside the integrated terminal (requires shell integration)",
+                            "Terminal sessions exiting with a non-zero code"
+                        ]
+                    },
+                    "uniqueItems": true
+                },
+                "fahh.volume": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Playback volume (0-100). Honoured on Windows and Linux; macOS uses system volume."
+                },
+                "fahh.cooldownMs": {
+                    "type": "number",
+                    "default": 1500,
+                    "minimum": 0,
+                    "maximum": 60000,
+                    "description": "Minimum time (ms) between two consecutive sounds; suppresses duplicate events from overlapping sources."
+                },
+                "fahh.ignorePatterns": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Regular expressions; if any matches the failure label, the sound is suppressed.",
+                    "items": { "type": "string" }
+                },
+                "fahh.showStatusBar": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the Fahh status bar item."
+                },
+                "fahh.logLevel": {
+                    "type": "string",
+                    "default": "warn",
+                    "enum": ["off", "error", "warn", "info", "debug"],
+                    "description": "Verbosity of the Fahh output channel."
+                }
+            }
+        }
+    },
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
@@ -41,7 +128,7 @@
     },
     "devDependencies": {
         "@types/node": "18.x",
-        "@types/vscode": "^1.80.0",
+        "@types/vscode": "^1.93.0",
         "typescript": "^5.2.2"
     }
 }

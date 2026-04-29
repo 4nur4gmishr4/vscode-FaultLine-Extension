@@ -2,3 +2,6 @@ out/
 node_modules/
 *.vsix
 .vscode-test/
+FahhLogo_original.png
+*.tsbuildinfo
+.env

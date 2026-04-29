@@ -1,34 +1,165 @@
-import { execFile } from 'child_process';
+import { execFile, ChildProcess } from 'child_process';
+import * as fs from 'fs';
+import { Logger } from './logger';
 
-let playing = false;
+export interface AudioOptions {
+    volume: number; // 0-100
+}
 
-export function playAudio(filePath: string): void {
-    if (playing) {
-        return;
-    }
-    playing = true;
+export class AudioPlayer {
+    private playing = false;
+    private currentChild: ChildProcess | null = null;
+    private warnedMissingPlayer = false;
 
-    const done = () => { playing = false; };
+    public constructor(private readonly logger: Logger) {}
 
-    switch (process.platform) {
-        case 'win32': {
-            const script = [
-                'Add-Type -AssemblyName PresentationCore',
-                `$p = New-Object System.Windows.Media.MediaPlayer`,
-                `$p.Open([Uri]'${filePath.replace(/'/g, "''")}')`,
-                `$p.Play()`,
-                `Start-Sleep -Milliseconds 300`,
-                `while ($p.Position -lt $p.NaturalDuration.TimeSpan) { Start-Sleep -Milliseconds 100 }`,
-                `$p.Close()`
-            ].join('; ');
-            execFile('powershell', ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', script], done);
-            break;
+    public play(filePath: string, options: AudioOptions): void {
+        if (this.playing) {
+            this.logger.debug('Audio play skipped: already playing.');
+            return;
         }
-        case 'darwin':
-            execFile('afplay', [filePath], done);
-            break;
-        default:
-            execFile('ffplay', ['-nodisp', '-autoexit', '-loglevel', 'quiet', filePath], done);
-            break;
+        if (!filePath || !fs.existsSync(filePath)) {
+            this.logger.error(`Audio file not found: ${filePath}`);
+            return;
+        }
+
+        this.playing = true;
+        const done = (err?: Error | null) => {
+            this.playing = false;
+            this.currentChild = null;
+            if (err) {
+                this.handleError(err);
+            }
+        };
+
+        try {
+            this.spawn(filePath, options, done);
+        } catch (e) {
+            done(e instanceof Error ? e : new Error(String(e)));
+        }
+    }
+
+    public stop(): void {
+        if (this.currentChild) {
+            try {
+                this.currentChild.kill();
+            } catch (e) {
+                this.logger.error('Failed to kill audio child process', e);
+            }
+        }
+        this.currentChild = null;
+        this.playing = false;
+    }
+
+    public dispose(): void {
+        this.stop();
+    }
+
+    private spawn(filePath: string, options: AudioOptions, done: (err?: Error | null) => void): void {
+        const volume01 = Math.min(Math.max(options.volume, 0), 100) / 100;
+
+        switch (process.platform) {
+            case 'win32': {
+                this.currentChild = this.playWindows(filePath, volume01, done);
+                return;
+            }
+            case 'darwin': {
+                this.currentChild = execFile(
+                    'afplay',
+                    ['-v', volume01.toFixed(3), filePath],
+                    (err) => done(err)
+                );
+                return;
+            }
+            default: {
+                this.currentChild = this.playLinux(filePath, volume01, done);
+                return;
+            }
+        }
+    }
+
+    private playWindows(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
+        // Path and volume are passed as $args — no string interpolation, no quoting bugs.
+        const script = [
+            "$ErrorActionPreference = 'Stop'",
+            'Add-Type -AssemblyName PresentationCore',
+            '$path = $args[0]',
+            '$volume = [double]$args[1]',
+            '$player = New-Object System.Windows.Media.MediaPlayer',
+            '$player.Volume = $volume',
+            '$opened = $false',
+            '$failed = $false',
+            '$null = Register-ObjectEvent $player MediaOpened -Action { $script:opened = $true }',
+            '$null = Register-ObjectEvent $player MediaFailed -Action { $script:failed = $true }',
+            '$player.Open([Uri]$path)',
+            '$deadline = (Get-Date).AddSeconds(5)',
+            'while (-not $opened -and -not $failed -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 50 }',
+            'if ($opened -and $player.NaturalDuration.HasTimeSpan) {',
+            '    $player.Play()',
+            '    $ms = [int]$player.NaturalDuration.TimeSpan.TotalMilliseconds + 200',
+            '    Start-Sleep -Milliseconds $ms',
+            '}',
+            '$player.Close()'
+        ].join('; ');
+
+        return execFile(
+            'powershell.exe',
+            [
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy', 'Bypass',
+                '-WindowStyle', 'Hidden',
+                '-Command', script,
+                '--',
+                filePath,
+                volume01.toFixed(3)
+            ],
+            { windowsHide: true },
+            (err) => done(err)
+        );
+    }
+
+    private playLinux(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
+        const ffplayVolume = Math.round(volume01 * 100).toString();
+        return execFile(
+            'ffplay',
+            ['-nodisp', '-autoexit', '-loglevel', 'quiet', '-volume', ffplayVolume, filePath],
+            (err) => {
+                if (err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+                    this.tryLinuxFallback(filePath, volume01, done);
+                    return;
+                }
+                done(err);
+            }
+        );
+    }
+
+    private tryLinuxFallback(filePath: string, volume01: number, done: (err?: Error | null) => void): void {
+        const paplayVolume = Math.round(volume01 * 65536).toString();
+        this.currentChild = execFile(
+            'paplay',
+            ['--volume', paplayVolume, filePath],
+            (err) => {
+                if (err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+                    this.currentChild = execFile('aplay', ['-q', filePath], (err2) => done(err2));
+                    return;
+                }
+                done(err);
+            }
+        );
+    }
+
+    private handleError(err: Error): void {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === 'ENOENT' && !this.warnedMissingPlayer) {
+            this.warnedMissingPlayer = true;
+            const tool =
+                process.platform === 'darwin' ? 'afplay'
+                : process.platform === 'win32' ? 'powershell.exe'
+                : 'ffplay (install ffmpeg) or paplay/aplay';
+            this.logger.error(`Required audio player not found: ${tool}`);
+        } else {
+            this.logger.error('Audio playback failed', err);
+        }
     }
 }
