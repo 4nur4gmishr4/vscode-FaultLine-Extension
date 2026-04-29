@@ -183,16 +183,32 @@ class FahhExtension {
 
     private registerCommands(): void {
         const cmds = [
-            vscode.commands.registerCommand('fahh.test', () => {
+            vscode.commands.registerCommand('fahh.test', async () => {
                 const soundPath = this.soundResolver.resolveForFailure('task', false);
-                if (soundPath) {
-                    this.player.play(soundPath, { volume: this.config.volume });
+                if (!soundPath) {
+                    void vscode.window.showErrorMessage('Fahh: no sound file resolved.');
+                    return;
+                }
+                try {
+                    await this.player.play(soundPath, { volume: this.config.volume });
+                    void vscode.window.showInformationMessage(`Fahh played: ${soundPath}`);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    void vscode.window.showErrorMessage(`Fahh playback failed: ${msg}. Open "Fahh: Show Output Log" for details.`);
                 }
             }),
-            vscode.commands.registerCommand('fahh.testSuccess', () => {
+            vscode.commands.registerCommand('fahh.testSuccess', async () => {
                 const soundPath = this.soundResolver.resolveForFailure('task', true);
-                if (soundPath) {
-                    this.player.play(soundPath, { volume: this.config.volume });
+                if (!soundPath) {
+                    void vscode.window.showErrorMessage('Fahh: no success sound resolved.');
+                    return;
+                }
+                try {
+                    await this.player.play(soundPath, { volume: this.config.volume });
+                    void vscode.window.showInformationMessage(`Fahh success played: ${soundPath}`);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    void vscode.window.showErrorMessage(`Fahh playback failed: ${msg}. Open "Fahh: Show Output Log" for details.`);
                 }
             }),
             vscode.commands.registerCommand('fahh.toggle', async () => {
