@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 
 export class WelcomePanel {
     public static currentPanel: WelcomePanel | undefined;
@@ -22,7 +21,7 @@ export class WelcomePanel {
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
-                localResourceRoots: [vscode.Uri.file(path.join(extensionUri.fsPath, 'media'))]
+                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
             }
         );
 
@@ -40,6 +39,12 @@ export class WelcomePanel {
                 switch (message.command) {
                     case 'test':
                         vscode.commands.executeCommand('fahh.test');
+                        return;
+                    case 'reset':
+                        vscode.commands.executeCommand('fahh.resetSettings');
+                        return;
+                    case 'error':
+                        vscode.window.showErrorMessage(message.text);
                         return;
                 }
             },
@@ -60,169 +65,244 @@ export class WelcomePanel {
     }
 
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
-        const logoPath = webview.asWebviewUri(vscode.Uri.file(path.join(extensionUri.fsPath, 'FahhLogo.png')));
+        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh-logo.jpeg'));
+        const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh.mp3'));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'welcome-client.js'));
+        const nonce = generateNonce();
 
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; media-src ${webview.cspSource}; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';">
     <title>Welcome to Fahh</title>
     <style>
+        :root {
+            --accent-color: #ffffff;
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --secondary-bg: #1a1a1a;
+            --border-color: #333333;
+            --danger-color: #ff4444;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--vscode-editor-background);
-            color: var(--vscode-editor-foreground);
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .header-actions {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-color);
+            color: var(--bg-color);
         }
 
         .container {
+            max-width: 800px;
+            padding: 40px;
             text-align: center;
-            animation: fadeIn 1.5s ease-out;
+            animation: fadeIn 1s ease-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .logo {
-            width: 150px;
-            height: 150px;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5));
-            animation: pulse 2s infinite;
+        .logo-container {
+            position: relative;
+            margin-bottom: 30px;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8)); }
-            100% { transform: scale(1); }
+        .logo {
+            width: 120px;
+            height: 120px;
+            filter: grayscale(1) brightness(2);
+            animation: breathe 4s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
         }
 
         h1 {
-            font-size: 3rem;
-            margin: 0;
-            background: linear-gradient(45deg, #ff4e50, #f9d423);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
         }
 
-        p {
-            font-size: 1.2rem;
-            opacity: 0.8;
-            margin-bottom: 40px;
+        .tagline {
+            font-size: 1.1rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-bottom: 50px;
         }
 
-        .features {
-            display: flex;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-bottom: 40px;
+            margin-bottom: 60px;
         }
 
-        .feature-card {
-            background: var(--vscode-button-secondaryBackground);
-            padding: 20px;
-            border-radius: 12px;
-            width: 150px;
-            transition: transform 0.3s;
+        .card {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            padding: 30px 20px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
         }
 
-        .feature-card:hover {
-            transform: translateY(-10px);
-            background: var(--vscode-button-secondaryHoverBackground);
+        .card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-5px);
         }
 
-        .icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
+        .card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn {
-            background-color: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
+            background: var(--accent-color);
+            color: var(--bg-color);
             border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            border-radius: 6px;
+            padding: 15px 40px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             cursor: pointer;
-            transition: background 0.2s;
+            border-radius: 2px;
+            transition: opacity 0.2s;
         }
 
         .btn:hover {
-            background-color: var(--vscode-button-hoverBackground);
+            opacity: 0.9;
         }
 
-        .sound-wave {
+        .visualizer {
             display: flex;
-            align-items: flex-end;
-            gap: 3px;
-            height: 40px;
-            margin-top: 20px;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 60px;
+            margin-top: 40px;
         }
 
         .bar {
-            width: 4px;
-            background: #ff4e50;
-            animation: wave 1s infinite ease-in-out;
+            width: 3px;
+            background: var(--accent-color);
+            height: 4px;
+            animation: none;
         }
 
-        @keyframes wave {
-            0%, 100% { height: 10px; }
+        .visualizer.active .bar {
+            animation: barHeight 0.8s infinite ease-in-out;
+        }
+
+        @keyframes barHeight {
+            0%, 100% { height: 4px; }
             50% { height: 40px; }
         }
 
-        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(1) { animation-delay: 0.1s; }
+        .bar:nth-child(2) { animation-delay: 0.3s; }
         .bar:nth-child(3) { animation-delay: 0.2s; }
-        .bar:nth-child(4) { animation-delay: 0.3s; }
-        .bar:nth-child(5) { animation-delay: 0.4s; }
+        .bar:nth-child(4) { animation-delay: 0.4s; }
+        .bar:nth-child(5) { animation-delay: 0.15s; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <img src="${logoPath}" class="logo" alt="Fahh Logo">
-        <h1>Fahh!</h1>
-        <p>The companion that hears your mistakes.</p>
-
-        <div class="features">
-            <div class="feature-card">
-                <div class="icon">🔊</div>
-                <div>Audio Feedback</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon">🤖</div>
-                <div>AI Explanations</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon">⚡</div>
-                <div>Zero Latency</div>
-            </div>
-        </div>
-
-        <button class="btn" onclick="testSound()">Test it Now</button>
-
-        <div class="sound-wave">
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-        </div>
+    <div class="header-actions">
+        <button id="reset-btn" class="btn-danger" type="button">Reset All Settings</button>
     </div>
 
-    <script>
-        const vscode = acquireVsCodeApi();
-        function testSound() {
-            vscode.postMessage({ command: 'test' });
-        }
-    </script>
+    <div class="container">
+        <div class="logo-container">
+            <img src="${logoUri}" class="logo" alt="Fahh Logo">
+        </div>
+        <h1>Fahh!</h1>
+        <div class="tagline">Audio error feedback</div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-icon">⚡</div>
+                <div class="card-title">Zero Latency</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">🔊</div>
+                <div class="card-title">Pure Audio</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">AI Insights</div>
+            </div>
+        </div>
+
+        <button id="test-btn" class="btn" type="button">Test Audio Now</button>
+
+        <div id="visualizer" class="visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+
+        <audio id="fahh-audio" src="${audioUri}" preload="auto"></audio>
+    </div>
+
+    <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
     }
+}
+
+function generateNonce(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 32; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
 }

@@ -3,7 +3,7 @@ import * as path from 'path';
 import { FahhConfig, FailureSource } from './config';
 import { Logger } from './logger';
 
-const DEFAULT_SOUND = 'Fahhh.mp3';
+const DEFAULT_SOUND = 'fahh.mp3';
 
 export class SoundResolver {
     private defaultSoundPath: string;
@@ -14,8 +14,8 @@ export class SoundResolver {
         private readonly config: () => FahhConfig,
         private readonly logger: Logger
     ) {
-        this.defaultSoundPath = path.join(_extensionPath, DEFAULT_SOUND);
-        this.packDir = path.join(_extensionPath, 'media', 'packs');
+        this.defaultSoundPath = path.join(_extensionPath, 'resources', DEFAULT_SOUND);
+        this.packDir = path.join(_extensionPath, 'resources', 'packs');
     }
 
     public resolveForFailure(source: FailureSource, isSuccess = false): string | null {

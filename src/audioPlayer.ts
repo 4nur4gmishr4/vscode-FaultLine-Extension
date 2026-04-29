@@ -1,6 +1,8 @@
 import { execFile, ChildProcess } from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
 import { Logger } from './logger';
+import { isWSL, convertWSLPathToWindows } from './wsl';
 
 export interface AudioOptions {
     volume: number; // 0-100
@@ -10,23 +12,34 @@ export class AudioPlayer {
     private playing = false;
     private currentChild: ChildProcess | null = null;
     private warnedMissingPlayer = false;
+    private queue: { filePath: string; options: AudioOptions }[] = [];
 
     public constructor(private readonly logger: Logger) {}
 
     public play(filePath: string, options: AudioOptions): void {
-        if (this.playing) {
-            this.logger.debug('Audio play skipped: already playing.');
-            return;
-        }
         if (!filePath) {
             this.logger.error('Audio play failed: No file path provided.');
             return;
         }
-        if (!fs.existsSync(filePath)) {
-            this.logger.error(`Audio file not found: ${filePath}`);
+
+        // Ensure absolute path
+        const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
+
+        if (!fs.existsSync(absolutePath)) {
+            this.logger.error(`Audio file not found: ${absolutePath}`);
             return;
         }
 
+        if (this.playing) {
+            this.queue.push({ filePath: absolutePath, options });
+            this.logger.debug('Audio queued.');
+            return;
+        }
+
+        this.playInternal(absolutePath, options);
+    }
+
+    private playInternal(absolutePath: string, options: AudioOptions): void {
         this.playing = true;
         const done = (err?: Error | null) => {
             this.playing = false;
@@ -34,19 +47,32 @@ export class AudioPlayer {
             if (err) {
                 this.handleError(err);
             }
+            if (this.queue.length > 0) {
+                const next = this.queue.shift();
+                if (next) {
+                    this.playInternal(next.filePath, next.options);
+                }
+            }
         };
 
         try {
-            this.spawn(filePath, options, done);
+            this.spawn(absolutePath, options, done);
         } catch (e) {
             this.playing = false;
             this.currentChild = null;
             const error = e instanceof Error ? e : new Error(String(e));
             this.handleError(error);
+            if (this.queue.length > 0) {
+                const next = this.queue.shift();
+                if (next) {
+                    this.playInternal(next.filePath, next.options);
+                }
+            }
         }
     }
 
     public stop(): void {
+        this.queue = [];
         if (this.currentChild) {
             try {
                 this.currentChild.kill();
@@ -64,6 +90,13 @@ export class AudioPlayer {
 
     private spawn(filePath: string, options: AudioOptions, done: (err?: Error | null) => void): void {
         const volume01 = Math.min(Math.max(options.volume, 0), 100) / 100;
+
+        // WSL support: if on linux but in WSL, use powershell on windows host
+        if (isWSL()) {
+            const winPath = convertWSLPathToWindows(filePath);
+            this.currentChild = this.playWindows(winPath, volume01, done);
+            return;
+        }
 
         switch (process.platform) {
             case 'win32': {
@@ -86,31 +119,27 @@ export class AudioPlayer {
     }
 
     private playWindows(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
-        // Use Base64 encoding for the script and path to prevent any injection
-        const script = [
-            "$ErrorActionPreference = 'Stop'",
-            'Add-Type -AssemblyName PresentationCore',
-            `$path = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('${Buffer.from(filePath, 'utf16le').toString('base64')}'))`,
-            `$volume = ${volume01.toFixed(3)}`,
-            '$player = New-Object System.Windows.Media.MediaPlayer',
-            '$player.Volume = $volume',
-            '$opened = $false',
-            '$failed = $false',
-            '$null = Register-ObjectEvent $player MediaOpened -Action { $script:opened = $true }',
-            '$null = Register-ObjectEvent $player MediaFailed -Action { $script:failed = $true }',
-            // Use New-Object System.Uri for more robust path handling
-            '$player.Open((New-Object System.Uri($path, [System.UriKind]::Absolute)))',
-            '$deadline = (Get-Date).AddSeconds(5)',
-            'while (-not $opened -and -not $failed -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 50 }',
-            'if ($opened -and $player.NaturalDuration.HasTimeSpan) {',
-            '    $player.Play()',
-            '    $ms = [int]$player.NaturalDuration.TimeSpan.TotalMilliseconds + 200',
-            '    Start-Sleep -Milliseconds $ms',
-            '}',
-            '$player.Close()'
-        ].join('; ');
+        // Use the Win32 MCI API (winmm.dll) via P/Invoke. WPF MediaPlayer's MediaOpened
+        // never fires from a non-UI PowerShell session because there is no Dispatcher
+        // pumping messages. mciSendString is fully synchronous and works without a UI.
+        // Volume is 0..1000 in MCI; map from our 0..1 range.
+        const mciVolume = Math.round(Math.min(Math.max(volume01, 0), 1) * 1000);
+        const alias = `fahh${Date.now().toString(36)}`;
+        const pathBase64 = Buffer.from(filePath, 'utf16le').toString('base64');
 
-        const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
+        const lines = [
+            "$ErrorActionPreference = 'Stop'",
+            "$path = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('" + pathBase64 + "'))",
+            "$mci = Add-Type -PassThru -Namespace Fahh -Name Mci -MemberDefinition '[DllImport(\"winmm.dll\", CharSet=CharSet.Auto)] public static extern int mciSendString(string command, System.Text.StringBuilder buffer, int bufferSize, System.IntPtr hwndCallback);'",
+            "$openCmd = 'open \"' + $path + '\" type mpegvideo alias " + alias + "'",
+            "$rcOpen = $mci::mciSendString($openCmd, $null, 0, [System.IntPtr]::Zero)",
+            "if ($rcOpen -ne 0) { exit 2 }",
+            "$null = $mci::mciSendString('setaudio " + alias + " volume to " + mciVolume + "', $null, 0, [System.IntPtr]::Zero)",
+            "$rcPlay = $mci::mciSendString('play " + alias + " wait', $null, 0, [System.IntPtr]::Zero)",
+            "$null = $mci::mciSendString('close " + alias + "', $null, 0, [System.IntPtr]::Zero)",
+            "if ($rcPlay -ne 0) { exit 3 }"
+        ];
+        const encodedScript = Buffer.from(lines.join('; '), 'utf16le').toString('base64');
 
         return execFile(
             'powershell.exe',

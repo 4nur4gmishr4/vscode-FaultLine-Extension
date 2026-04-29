@@ -4,9 +4,14 @@
 .github/**
 src/**
 out/**/*.map
+out/**/*.test.js
+out/**/*.spec.js
+__mocks__/**
+jest.config.js
 node_modules/**
 .gitignore
 tsconfig.json
+tsconfig.test.json
 package-lock.json
 FahhLogo_original.png
 **/*.ts

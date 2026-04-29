@@ -21,7 +21,7 @@ class FahhExtension {
     private readonly integrations: IntegrationsManager;
     private config: FahhConfig;
     private detectors: vscode.Disposable | null = null;
-    private historyView: vscode.TreeView<unknown> | null = null;
+    private historyView: vscode.TreeView<vscode.TreeItem> | null = null;
 
     public constructor(private readonly ctx: vscode.ExtensionContext) {
         this.logger = new Logger('Fahh');
@@ -31,8 +31,8 @@ class FahhExtension {
         this.scheduler = new Scheduler(() => this.config, this.logger);
         this.soundResolver = new SoundResolver(ctx.extensionPath, () => this.config, this.logger);
         this.statusBar = new StatusBarManager(() => this.config, this.logger);
-        this.history = new HistoryManager(() => this.config, this.logger);
-        this.integrations = new IntegrationsManager(() => this.config, this.logger);
+        this.history = new HistoryManager(() => this.config, this.logger, ctx.globalState);
+        this.integrations = new IntegrationsManager(() => this.config, this.logger, ctx.globalState);
     }
 
     public start(): void {
@@ -43,13 +43,7 @@ class FahhExtension {
         this.registerCommands();
         this.registerHistoryView();
 
-        // Show welcome screen on first install
-        const version = this.ctx.extension.packageJSON.version;
-        const lastVersion = this.ctx.globalState.get<string>('lastVersion');
-        if (lastVersion !== version) {
-            WelcomePanel.createOrShow(this.ctx.extensionUri);
-            this.ctx.globalState.update('lastVersion', version);
-        }
+        void this.maybeShowWelcomeOnInstall();
 
         this.ctx.subscriptions.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
@@ -57,6 +51,7 @@ class FahhExtension {
                 this.config = readConfig();
                 this.logger.setLevel(this.config.logLevel);
                 this.statusBar.refresh();
+                this.integrations.onConfigChanged();
                 this.logger.debug('Configuration reloaded.');
             }),
             this.player,
@@ -68,6 +63,21 @@ class FahhExtension {
             { dispose: () => this.detectors?.dispose() },
             { dispose: () => this.historyView?.dispose() }
         );
+    }
+
+    private async maybeShowWelcomeOnInstall(): Promise<void> {
+        const version = this.ctx.extension.packageJSON.version as string;
+        const lastVersion = this.ctx.globalState.get<string>('lastVersion');
+        if (shouldShowWelcome(lastVersion, version)) {
+            WelcomePanel.createOrShow(this.ctx.extensionUri);
+        }
+        if (lastVersion !== version) {
+            try {
+                await this.ctx.globalState.update('lastVersion', version);
+            } catch (err) {
+                this.logger.warn(`Failed to persist lastVersion: ${err instanceof Error ? err.message : String(err)}`);
+            }
+        }
     }
 
     private registerDetectors(): void {
@@ -142,6 +152,7 @@ class FahhExtension {
 
     private handleSuccess(source: FailureSource, label: string): void {
         if (!this.config.successEnabled) { return; }
+        this.logger.debug(`Success: [${source}] ${label}`);
 
         const soundPath = this.soundResolver.resolveForFailure(source, true);
         if (soundPath) {
@@ -286,6 +297,11 @@ class FahhExtension {
                     await resetAllSettings();
                     this.history.clear();
                     this.statusBar.resetCounter();
+                    try {
+                        await this.ctx.globalState.update('lastVersion', undefined);
+                    } catch (err) {
+                        this.logger.warn(`Failed to clear lastVersion: ${err instanceof Error ? err.message : String(err)}`);
+                    }
                     this.config = readConfig();
                     this.statusBar.refresh();
                     void vscode.window.showInformationMessage('Fahh has been factory reset.');
@@ -306,4 +322,17 @@ export function activate(ctx: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
     // Disposables auto-cleaned by VS Code
+}
+
+function shouldShowWelcome(lastVersion: string | undefined, currentVersion: string): boolean {
+    if (!lastVersion) {
+        // First install
+        return true;
+    }
+    return semverMajor(lastVersion) !== semverMajor(currentVersion);
+}
+
+function semverMajor(version: string): number {
+    const major = Number(version.split('.')[0]);
+    return Number.isFinite(major) ? major : 0;
 }

@@ -33,42 +33,62 @@ export function registerFailureDetectors(
     }, 1000 * 60 * 15); // Every 15 minutes
     disposables.push({ dispose: () => clearInterval(cleanupInterval) });
 
+    registerTaskDetector(config, onFailure, onSuccess, disposables);
+    registerTerminalDetector(config, onFailure, onSuccess, logger, disposables);
+    registerDiagnosticsDetector(config, onFailure, disposables);
+
+    return vscode.Disposable.from(...disposables);
+}
+
+function taskIdentity(task: vscode.Task): string {
+    return `${task.definition.type}|${task.name}|${task.source}`;
+}
+
+function registerTaskDetector(
+    config: () => FahhConfig,
+    onFailure: FailureHandler,
+    onSuccess: SuccessHandler | null,
+    disposables: vscode.Disposable[]
+) {
     // Task process end (handles task, build, longTask)
     disposables.push(
         vscode.tasks.onDidEndTaskProcess((e) => {
             const cfg = config();
-            const def = e.execution.task.definition;
-            const taskId = `${def.type}:${JSON.stringify(def)}`;
+            const taskId = taskIdentity(e.execution.task);
             const startInfo = taskStarts.get(taskId);
             taskStarts.delete(taskId);
 
             const code = e.exitCode;
             const isSuccess = code === 0;
-            const isBuild = e.execution.task.group === vscode.TaskGroup.Build;
+            const group = e.execution.task.group;
+            const isBuild = isBuildGroup(group);
             const duration = startInfo ? Date.now() - startInfo.startTime : 0;
+            const taskName = e.execution.task.name ?? 'unknown';
 
             if (isSuccess) {
-                if (onSuccess) {
-                    onSuccess({ source: 'task', label: `Task "${e.execution.task.name}" succeeded` });
-                    if (isBuild) {
-                        onSuccess({ source: 'build', label: `Build "${e.execution.task.name}" succeeded` });
-                    }
-                    if (cfg.sources.has('longTask') && duration >= cfg.longTaskThresholdMs) {
-                        onSuccess({ source: 'longTask', label: `Long task "${e.execution.task.name}" completed (${Math.round(duration / 1000)}s)` });
-                    }
+                if (!onSuccess) { return; }
+                if (cfg.sources.has('task')) {
+                    onSuccess({ source: 'task', label: `Task "${taskName}" succeeded` });
+                }
+                if (isBuild && cfg.sources.has('build')) {
+                    onSuccess({ source: 'build', label: `Build "${taskName}" succeeded` });
+                }
+                if (cfg.sources.has('longTask') && duration >= cfg.longTaskThresholdMs) {
+                    onSuccess({ source: 'longTask', label: `Long task "${taskName}" completed (${Math.round(duration / 1000)}s)` });
                 }
                 return;
             }
 
-            // Failure
-            if (!cfg.sources.has('task')) { return; }
-            if (code === 0) { return; } // shouldn't happen given above
-            const taskName = e.execution?.task?.name ?? 'unknown';
             const codeText = code === undefined ? 'signal' : String(code);
-            onFailure({ source: 'task', label: `Task "${taskName}" failed (exit ${codeText})` });
 
+            if (cfg.sources.has('task')) {
+                onFailure({ source: 'task', label: `Task "${taskName}" failed (exit ${codeText})` });
+            }
             if (isBuild && cfg.sources.has('build')) {
                 onFailure({ source: 'build', label: `Build "${taskName}" failed (exit ${codeText})` });
+            }
+            if (cfg.sources.has('longTask') && duration >= cfg.longTaskThresholdMs) {
+                onFailure({ source: 'longTask', label: `Long task "${taskName}" failed after ${Math.round(duration / 1000)}s` });
             }
         })
     );
@@ -76,17 +96,31 @@ export function registerFailureDetectors(
     // Track task starts for duration
     disposables.push(
         vscode.tasks.onDidStartTask((e) => {
-            const def = e.execution.task.definition;
-            const taskId = `${def.type}:${JSON.stringify(def)}`;
-            const isBuild = e.execution.task.group === vscode.TaskGroup.Build;
+            const taskId = taskIdentity(e.execution.task);
             taskStarts.set(taskId, {
                 taskName: e.execution.task.name,
-                isBuild,
+                isBuild: isBuildGroup(e.execution.task.group),
                 startTime: Date.now()
             });
         })
     );
+}
 
+function isBuildGroup(group: vscode.TaskGroup | undefined): boolean {
+    if (!group) { return false; }
+    // Prefer string id (stable across instances) when available; fall back to reference equality.
+    const id = (group as unknown as { id?: string }).id;
+    if (typeof id === 'string') { return id === 'build'; }
+    return group === vscode.TaskGroup.Build;
+}
+
+function registerTerminalDetector(
+    config: () => FahhConfig,
+    onFailure: FailureHandler,
+    onSuccess: SuccessHandler | null,
+    logger: Logger,
+    disposables: vscode.Disposable[]
+) {
     // Terminal shell execution
     if (typeof vscode.window.onDidEndTerminalShellExecution === 'function') {
         disposables.push(
@@ -124,61 +158,51 @@ export function registerFailureDetectors(
             onFailure({ source: 'terminal', label: `Terminal "${t.name}" exited (code ${code})` });
         })
     );
+}
 
+function registerDiagnosticsDetector(
+    config: () => FahhConfig,
+    onFailure: FailureHandler,
+    disposables: vscode.Disposable[]
+) {
     // Diagnostics listener
-    let lastDiagnosticCount = 0;
+    const lastDiagnosticCounts = new Map<string, number>();
     let diagTimeout: NodeJS.Timeout | null = null;
+    
     disposables.push(
-        vscode.languages.onDidChangeDiagnostics(() => {
+        vscode.languages.onDidChangeDiagnostics((e) => {
             if (diagTimeout) { clearTimeout(diagTimeout); }
             diagTimeout = setTimeout(() => {
                 const cfg = config();
                 if (!cfg.sources.has('diagnostics')) { return; }
-                const all = vscode.languages.getDiagnostics();
-                const errorCount = all.reduce((sum, [, diags]) => sum + diags.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length, 0);
-                if (errorCount > lastDiagnosticCount && errorCount >= cfg.diagnosticsThreshold) {
-                    const newErrors = errorCount - lastDiagnosticCount;
-                    onFailure({ source: 'diagnostics', label: `${newErrors} new error(s) detected` });
+
+                let totalNewErrors = 0;
+                // Only check the URIs that actually changed
+                for (const uri of e.uris) {
+                    const uriString = uri.toString();
+                    const diags = vscode.languages.getDiagnostics(uri);
+                    const errorCount = diags.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length;
+                    const previousCount = lastDiagnosticCounts.get(uriString) ?? 0;
+
+                    if (errorCount > previousCount) {
+                        totalNewErrors += (errorCount - previousCount);
+                    }
+                    lastDiagnosticCounts.set(uriString, errorCount);
                 }
-                lastDiagnosticCount = errorCount;
+
+                if (totalNewErrors >= cfg.diagnosticsThreshold) {
+                    onFailure({ source: 'diagnostics', label: `${totalNewErrors} new error(s) detected in changed files` });
+                }
             }, 500); // Debounce 500ms
         })
     );
     disposables.push({ dispose: () => { if (diagTimeout) { clearTimeout(diagTimeout); } } });
 
-    // Debug session listener (if API available)
-    if (vscode.debug) {
-        disposables.push(
-            vscode.debug.onDidTerminateDebugSession((session) => {
-                const cfg = config();
-                if (!cfg.sources.has('debug')) { return; }
-                // Debug sessions don't have exit codes directly; infer from custom event if possible
-                // For now, we rely on users requesting this feature and reporting the experience
-            })
-        );
-    }
-
-    // Test listener (if test API available in this VS Code version)
-    try {
-        const testApi = (vscode as any).tests;
-        if (testApi?.onDidChangeTestResults) {
-            disposables.push(
-                testApi.onDidChangeTestResults((results: any) => {
-                    const cfg = config();
-                    if (!cfg.sources.has('test')) { return; }
-                    // Check if any test failed
-                    const failed = results?.items?.some((item: any) => item.result?.state === 'Failed');
-                    if (failed) {
-                        onFailure({ source: 'test', label: 'Tests failed' });
-                    } else if (onSuccess && results?.items?.every((item: any) => item.result?.state === 'Passed')) {
-                        onSuccess({ source: 'test', label: 'All tests passed' });
-                    }
-                })
-            );
-        }
-    } catch {
-        // Test API not available
-    }
-
-    return vscode.Disposable.from(...disposables);
+    // Clean up memory when text documents are closed
+    disposables.push(
+        vscode.workspace.onDidCloseTextDocument((doc) => {
+            lastDiagnosticCounts.delete(doc.uri.toString());
+        })
+    );
 }
+

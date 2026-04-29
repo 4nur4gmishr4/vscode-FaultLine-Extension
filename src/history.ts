@@ -15,7 +15,13 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
     private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<HistoryItem | undefined>();
     public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
-    public constructor(private readonly config: () => FahhConfig, private readonly logger: Logger) {}
+    public constructor(
+        private readonly config: () => FahhConfig,
+        private readonly logger: Logger,
+        private readonly state: vscode.Memento
+    ) {
+        this.entries = this.state.get<HistoryEntry[]>('fahh.history', []);
+    }
 
     public getTreeItem(element: HistoryItem): vscode.TreeItem {
         return element;
@@ -34,14 +40,22 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
         if (this.entries.length > max) {
             this.entries = this.entries.slice(0, max);
         }
+        this.persist();
         this.onDidChangeTreeDataEmitter.fire(undefined);
         this.logger.debug(`History added: ${entry.label}`);
     }
 
     public clear(): void {
         this.entries = [];
+        this.persist();
         this.onDidChangeTreeDataEmitter.fire(undefined);
         this.logger.info('History cleared.');
+    }
+
+    private persist(): void {
+        Promise.resolve(this.state.update('fahh.history', this.entries)).catch((err: unknown) => {
+            this.logger.warn(`Failed to persist history: ${err instanceof Error ? err.message : String(err)}`);
+        });
     }
 
     public getLast(): HistoryEntry | null {

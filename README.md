@@ -4,17 +4,15 @@
 
 Fahh monitors your VS Code tasks, terminal sessions, tests, builds, and more. When something fails, it plays a sound so you know immediately — even if you're looking away from the screen. With 44 features and extensive customization, Fahh is the most configurable failure notification extension for VS Code.
 
-## What it catches (8 sources)
+## What it catches (6 sources)
 
 | Source | How | Configurable |
 |---|---|---|
 | Tasks | `onDidEndTaskProcess` — any task that exits non-zero | ✅ |
 | Shell commands | `onDidEndTerminalShellExecution` — per command | ✅ |
 | Terminal crashes | `onDidCloseTerminal` — session exits non-zero | ✅ |
-| Test failures | VS Code Test API — any failed test | ✅ |
-| Debug crashes | Debug session terminations | ✅ |
 | Diagnostics | New lint/build errors crossing threshold | ✅ |
-| Build failures | Build group tasks specifically | ✅ |
+| Build failures | Build-group tasks specifically | ✅ |
 | Long tasks | Tasks exceeding duration threshold | ✅ |
 
 ## Quick Start
@@ -33,7 +31,7 @@ Fahh monitors your VS Code tasks, terminal sessions, tests, builds, and more. Wh
 | `Fahh: Toggle (This Workspace)` | Workspace-only toggle |
 | `Fahh: Select Custom Sound File…` | Pick your own MP3/WAV/OGG/FLAC |
 | `Fahh: Select Sound Folder (Random)` | Random sounds from folder |
-| `Fahh: Reset Sound to Default` | Back to bundled Fahhh.mp3 |
+| `Fahh: Reset Sound to Default` | Back to bundled fahh.mp3 |
 | `Fahh: Pick Sound Pack` | Choose from bundled packs |
 | `Fahh: Stop Currently Playing Sound` | Kill audio immediately |
 | `Fahh: Snooze for Configured Minutes` | Temporary silence |
@@ -58,10 +56,9 @@ Fahh monitors your VS Code tasks, terminal sessions, tests, builds, and more. Wh
 | `fahh.sounds.task` | Sound for task failures |
 | `fahh.sounds.shell` | Sound for shell command failures |
 | `fahh.sounds.terminal` | Sound for terminal exits |
-| `fahh.sounds.test` | Sound for test failures |
-| `fahh.sounds.debug` | Sound for debug crashes |
 | `fahh.sounds.diagnostics` | Sound for lint errors |
 | `fahh.sounds.build` | Sound for build failures |
+| `fahh.sounds.longTask` | Sound for long-task completion / failure |
 | `fahh.volumes.task` | Volume (-1 = use global) |
 | `fahh.volumes.shell` | Volume (-1 = use global) |
 | `fahh.volumes.terminal` | Volume (-1 = use global) |
@@ -78,9 +75,9 @@ Fahh monitors your VS Code tasks, terminal sessions, tests, builds, and more. Wh
 ### Rate Limiting
 | Key | Default | Description |
 |---|---|---|
-| `fahh.cooldownMs` | `1500` | Min gap between sounds (ms) |
+| `fahh.cooldownMs` | `50` | Min gap between sounds (ms) |
 | `fahh.cooldownPerSource` | `false` | Separate cooldowns per source |
-| `fahh.maxPerMinute` | `10` | Hard cap per minute |
+| `fahh.maxPerMinute` | `0` | Hard cap per minute |
 
 ### Advanced Features
 | Key | Default | Description |
@@ -104,7 +101,7 @@ Fahh monitors your VS Code tasks, terminal sessions, tests, builds, and more. Wh
 
 ## Platform Notes
 
-- **Windows** — PowerShell + WPF MediaPlayer (built-in)
+- **Windows** — PowerShell + Win32 `mciSendString` (winmm.dll, built-in)
 - **macOS** — `afplay` (built-in)
 - **Linux** — `ffplay` → `paplay` → `aplay` (ffplay requires ffmpeg)
 - **WSL** — Automatically routes audio to Windows host

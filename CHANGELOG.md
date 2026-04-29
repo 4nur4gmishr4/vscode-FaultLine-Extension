@@ -1,22 +1,50 @@
 # Changelog
 
-## 2.1.0 — Security & Performance Update
+## 2.1.0 — Audit, Hardening, Security & Performance
 
-### Security Fixes
-- **Command Injection Hardening**: Secured voice synthesis (TTS) on Windows by using Base64 encoding for PowerShell commands, preventing arbitrary command execution via failure labels.
-- **Improved Windows Playback**: Hardened PowerShell audio playback script to prevent injection via sound file paths.
+### Removed
+- **`test` failure source**: relied on a non-existent VS Code API (`vscode.tests.onDidChangeTestResults`); never fired. Settings `fahh.sounds.test` / `fahh.volumes.test` deleted.
+- **`debug` failure source**: registered an empty handler with no integration path on the public debug API. Settings `fahh.sounds.debug` / `fahh.volumes.debug` deleted.
+- **Dead snooze listener** in `Scheduler.snooze()` (no-op disposable that leaked on every call).
+- Test files no longer compile or ship into the `.vsix` (production hygiene).
 
-### Performance & Stability
-- **Diagnostics Optimization**: Debounced diagnostics listener (500ms) and optimized error counting to prevent UI lag in large workspaces.
-- **Memory Leak Fixes**: 
-    - Fixed unmanaged `setInterval` in `Scheduler` and `IntegrationsManager`.
-    - Implemented TTL (Time-To-Live) for task tracking to prevent memory growth over time.
-- **Audio Reliability**: Fixed a bug where sound playback could fail or hang after installation by improving the Windows Media Player lifecycle in PowerShell.
+### Security
+- **Command Injection Hardening**: Voice synthesis (TTS) on Windows uses Base64-encoded payloads inside the PowerShell script body, preventing arbitrary command execution via failure labels.
+- **Hardened Windows playback**: PowerShell audio playback script also Base64-encodes the file path, eliminating any quoting/injection bug.
+
+### CRITICAL — Windows audio actually works now
+- **Switched the Windows pipeline from WPF `MediaPlayer` to `mciSendString` (winmm.dll P/Invoke)**. The old WPF approach silently *never played a sound*: `MediaPlayer.MediaOpened` requires a Dispatcher / message pump, which a non-UI PowerShell session does not have, so the script always reached the 5-second deadline without ever firing `Play()`. Verified end-to-end via the production `out/audioPlayer.js` against the bundled `resources/fahh.mp3` — `OPEN_RC=0`, `PLAY_RC=0`, full-length playback. Volume is now mapped onto MCI's 0..1000 scale.
+
+### Fixed
+- **History view never visible**: moved into the `fahh` activity-bar container and removed the dead `when` clause on the never-set context key.
+- **AI summary always crashed**: rewritten using the public `vscode.LanguageModelChatMessage.User(...)` factory instead of broken `as any` constructors.
+- **Webhook ignored `http://`**: selects `http`/`https` transport based on URL protocol; rejects unsupported schemes with a clear log entry.
+- **Daily summary never started after runtime toggle**: integrations now reschedule on every config change.
+- **Welcome panel popped on every patch update**: now only auto-shows on first install or major-version bump (still available via `Fahh: Show Welcome Screen`).
+- **Welcome assets broken on Remote-SSH/WSL/Codespaces**: switched to `vscode.Uri.joinPath(extensionUri, ...)`.
+- **`task`/`build` source coupling**: builds and long-tasks now report independently when `task` is disabled.
+- **Quiet-hours boundary off-by-one** at the end-of-window minute.
+- **`TaskGroup.Build` reference equality**: prefer `group.id === 'build'` for robustness.
+- **Unawaited `globalState.update`** calls (`extension.ts`, `history.ts`, `integrations.ts`) — now properly awaited / error-logged.
+- **Activation events**: `["*"]` replaced with `["onStartupFinished"]` (deprecated wildcard).
+- **Type safety**: `TreeView<unknown>` → `TreeView<vscode.TreeItem>`.
+- **Audio reliability**: improved Windows MediaPlayer lifecycle in PowerShell so playback no longer hangs after install.
+
+### Performance
+- **`isWSL()` cached**: synchronous `/proc` read on every audio play replaced by a one-time memoised result.
+- **`convertWSLPathToWindows` cached**: per-path memoisation avoids repeated `wslpath` shell-outs.
+- **Diagnostics listener debounced** (500ms) and only re-counts URIs that actually changed — keeps large workspaces responsive.
+- **Memory-leak fixes**:
+    - Unmanaged `setInterval` in `Scheduler` and `IntegrationsManager` now cleared on dispose.
+    - 1-hour TTL on the task-start tracking map.
+- **Lighter task identity**: `${type}|${name}|${source}` replaces `JSON.stringify(taskDefinition)`.
 
 ### UX & Configuration
-- **Reduced Default Latency**: Default sound cooldown reduced to **10ms** for more responsive audio feedback.
-- **Simplified Setup**: Refined configuration options for easier onboarding of non-technical users.
-- **Better Type Safety**: Removed internal `any` usage for VS Code APIs, ensuring better stability.
+- **All commands grouped under `Fahh:`** in the palette (added `category` field).
+- **Default cooldown reduced to 50 ms** for more responsive audio feedback.
+- **Resources reorganised**: sounds/images/markdown live in `resources/`.
+- **Bundled sound renamed** to `fahh.mp3` for consistency.
+- **`longTask` now fires on failure too** when a failed task crosses the duration threshold.
 
 ## 2.0.0 — The Everything Update
 

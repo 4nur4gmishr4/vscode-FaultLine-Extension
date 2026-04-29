@@ -5,8 +5,6 @@ export type FailureSource =
     | 'task'
     | 'shell'
     | 'terminal'
-    | 'test'
-    | 'debug'
     | 'diagnostics'
     | 'build'
     | 'longTask';
@@ -24,16 +22,18 @@ export interface PerSourceSounds {
     task: string;
     shell: string;
     terminal: string;
-    test: string;
-    debug: string;
     diagnostics: string;
     build: string;
+    longTask: string;
 }
 
 export interface PerSourceVolumes {
     task: number;
     shell: number;
     terminal: number;
+    diagnostics: number;
+    build: number;
+    longTask: number;
 }
 
 export interface FahhConfig {
@@ -73,7 +73,7 @@ export interface FahhConfig {
 
 const SECTION = 'fahh';
 const VALID_SOURCES: ReadonlySet<FailureSource> = new Set<FailureSource>([
-    'task', 'shell', 'terminal', 'test', 'debug', 'diagnostics', 'build', 'longTask'
+    'task', 'shell', 'terminal', 'diagnostics', 'build', 'longTask'
 ]);
 
 export function readConfig(): FahhConfig {
@@ -87,21 +87,13 @@ export function readConfig(): FahhConfig {
     const rawPatterns = cfg.get<string[]>('ignorePatterns', []);
     const ignorePatterns = compilePatterns(rawPatterns);
 
-    const sounds: PerSourceSounds = {
-        task: cfg.get<string>('sounds.task', '').trim(),
-        shell: cfg.get<string>('sounds.shell', '').trim(),
-        terminal: cfg.get<string>('sounds.terminal', '').trim(),
-        test: cfg.get<string>('sounds.test', '').trim(),
-        debug: cfg.get<string>('sounds.debug', '').trim(),
-        diagnostics: cfg.get<string>('sounds.diagnostics', '').trim(),
-        build: cfg.get<string>('sounds.build', '').trim()
-    };
-
-    const volumes: PerSourceVolumes = {
-        task: clamp(cfg.get<number>('volumes.task', -1), -1, 100),
-        shell: clamp(cfg.get<number>('volumes.shell', -1), -1, 100),
-        terminal: clamp(cfg.get<number>('volumes.terminal', -1), -1, 100)
-    };
+    const sounds = {} as PerSourceSounds;
+    const volumes = {} as PerSourceVolumes;
+    
+    for (const source of VALID_SOURCES) {
+        sounds[source] = cfg.get<string>(`sounds.${source}`, '').trim();
+        volumes[source] = clamp(cfg.get<number>(`volumes.${source}`, -1), -1, 100);
+    }
 
     return {
         enabled: cfg.get<boolean>('enabled', true),
@@ -116,7 +108,7 @@ export function readConfig(): FahhConfig {
         showNotification: cfg.get<boolean>('showNotification', true),
         notificationLevel: cfg.get<NotificationLevel>('notificationLevel', 'warning'),
         sources,
-        cooldownMs: clamp(cfg.get<number>('cooldownMs', 10), 0, 60000),
+        cooldownMs: clamp(cfg.get<number>('cooldownMs', 50), 0, 60000),
         cooldownPerSource: cfg.get<boolean>('cooldownPerSource', false),
         maxPerMinute: clamp(cfg.get<number>('maxPerMinute', 0), 0, 120),
         ignorePatterns,

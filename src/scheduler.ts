@@ -6,7 +6,6 @@ export class Scheduler {
     private snoozeEndAt = 0;
     private perSourceLast: Map<FailureSource, number> = new Map();
     private perMinuteWindow: number[] = [];
-    private snoozeDisposable: vscode.Disposable | null = null;
     private cleanupTimer: NodeJS.Timeout | null = null;
 
     public constructor(private readonly config: () => FahhConfig, private readonly logger: Logger) {
@@ -16,9 +15,9 @@ export class Scheduler {
     }
 
     public dispose(): void {
-        this.snoozeDisposable?.dispose();
         if (this.cleanupTimer) {
             clearInterval(this.cleanupTimer);
+            this.cleanupTimer = null;
         }
     }
 
@@ -50,6 +49,7 @@ export class Scheduler {
         }
 
         // Max per minute
+        this.cleanPerMinuteWindow();
         if (cfg.maxPerMinute > 0 && this.perMinuteWindow.length >= cfg.maxPerMinute) {
             this.logger.debug(`Muted by max-per-minute: ${source}`);
             return true;
@@ -79,10 +79,6 @@ export class Scheduler {
     public snooze(minutes: number): void {
         this.snoozeEndAt = Date.now() + minutes * 60000;
         this.logger.info(`Snoozed for ${minutes} minutes.`);
-        this.snoozeDisposable?.dispose();
-        this.snoozeDisposable = vscode.workspace.onDidChangeConfiguration(() => {
-            // If config changes, we might want to clear snooze, but keep it simple
-        });
     }
 
     public isSnoozing(): boolean {
@@ -94,23 +90,38 @@ export class Scheduler {
     }
 
     private isInQuietHours(from: string, to: string): boolean {
+        const fromMin = parseHHmm(from);
+        const toMin = parseHHmm(to);
+        if (fromMin === null || toMin === null) {
+            return false;
+        }
         const now = new Date();
         const current = now.getHours() * 60 + now.getMinutes();
-        const [fromH, fromM] = from.split(':').map(Number);
-        const [toH, toM] = to.split(':').map(Number);
-        const fromMin = fromH * 60 + fromM;
-        const toMin = toH * 60 + toM;
 
-        if (fromMin <= toMin) {
-            return current >= fromMin && current <= toMin;
-        } else {
-            // Crosses midnight
-            return current >= fromMin || current <= toMin;
+        if (fromMin === toMin) {
+            // Empty window
+            return false;
         }
+        if (fromMin < toMin) {
+            // Same-day window: include start, exclude end (e.g. 22:00 — 08:00 means active at 22:00 but not at 08:00)
+            return current >= fromMin && current < toMin;
+        }
+        // Crosses midnight
+        return current >= fromMin || current < toMin;
     }
 
     private cleanPerMinuteWindow(): void {
         const cutoff = Date.now() - 60000;
         this.perMinuteWindow = this.perMinuteWindow.filter(t => t > cutoff);
     }
+}
+
+function parseHHmm(value: string): number | null {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+    if (!match) { return null; }
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) { return null; }
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) { return null; }
+    return hours * 60 + minutes;
 }

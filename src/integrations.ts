@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { execFile } from 'child_process';
+import * as http from 'http';
 import * as https from 'https';
 import { Logger } from './logger';
 import { FahhConfig } from './config';
@@ -10,14 +11,31 @@ export class IntegrationsManager {
     private dailyFailCount = 0;
     private dailyTimer: NodeJS.Timeout | null = null;
 
-    public constructor(private readonly config: () => FahhConfig, private readonly logger: Logger) {
+    public constructor(
+        private readonly config: () => FahhConfig,
+        private readonly logger: Logger,
+        private readonly state: vscode.Memento
+    ) {
+        this.lastSuccessStreak = this.state.get<number>('fahh.lastSuccessStreak', 0);
+        this.bossHp = this.state.get<number>('fahh.bossHp', 100);
+        this.dailyFailCount = this.state.get<number>('fahh.dailyFailCount', 0);
         this.scheduleDailySummary();
     }
 
     public dispose(): void {
         if (this.dailyTimer) {
             clearTimeout(this.dailyTimer);
+            this.dailyTimer = null;
         }
+    }
+
+    public onConfigChanged(): void {
+        // Re-evaluate daily summary scheduling when config toggles at runtime.
+        if (this.dailyTimer) {
+            clearTimeout(this.dailyTimer);
+            this.dailyTimer = null;
+        }
+        this.scheduleDailySummary();
     }
 
     public speak(text: string): void {
@@ -28,13 +46,13 @@ export class IntegrationsManager {
         const platform = process.platform;
         const safeText = text.slice(0, 200);
         if (platform === 'darwin') {
-            execFile('say', [safeText], { windowsHide: true }, () => {});
+            execFile('say', ['--', safeText], { windowsHide: true }, () => {});
         } else if (platform === 'win32') {
-            // Use -EncodedCommand to prevent injection
+            // Inject text via base64 inside the script body — keeps user input out of PowerShell's parser.
             const script = `$s = New-Object -ComObject SAPI.SpVoice; $s.Speak([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('${Buffer.from(safeText, 'utf16le').toString('base64')}')))`;
             execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true }, () => {});
         } else {
-            execFile('espeak', [safeText], { windowsHide: true }, () => {});
+            execFile('espeak', ['--', safeText], { windowsHide: true }, () => {});
         }
     }
 
@@ -51,17 +69,27 @@ export class IntegrationsManager {
                 workspace: 'vscode'
             });
             const url = new URL(cfg.webhookUrl);
+            const isHttps = url.protocol === 'https:';
+            if (!isHttps && url.protocol !== 'http:') {
+                this.logger.warn(`Webhook ignored: unsupported protocol "${url.protocol}"`);
+                return;
+            }
             const options = {
                 hostname: url.hostname,
-                port: url.port || (url.protocol === 'https:' ? 443 : 80),
-                path: url.pathname + url.search,
+                port: url.port || (isHttps ? 443 : 80),
+                path: (url.pathname || '/') + url.search,
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload)
+                }
             };
-            const req = https.request(options, (res) => {
+            const transport = isHttps ? https : http;
+            const req = transport.request(options, (res) => {
                 if (res.statusCode && res.statusCode >= 400) {
                     this.logger.warn(`Webhook returned ${res.statusCode}`);
                 }
+                res.resume();
             });
             req.on('error', (e) => this.logger.error('Webhook error', e));
             req.write(payload);
@@ -84,16 +112,23 @@ export class IntegrationsManager {
             }
             const model = models[0];
             const messages = [
-                new (vscode as any).LanguageModelChatMessage((vscode as any).LanguageModelChatMessageRole.System, 'You summarize build failures concisely. One sentence only.'),
-                new (vscode as any).LanguageModelChatMessage((vscode as any).LanguageModelChatMessageRole.User, `Explain this failure: ${label}`)
+                vscode.LanguageModelChatMessage.User(
+                    `You summarize build failures concisely in one sentence. Failure: ${label}`
+                )
             ];
-            const response = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
-            let text = '';
-            for await (const chunk of response.text) {
-                text += chunk;
+            const tokenSource = new vscode.CancellationTokenSource();
+            try {
+                const response = await model.sendRequest(messages, {}, tokenSource.token);
+                let text = '';
+                for await (const chunk of response.text) {
+                    text += chunk;
+                }
+                return text.trim().slice(0, 200) || null;
+            } finally {
+                tokenSource.dispose();
             }
-            return text.slice(0, 200) || null;
-        } catch {
+        } catch (err) {
+            this.logger.debug(`AI summary unavailable: ${err instanceof Error ? err.message : String(err)}`);
             return null;
         }
     }
@@ -149,10 +184,15 @@ export class IntegrationsManager {
             target.setDate(target.getDate() + 1);
         }
         const ms = target.getTime() - now.getTime();
-        this.dailyTimer = setTimeout(() => {
+        this.dailyTimer = setTimeout(async () => {
             this.logger.info(this.getDailySummary());
             // Reset daily counter at summary time
             this.dailyFailCount = 0;
+            try {
+                await this.state.update('fahh.dailyFailCount', this.dailyFailCount);
+            } catch (err) {
+                this.logger.warn(`Failed to persist daily fail count: ${err instanceof Error ? err.message : String(err)}`);
+            }
             this.scheduleDailySummary();
         }, ms);
     }
