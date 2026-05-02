@@ -185,68 +185,89 @@
         "configuration": {
             "title": "%config.fahh.title%",
             "properties": {
+                "fahh.soundPack": {
+                    "type": "string",
+                    "default": "fahh.mp3",
+                    "enum": [
+                        "fahh.mp3",
+                        "fahhhard.mp3",
+                        "fartreverb.mp3",
+                        "fahhdeep.mp3",
+                        "fahhbroke.mp3",
+                        "ohshit.mp3"
+                    ],
+                    "enumDescriptions": [
+                        "Classic Fahh (Default)",
+                        "Impact Strike",
+                        "Reverb Blast",
+                        "Deep Resonance",
+                        "System Crash",
+                        "Quick Expletive"
+                    ],
+                    "description": "Sound Pack to use for failure sounds"
+                },
                 "fahh.enabled": {
                     "type": "boolean",
                     "default": true,
-                    "description": "%config.fahh.enabled%"
+                    "description": "Enable/disable Fahh extension"
                 },
                 "fahh.soundPath": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.soundPath%",
+                    "description": "Path to custom sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.soundFolder": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.soundFolder%",
+                    "description": "Folder containing random sound files",
                     "scope": "machine-overridable"
                 },
                 "fahh.sounds.task": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.sounds.task%",
+                    "description": "Task failure sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.sounds.shell": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.sounds.shell%",
+                    "description": "Shell failure sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.sounds.terminal": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.sounds.terminal%",
+                    "description": "Terminal failure sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.sounds.diagnostics": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.sounds.diagnostics%",
+                    "description": "Diagnostics error sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.sounds.build": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.sounds.build%",
+                    "description": "Build failure sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.sounds.longTask": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.sounds.longTask%",
+                    "description": "Long task failure sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.successEnabled": {
                     "type": "boolean",
                     "default": false,
-                    "description": "%config.fahh.successEnabled%"
+                    "description": "Enable success sounds"
                 },
                 "fahh.successSound": {
                     "type": "string",
                     "default": "",
-                    "description": "%config.fahh.successSound%",
+                    "description": "Success sound file",
                     "scope": "machine-overridable"
                 },
                 "fahh.volumes.task": {
@@ -254,14 +275,14 @@
                     "default": -1,
                     "minimum": -1,
                     "maximum": 100,
-                    "description": "%config.fahh.volumes.task%"
+                    "description": "Task volume (-1 = global)"
                 },
                 "fahh.volumes.shell": {
                     "type": "number",
                     "default": -1,
                     "minimum": -1,
                     "maximum": 100,
-                    "description": "%config.fahh.volumes.shell%"
+                    "description": "Shell volume (-1 = global)"
                 },
                 "fahh.volumes.terminal": {
                     "type": "number",
@@ -330,7 +351,7 @@
                         "shell",
                         "terminal"
                     ],
-                    "description": "%config.fahh.sources%",
+                    "description": "Sources to monitor for failures",
                     "items": {
                         "type": "string",
                         "enum": [
@@ -472,20 +493,59 @@
                     "default": false,
                     "description": "%config.fahh.aiSummary.enabled%"
                 },
+                "fahh.aiProvider": {
+                    "type": "string",
+                    "default": "copilot",
+                    "enum": [
+                        "copilot",
+                        "openrouter"
+                    ],
+                    "description": "AI provider (copilot or openrouter)"
+                },
+                "fahh.openrouterApiKey": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "description": "OpenRouter API key for free AI models"
+                },
+                "fahh.openrouterModel": {
+                    "type": "string",
+                    "default": "meta-llama/llama-3.2-3b-instruct:free",
+                    "enum": [
+                        "meta-llama/llama-3.2-3b-instruct:free",
+                        "google/gemma-4-31b-it:free",
+                        "google/gemma-4-26b-a4b-it:free",
+                        "nousresearch/hermes-3-llama-3.1-405b:free",
+                        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                        "poolside/laguna-xs.2:free",
+                        "poolside/laguna-m.1:free"
+                    ],
+                    "description": "OpenRouter model to use"
+                },
                 "fahh.dailySummary": {
                     "type": "boolean",
                     "default": false,
-                    "description": "%config.fahh.dailySummary%"
+                    "description": "Enable daily summary"
                 },
                 "fahh.streakCounter": {
                     "type": "boolean",
                     "default": false,
-                    "description": "%config.fahh.streakCounter%"
+                    "description": "Enable success streak counter"
                 },
                 "fahh.bossFightMode": {
                     "type": "boolean",
                     "default": false,
-                    "description": "%config.fahh.bossFightMode%"
+                    "description": "Enable boss fight mode"
+                },
+                "fahh.errorExplanation.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable error explanations"
+                },
+                "fahh.errorExplanation.autoShow": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto-show error explanations on failure"
                 }
             }
         }
@@ -496,6 +556,8 @@
         "watch": "tsc -watch -p ./",
         "lint": "tsc --noEmit",
         "test": "jest",
+        "test:coverage": "jest --coverage",
+        "test:watch": "jest --watch",
         "package": "npx @vscode/vsce package"
     },
     "devDependencies": {
@@ -503,9 +565,92 @@
         "@types/node": "18.x",
         "@types/vscode": "^1.93.0",
         "jest": "^29.7.0",
-        "jest-environment-jsdom": "^29.7.0",
-        "jest-util": "^30.3.0",
+        "jest-environment-jsdom": "^30.3.0",
         "ts-jest": "^29.1.0",
         "typescript": "^5.2.2"
+    },
+    "localizations": {
+        "translations": [
+            {
+                "id": "en",
+                "name": "English",
+                "translations": {
+                    "command.fahh.test": "Play Test Sound",
+                    "command.fahh.testSuccess": "Play Test Success Sound",
+                    "command.fahh.toggle": "Toggle Enable / Disable",
+                    "command.fahh.toggleWorkspace": "Toggle (This Workspace)",
+                    "command.fahh.selectSound": "Select Custom Sound File...",
+                    "command.fahh.selectSoundFolder": "Select Sound Folder (Random)",
+                    "command.fahh.resetSound": "Reset Sound to Default",
+                    "command.fahh.pickSoundPack": "Pick Sound Pack",
+                    "command.fahh.stop": "Stop Currently Playing Sound",
+                    "command.fahh.snooze": "Snooze for Configured Minutes",
+                    "command.fahh.clearHistory": "Clear Failure History",
+                    "command.fahh.replayLast": "Replay Last Failure Sound",
+                    "command.fahh.showHistory": "Show Failure History",
+                    "command.fahh.showOutput": "Show Output Log",
+                    "command.fahh.resetSettings": "Reset Settings",
+                    "command.fahh.factoryReset": "Factory Reset",
+                    "command.fahh.showWelcome": "Show Welcome Screen",
+                    "config.fahh.title": "Fahh",
+                    "config.fahh.enabled": "Enable Fahh",
+                    "config.fahh.soundPack": "Sound Pack",
+                    "config.fahh.soundPath": "Custom Sound File",
+                    "config.fahh.soundFolder": "Random Sound Folder",
+                    "config.fahh.sounds.task": "Task Failure Sound",
+                    "config.fahh.sounds.shell": "Shell Command Failure Sound",
+                    "config.fahh.sounds.terminal": "Terminal Failure Sound",
+                    "config.fahh.sounds.diagnostics": "Diagnostic Error Sound",
+                    "config.fahh.sounds.build": "Build Failure Sound",
+                    "config.fahh.sounds.longTask": "Long Task Failure Sound",
+                    "config.fahh.successEnabled": "Enable Success Sounds",
+                    "config.fahh.successSound": "Success Sound File",
+                    "config.fahh.volumes.task": "Task Volume (-1 = global)",
+                    "config.fahh.volumes.shell": "Shell Volume (-1 = global)",
+                    "config.fahh.volumes.terminal": "Terminal Volume (-1 = global)",
+                    "config.fahh.volumes.diagnostics": "Diagnostics Volume (-1 = global)",
+                    "config.fahh.volumes.build": "Build Volume (-1 = global)",
+                    "config.fahh.volumes.longTask": "Long Task Volume (-1 = global)",
+                    "config.fahh.volume": "Master Volume",
+                    "config.fahh.volumeCurve": "Volume Curve",
+                    "config.fahh.showNotification": "Show Notifications",
+                    "config.fahh.notificationLevel": "Notification Level",
+                    "config.fahh.sources": "Monitor These Sources",
+                    "config.fahh.sources.task": "Task failures",
+                    "config.fahh.sources.shell": "Shell command failures",
+                    "config.fahh.sources.terminal": "Terminal failures",
+                    "config.fahh.sources.diagnostics": "Diagnostic errors",
+                    "config.fahh.sources.build": "Build failures",
+                    "config.fahh.sources.longTask": "Long task failures",
+                    "config.fahh.cooldownMs": "Cooldown (ms)",
+                    "config.fahh.cooldownPerSource": "Separate Cooldowns per Source",
+                    "config.fahh.maxPerMinute": "Max Sounds per Minute",
+                    "config.fahh.ignorePatterns": "Ignore Patterns",
+                    "config.fahh.showStatusBar": "Show Status Bar Item",
+                    "config.fahh.statusBarCounter": "Show Failure Counter",
+                    "config.fahh.flashStatusBar": "Flash Status Bar on Failure",
+                    "config.fahh.quietHours.enabled": "Enable Quiet Hours",
+                    "config.fahh.quietHours.from": "Quiet Hours From",
+                    "config.fahh.quietHours.to": "Quiet Hours To",
+                    "config.fahh.muteWhenFocused": "Mute When VS Code is Focused",
+                    "config.fahh.snoozeMinutes": "Snooze Duration (minutes)",
+                    "config.fahh.diagnosticsThreshold": "Diagnostic Error Threshold",
+                    "config.fahh.longTaskThresholdMs": "Long Task Threshold (ms)",
+                    "config.fahh.logLevel": "Log Level",
+                    "config.fahh.historyMax": "Maximum History Entries",
+                    "config.fahh.speakLabel": "Speak Failure Labels",
+                    "config.fahh.webhookUrl": "Webhook URL",
+                    "config.fahh.aiSummary.enabled": "Enable AI Summaries",
+                    "config.fahh.aiProvider": "AI Provider",
+                    "config.fahh.openrouterApiKey": "OpenRouter API Key",
+                    "config.fahh.openrouterModel": "OpenRouter Model",
+                    "config.fahh.dailySummary": "Daily Summary",
+                    "config.fahh.streakCounter": "Success Streak Counter",
+                    "config.fahh.bossFightMode": "Boss Fight Mode",
+                    "config.fahh.errorExplanation.enabled": "Enable Error Explanations",
+                    "config.fahh.errorExplanation.autoShow": "Auto-show Error Explanations"
+                }
+            }
+        ]
     }
 }

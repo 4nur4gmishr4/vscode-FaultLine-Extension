@@ -1,6 +1,7 @@
 out/
 node_modules/
 *.vsix
+coverage/
 .vscode-test/
 FahhLogo_original.png
 *.tsbuildinfo
