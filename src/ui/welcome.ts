@@ -1,6 +1,19 @@
 import * as vscode from 'vscode';
 
 /**
+ * Discriminated union of every command the welcome webview is allowed to send.
+ *
+ * Defining this explicitly (instead of typing the listener as `any`) means a
+ * mistyped or attacker-injected message lands in the implicit `default` branch
+ * and is dropped by the handler instead of triggering a config write.
+ */
+type WelcomeMessage =
+    | { command: 'test' }
+    | { command: 'reset' }
+    | { command: 'error'; text?: string }
+    | { command: 'setSound'; sound?: string };
+
+/**
  * Manages the welcome webview panel for first-run experience.
  * Displays extension features, sound selection, and test audio functionality.
  */
@@ -29,7 +42,7 @@ export class WelcomePanel {
         const panel = vscode.window.createWebviewPanel(
             'fahhWelcome',
             'Welcome to Fahh!',
-            column || vscode.ViewColumn.One,
+            column ?? vscode.ViewColumn.One,
             {
                 enableScripts: true,
                 localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
@@ -44,30 +57,47 @@ export class WelcomePanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
         this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, extensionUri);
 
-        // Handle messages from the webview
+        // Handle messages from the webview. Strictly typed and shape-validated
+        // before use so a compromised webview can't smuggle arbitrary fields
+        // into config writes or notifications.
         this._panel.webview.onDidReceiveMessage(
-            async message => {
-                switch (message.command) {
-                    case 'test':
-                        vscode.commands.executeCommand('fahh.test');
-                        return;
-                    case 'reset':
-                        vscode.commands.executeCommand('fahh.resetSettings');
-                        return;
-                    case 'error':
-                        vscode.window.showErrorMessage(message.text);
-                        return;
-                    case 'setSound':
-                        if (message.sound) {
-                            const soundPath = vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', message.sound).fsPath;
-                            await vscode.workspace.getConfiguration('fahh').update('soundPath', soundPath, vscode.ConfigurationTarget.Global);
-                        }
-                        return;
-                }
+            (message: WelcomeMessage) => {
+                void this.handleWebviewMessage(message, extensionUri);
             },
             null,
             this._disposables
         );
+    }
+
+    private async handleWebviewMessage(
+        message: WelcomeMessage,
+        extensionUri: vscode.Uri
+    ): Promise<void> {
+        if (!message || typeof message.command !== 'string') {
+            return;
+        }
+        switch (message.command) {
+            case 'test':
+                await vscode.commands.executeCommand('fahh.test');
+                return;
+            case 'reset':
+                await vscode.commands.executeCommand('fahh.resetSettings');
+                return;
+            case 'error':
+                if (typeof message.text === 'string') {
+                    void vscode.window.showErrorMessage(message.text);
+                }
+                return;
+            case 'setSound':
+                if (typeof message.sound === 'string' && /^[\w.-]+\.(mp3|wav|ogg|flac|m4a)$/i.test(message.sound)) {
+                    const soundPath = vscode.Uri.joinPath(
+                        extensionUri, 'resources', 'packs', 'default', message.sound
+                    ).fsPath;
+                    await vscode.workspace.getConfiguration('fahh')
+                        .update('soundPath', soundPath, vscode.ConfigurationTarget.Global);
+                }
+                return;
+        }
     }
 
     /**
@@ -96,7 +126,7 @@ export class WelcomePanel {
      * @returns The complete HTML string for the webview
      */
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh-logo.jpeg'));
+        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh-logo.jpeg')).toString();
         const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'fahh.mp3'));
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'welcome-client.js'));
         const nonce = generateNonce();
@@ -368,10 +398,10 @@ export class WelcomePanel {
             <div class="bar"></div>
         </div>
 
-        <audio id="fahh-audio" src="${audioUri}" preload="auto"></audio>
+        <audio id="fahh-audio" src="${audioUri.toString()}" preload="auto"></audio>
     </div>
 
-    <script nonce="${nonce}" src="${scriptUri}"></script>
+    <script nonce="${nonce}" src="${scriptUri.toString()}"></script>
 </body>
 </html>`;
     }

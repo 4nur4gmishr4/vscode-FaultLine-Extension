@@ -2,7 +2,7 @@
     "name": "fahh",
     "displayName": "Fahh",
     "description": "Plays a sound whenever a task, build, or terminal command fails.",
-    "version": "2.1.2",
+    "version": "2.4.0",
     "publisher": "4nur4gmishr4",
     "author": "Anurag Mishra",
     "license": "MIT",
@@ -15,7 +15,8 @@
     },
     "homepage": "https://github.com/4nur4gmishr4/vscode-fahh-Extension#readme",
     "engines": {
-        "vscode": "^1.93.0"
+        "vscode": "^1.93.0",
+        "node": ">=18.0.0"
     },
     "categories": [
         "Other"
@@ -486,6 +487,17 @@
                     "type": "string",
                     "default": "",
                     "description": "%config.fahh.webhookUrl%",
+                    "scope": "machine",
+                    "pattern": "^$|^https?://.+",
+                    "patternErrorMessage": "Webhook URL must start with http:// or https:// (or be empty to disable)."
+                },
+                "fahh.webhookAllowedDomains": {
+                    "type": "array",
+                    "default": [],
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "%config.fahh.webhookAllowedDomains%",
                     "scope": "machine"
                 },
                 "fahh.aiSummary.enabled": {
@@ -498,29 +510,121 @@
                     "default": "copilot",
                     "enum": [
                         "copilot",
-                        "openrouter"
+                        "openrouter",
+                        "groq",
+                        "gemini",
+                        "huggingface",
+                        "mistral",
+                        "together",
+                        "cohere",
+                        "openai",
+                        "anthropic"
                     ],
-                    "description": "AI provider (copilot or openrouter)"
+                    "enumDescriptions": [
+                        "GitHub Copilot (uses your existing Copilot subscription via VS Code Language Model API; no key required)",
+                        "OpenRouter (free Llama, Gemma, Mistral models; rate-limited)",
+                        "Groq (extremely fast inference; free tier with Llama, Gemma, Mixtral)",
+                        "Google Gemini (1500 req/day free on gemini-2.0-flash)",
+                        "Hugging Face (free inference API for open-source chat models)",
+                        "Mistral AI (free tier for open-mistral, ministral, Codestral)",
+                        "Together AI (free trial credit; 200+ open-source models)",
+                        "Cohere (free tier ~1000 req/month on Command R / R+)",
+                        "OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5; pay per token)",
+                        "Anthropic Claude (3.5 Sonnet/Haiku/Opus; pay per token)"
+                    ],
+                    "description": "%config.fahh.aiProvider%"
                 },
                 "fahh.openrouterApiKey": {
                     "type": "string",
                     "default": "",
                     "scope": "machine",
-                    "description": "OpenRouter API key for free AI models"
+                    "description": "%config.fahh.openrouterApiKey%",
+                    "pattern": "^$|^sk-or-v1-[A-Za-z0-9_-]{20,}$",
+                    "patternErrorMessage": "OpenRouter API keys start with 'sk-or-v1-' followed by at least 20 characters.",
+                    "deprecationMessage": "Storing API keys in settings is insecure. Use the 'Fahh: Configure AI Provider' command to save your key in VS Code's encrypted SecretStorage.",
+                    "markdownDeprecationMessage": "Storing API keys in settings is insecure. Run **Fahh: Configure AI Provider** from the command palette to save your key in VS Code's encrypted SecretStorage. Existing values are migrated automatically on next activation."
                 },
                 "fahh.openrouterModel": {
                     "type": "string",
                     "default": "meta-llama/llama-3.2-3b-instruct:free",
+                    "description": "%config.fahh.openrouterModel%"
+                },
+                "fahh.groqModel": {
+                    "type": "string",
+                    "default": "llama-3.1-8b-instant",
                     "enum": [
-                        "meta-llama/llama-3.2-3b-instruct:free",
-                        "google/gemma-4-31b-it:free",
-                        "google/gemma-4-26b-a4b-it:free",
-                        "nousresearch/hermes-3-llama-3.1-405b:free",
-                        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-                        "poolside/laguna-xs.2:free",
-                        "poolside/laguna-m.1:free"
+                        "llama-3.3-70b-versatile",
+                        "llama-3.1-8b-instant",
+                        "gemma2-9b-it",
+                        "mixtral-8x7b-32768"
                     ],
-                    "description": "OpenRouter model to use"
+                    "description": "%config.fahh.groqModel%"
+                },
+                "fahh.geminiModel": {
+                    "type": "string",
+                    "default": "gemini-2.0-flash",
+                    "enum": [
+                        "gemini-2.0-flash",
+                        "gemini-1.5-flash",
+                        "gemini-1.5-flash-8b",
+                        "gemini-1.5-pro"
+                    ],
+                    "description": "%config.fahh.geminiModel%"
+                },
+                "fahh.huggingfaceModel": {
+                    "type": "string",
+                    "default": "mistralai/Mistral-7B-Instruct-v0.3",
+                    "description": "%config.fahh.huggingfaceModel%"
+                },
+                "fahh.mistralModel": {
+                    "type": "string",
+                    "default": "open-mistral-nemo",
+                    "enum": [
+                        "open-mistral-nemo",
+                        "ministral-3b-latest",
+                        "ministral-8b-latest",
+                        "mistral-small-latest",
+                        "codestral-latest"
+                    ],
+                    "description": "%config.fahh.mistralModel%"
+                },
+                "fahh.togetherModel": {
+                    "type": "string",
+                    "default": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+                    "description": "%config.fahh.togetherModel%"
+                },
+                "fahh.cohereModel": {
+                    "type": "string",
+                    "default": "command-r-08-2024",
+                    "enum": [
+                        "command-r-plus-08-2024",
+                        "command-r-08-2024",
+                        "command-r",
+                        "command-light"
+                    ],
+                    "description": "%config.fahh.cohereModel%"
+                },
+                "fahh.openaiModel": {
+                    "type": "string",
+                    "default": "gpt-4o-mini",
+                    "enum": [
+                        "gpt-4o-mini",
+                        "gpt-4o",
+                        "gpt-4-turbo",
+                        "gpt-3.5-turbo"
+                    ],
+                    "description": "%config.fahh.openaiModel%"
+                },
+                "fahh.anthropicModel": {
+                    "type": "string",
+                    "default": "claude-3-5-haiku-latest",
+                    "enum": [
+                        "claude-3-5-haiku-latest",
+                        "claude-3-5-sonnet-latest",
+                        "claude-3-haiku-20240307",
+                        "claude-3-opus-latest"
+                    ],
+                    "description": "%config.fahh.anthropicModel%"
                 },
                 "fahh.dailySummary": {
                     "type": "boolean",
@@ -555,8 +659,8 @@
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "clean": "node -e \"require('fs').rmSync('out', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('coverage', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('*.vsix', {force: true})\"",
-        "lint": "tsc --noEmit",
-        "lint:fix": "tsc --noEmit && echo 'TypeScript compilation successful'",
+        "lint": "tsc --noEmit && eslint \"src/**/*.ts\"",
+        "lint:fix": "eslint \"src/**/*.ts\" --fix",
         "test": "jest",
         "test:coverage": "jest --coverage",
         "test:watch": "jest --watch",
@@ -569,6 +673,9 @@
         "@types/jest": "^29.5.10",
         "@types/node": "18.x",
         "@types/vscode": "^1.93.0",
+        "@typescript-eslint/eslint-plugin": "^7.18.0",
+        "@typescript-eslint/parser": "^7.18.0",
+        "eslint": "^8.57.1",
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^30.3.0",
         "ts-jest": "^29.1.0",
@@ -645,10 +752,19 @@
                     "config.fahh.historyMax": "Maximum History Entries",
                     "config.fahh.speakLabel": "Speak Failure Labels",
                     "config.fahh.webhookUrl": "Webhook URL",
+                    "config.fahh.webhookAllowedDomains": "Webhook Allowed Domains",
                     "config.fahh.aiSummary.enabled": "Enable AI Summaries",
                     "config.fahh.aiProvider": "AI Provider",
-                    "config.fahh.openrouterApiKey": "OpenRouter API Key",
+                    "config.fahh.openrouterApiKey": "OpenRouter API Key (deprecated; use Fahh: Configure AI Provider)",
                     "config.fahh.openrouterModel": "OpenRouter Model",
+                    "config.fahh.groqModel": "Groq Model",
+                    "config.fahh.geminiModel": "Google Gemini Model",
+                    "config.fahh.huggingfaceModel": "Hugging Face Model",
+                    "config.fahh.mistralModel": "Mistral AI Model",
+                    "config.fahh.togetherModel": "Together AI Model",
+                    "config.fahh.cohereModel": "Cohere Model",
+                    "config.fahh.openaiModel": "OpenAI Model",
+                    "config.fahh.anthropicModel": "Anthropic Claude Model",
                     "config.fahh.dailySummary": "Daily Summary",
                     "config.fahh.streakCounter": "Success Streak Counter",
                     "config.fahh.bossFightMode": "Boss Fight Mode",

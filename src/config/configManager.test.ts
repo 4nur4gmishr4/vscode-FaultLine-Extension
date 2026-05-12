@@ -117,14 +117,6 @@ describe('ConfigManager', () => {
             expect(mockConfiguration.get).toHaveBeenCalledWith('aiProvider', 'copilot');
         });
 
-        it('should NOT return hardcoded API key in openrouterApiKey field', () => {
-            const config = configManager.readConfig();
-
-            // SECURITY FIX: openrouterApiKey should always be empty string
-            // API keys must be retrieved via getAiApiKey()
-            expect(config.openrouterApiKey).toBe('');
-        });
-
         it('should validate and clamp volume to valid range', () => {
             mockConfiguration.get.mockImplementation((key: string, defaultValue?: any) => {
                 if (key === 'volume') {
@@ -217,7 +209,10 @@ describe('ConfigManager', () => {
             expect(mockSecretStorage.get).not.toHaveBeenCalled();
         });
 
-        it('should throw error for unsupported AI provider', async () => {
+        it('should fall back to default provider when an unknown provider is configured', async () => {
+            // ConfigManager.readConfig() now validates aiProvider against the registry
+            // and falls back to the default ("copilot") for unknown ids, so the user
+            // can never end up in an unrecoverable error state via a settings typo.
             mockConfiguration.get.mockImplementation((key: string, defaultValue?: any) => {
                 if (key === 'aiProvider') {
                     return 'unsupported-provider';
@@ -225,7 +220,11 @@ describe('ConfigManager', () => {
                 return defaultValue;
             });
 
-            await expect(configManager.getAiApiKey()).rejects.toThrow('Unsupported AI provider: unsupported-provider');
+            const apiKey = await configManager.getAiApiKey();
+
+            // Default provider is copilot, which uses VS Code's LM API (no key)
+            expect(apiKey).toBeNull();
+            expect(mockSecretStorage.get).not.toHaveBeenCalled();
         });
 
         it('should return null when OpenRouter API key is not configured', async () => {
@@ -342,13 +341,6 @@ describe('ConfigManager', () => {
     });
 
     describe('Security Fixes', () => {
-        it('should NOT contain hardcoded OpenRouter API key', () => {
-            const config = configManager.readConfig();
-
-            // The hardcoded key should NOT appear anywhere (security check)
-            expect(config.openrouterApiKey).toBe('');
-        });
-
         it('should read aiProvider from user config, not hardcode to "openrouter"', () => {
             // Test default (copilot)
             mockConfiguration.get.mockImplementation((key: string, defaultValue?: any) => {

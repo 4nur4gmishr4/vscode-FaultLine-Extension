@@ -95,9 +95,13 @@ export interface FahhConfig {
     historyMax: number;
     speakLabel: boolean;
     webhookUrl: string;
+    /**
+     * Optional allowlist of host names that {@link webhookUrl} may target.
+     * Empty array = no restriction (any host is allowed).
+     */
+    webhookAllowedDomains: ReadonlyArray<string>;
     aiSummaryEnabled: boolean;
     aiProvider: string;
-    openrouterApiKey: string;
     openrouterModel: string;
     dailySummary: boolean;
     streakCounter: boolean;

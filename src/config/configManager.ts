@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { CONFIG, DEFAULTS, VALIDATION } from './constants';
 import { SecretManager, ISecretManager } from './secretManager';
+import { getProvider, listProviders } from '../integrations/aiProviders';
+import type { Logger } from '../utils/logger';
 import type {
     FahhConfig,
     FailureSource,
@@ -34,17 +36,38 @@ import type {
  */
 export class ConfigManager {
     private readonly secretManager: ISecretManager;
+    private readonly logger?: Logger;
     private readonly validSources: ReadonlySet<FailureSource> = new Set<FailureSource>([
         'task', 'shell', 'terminal', 'diagnostics', 'build', 'longTask'
     ]);
+    private readonly knownProviders: ReadonlySet<string> = new Set(
+        listProviders().map(p => p.id)
+    );
 
     /**
      * Creates a new ConfigManager instance.
-     * 
+     *
      * @param secretStorage - VS Code's SecretStorage instance from ExtensionContext
+     * @param logger - Optional logger; when provided, validation warnings go through
+     *                the extension's structured log channel instead of `console.warn`
      */
-    constructor(secretStorage: vscode.SecretStorage) {
+    constructor(secretStorage: vscode.SecretStorage, logger?: Logger) {
         this.secretManager = new SecretManager(secretStorage);
+        this.logger = logger;
+    }
+
+    /**
+     * Emit a warning through the configured logger if available, otherwise fall
+     * back to `console.warn` so test environments without a Logger still see it.
+     *
+     * @private
+     */
+    private warn(message: string): void {
+        if (this.logger) {
+            this.logger.warn(message);
+        } else {
+            console.warn(message);
+        }
     }
 
     /**
@@ -98,10 +121,18 @@ export class ConfigManager {
         const quietHoursTo = cfg.get<string>(CONFIG.KEYS.QUIET_HOURS_TO, DEFAULTS.QUIET_HOURS_TO);
         
         if (!VALIDATION.TIME_FORMAT.test(quietHoursFrom)) {
-            console.warn(`Invalid quiet hours 'from' format: ${quietHoursFrom}. Using default ${DEFAULTS.QUIET_HOURS_FROM}`);
+            this.warn(`Invalid quiet hours 'from' format: ${quietHoursFrom}. Using default ${DEFAULTS.QUIET_HOURS_FROM}`);
         }
         if (!VALIDATION.TIME_FORMAT.test(quietHoursTo)) {
-            console.warn(`Invalid quiet hours 'to' format: ${quietHoursTo}. Using default ${DEFAULTS.QUIET_HOURS_TO}`);
+            this.warn(`Invalid quiet hours 'to' format: ${quietHoursTo}. Using default ${DEFAULTS.QUIET_HOURS_TO}`);
+        }
+
+        // Validate aiProvider against the registry; fall back to default for unknown ids
+        // so a typo in settings.json does not silently break AI features.
+        const rawProvider = cfg.get<string>(CONFIG.KEYS.AI_PROVIDER, DEFAULTS.AI_PROVIDER).toLowerCase();
+        const aiProvider = this.knownProviders.has(rawProvider) ? rawProvider : DEFAULTS.AI_PROVIDER;
+        if (rawProvider !== aiProvider) {
+            this.warn(`Unknown AI provider "${rawProvider}". Falling back to "${DEFAULTS.AI_PROVIDER}".`);
         }
 
         return {
@@ -166,11 +197,13 @@ export class ConfigManager {
             ),
             speakLabel: cfg.get<boolean>(CONFIG.KEYS.SPEAK_LABEL, false),
             webhookUrl: cfg.get<string>(CONFIG.KEYS.WEBHOOK_URL, '').trim(),
+            webhookAllowedDomains: this.normalizeDomainList(
+                cfg.get<string[]>(CONFIG.KEYS.WEBHOOK_ALLOWED_DOMAINS, [])
+            ),
             aiSummaryEnabled: cfg.get<boolean>(CONFIG.KEYS.AI_SUMMARY_ENABLED, false),
             // SECURITY FIX: Read aiProvider from user config instead of hardcoding "openrouter"
-            aiProvider: cfg.get<string>(CONFIG.KEYS.AI_PROVIDER, DEFAULTS.AI_PROVIDER),
-            // SECURITY FIX: Deprecated - API keys should be retrieved via getAiApiKey()
-            openrouterApiKey: '',
+            // and validate against the registry so unknown ids are not accepted.
+            aiProvider,
             openrouterModel: cfg.get<string>(CONFIG.KEYS.OPENROUTER_MODEL, DEFAULTS.OPENROUTER_MODEL),
             dailySummary: cfg.get<boolean>(CONFIG.KEYS.DAILY_SUMMARY, false),
             streakCounter: cfg.get<boolean>(CONFIG.KEYS.STREAK_COUNTER, false),
@@ -207,19 +240,18 @@ export class ConfigManager {
         const config = this.readConfig();
         const provider = config.aiProvider.toLowerCase();
 
-        // Map provider names to secret storage keys
-        switch (provider) {
-            case 'openrouter':
-                return await this.secretManager.getApiKey('openrouter');
-            
-            case 'copilot':
-                // Copilot uses GitHub authentication, which is handled by VS Code
-                // No API key needed from SecretManager
-                return null;
-            
-            default:
-                throw new Error(`Unsupported AI provider: ${provider}`);
+        // Copilot uses VS Code's Language Model API (no key needed)
+        if (provider === 'copilot') {
+            return null;
         }
+
+        // For every other registered provider, the key lives in SecretStorage.
+        // Unknown ids should never reach here because `readConfig` validates against
+        // the registry, but guard explicitly for defence in depth.
+        if (!getProvider(provider)) {
+            throw new Error(`Unsupported AI provider: ${provider}`);
+        }
+        return await this.secretManager.getApiKey(provider);
     }
 
     /**
@@ -352,8 +384,7 @@ export class ConfigManager {
             try {
                 compiled.push(new RegExp(pattern));
             } catch {
-                // Invalid regex; silently skip
-                console.warn(`Invalid regex pattern ignored: ${pattern}`);
+                this.warn(`Invalid regex pattern ignored: ${pattern}`);
             }
         }
         return compiled;
@@ -374,61 +405,27 @@ export class ConfigManager {
         }
         return Math.min(Math.max(value, min), max);
     }
+
+    /**
+     * Normalize an array of host names into a deduplicated, lowercased list.
+     *
+     * Strips empty strings, trims whitespace, lowercases hosts, and removes
+     * exact duplicates so callers can do a plain `Set.has` check.
+     *
+     * @private
+     */
+    private normalizeDomainList(input: unknown): string[] {
+        if (!Array.isArray(input)) { return []; }
+        const seen = new Set<string>();
+        const out: string[] = [];
+        for (const raw of input) {
+            if (typeof raw !== 'string') { continue; }
+            const host = raw.trim().toLowerCase();
+            if (host.length === 0 || seen.has(host)) { continue; }
+            seen.add(host);
+            out.push(host);
+        }
+        return out;
+    }
 }
 
-/**
- * Legacy function for backward compatibility.
- * 
- * @deprecated Use ConfigManager class instead
- * @returns Validated configuration object
- */
-export function readConfig(): FahhConfig {
-    // This function is kept for backward compatibility during migration
-    // It will be removed once all code is updated to use ConfigManager
-    throw new Error('readConfig() is deprecated. Use ConfigManager.readConfig() instead.');
-}
-
-/**
- * Legacy function for backward compatibility.
- * 
- * @deprecated Use ConfigManager.updateEnabled() instead
- */
-export async function updateEnabled(_enabled: boolean, _target?: vscode.ConfigurationTarget): Promise<void> {
-    throw new Error('updateEnabled() is deprecated. Use ConfigManager.updateEnabled() instead.');
-}
-
-/**
- * Legacy function for backward compatibility.
- * 
- * @deprecated Use ConfigManager.updateSoundPath() instead
- */
-export async function updateSoundPath(_path: string): Promise<void> {
-    throw new Error('updateSoundPath() is deprecated. Use ConfigManager.updateSoundPath() instead.');
-}
-
-/**
- * Legacy function for backward compatibility.
- * 
- * @deprecated Use ConfigManager.updateSoundFolder() instead
- */
-export async function updateSoundFolder(_path: string): Promise<void> {
-    throw new Error('updateSoundFolder() is deprecated. Use ConfigManager.updateSoundFolder() instead.');
-}
-
-/**
- * Legacy function for backward compatibility.
- * 
- * @deprecated Use ConfigManager.affectsFahh() instead
- */
-export function affectsFahh(event: vscode.ConfigurationChangeEvent): boolean {
-    return event.affectsConfiguration(CONFIG.SECTION);
-}
-
-/**
- * Legacy function for backward compatibility.
- * 
- * @deprecated Use ConfigManager.resetAllSettings() instead
- */
-export async function resetAllSettings(): Promise<void> {
-    throw new Error('resetAllSettings() is deprecated. Use ConfigManager.resetAllSettings() instead.');
-}

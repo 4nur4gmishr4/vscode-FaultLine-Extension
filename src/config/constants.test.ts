@@ -5,13 +5,11 @@
 import {
     EXTENSION,
     CONFIG,
-    COMMANDS,
     SOUNDS,
-    TIMEOUTS,
     DEFAULTS,
     VALIDATION,
-    AI,
-    MESSAGES
+    RESOURCES,
+    WEBVIEW_PANELS
 } from './constants';
 
 describe('Constants Module', () => {
@@ -19,7 +17,7 @@ describe('Constants Module', () => {
         it('should have correct extension metadata', () => {
             expect(EXTENSION.ID).toBe('fahh');
             expect(EXTENSION.NAME).toBe('Fahh');
-            expect(EXTENSION.VERSION).toBe('2.1.0');
+            expect(EXTENSION.VERSION).toBe('2.4.0');
             expect(EXTENSION.PUBLISHER).toBe('4nur4gmishr4');
         });
     });
@@ -33,15 +31,6 @@ describe('Constants Module', () => {
             expect(CONFIG.KEYS.ENABLED).toBe('enabled');
             expect(CONFIG.KEYS.SOUND_PACK).toBe('soundPack');
             expect(CONFIG.KEYS.AI_PROVIDER).toBe('aiProvider');
-            expect(CONFIG.KEYS.OPENROUTER_API_KEY).toBe('openrouterApiKey');
-        });
-    });
-
-    describe('COMMANDS', () => {
-        it('should have all command identifiers', () => {
-            expect(COMMANDS.TEST).toBe('fahh.test');
-            expect(COMMANDS.TOGGLE).toBe('fahh.toggle');
-            expect(COMMANDS.SHOW_HISTORY).toBe('fahh.showHistory');
         });
     });
 
@@ -54,14 +43,6 @@ describe('Constants Module', () => {
             expect(SOUNDS.PACKS.FAHH).toBe('fahh.mp3');
             expect(SOUNDS.PACKS.FAHH_HARD).toBe('fahhhard.mp3');
             expect(SOUNDS.PACKS.OH_SHIT).toBe('ohshit.mp3');
-        });
-    });
-
-    describe('TIMEOUTS', () => {
-        it('should have correct timeout values', () => {
-            expect(TIMEOUTS.CLEANUP_INTERVAL_MS).toBe(60000);
-            expect(TIMEOUTS.PER_MINUTE_WINDOW_MS).toBe(60000);
-            expect(TIMEOUTS.MILLISECONDS_PER_MINUTE).toBe(60000);
         });
     });
 
@@ -89,42 +70,31 @@ describe('Constants Module', () => {
         });
     });
 
-    describe('AI', () => {
-        it('should have AI provider names', () => {
-            expect(AI.PROVIDERS.COPILOT).toBe('copilot');
-            expect(AI.PROVIDERS.OPENROUTER).toBe('openrouter');
-        });
-
-        it('should have OpenRouter configuration', () => {
-            expect(AI.OPENROUTER.BASE_URL).toBe('https://openrouter.ai/api/v1');
-            expect(AI.OPENROUTER.CHAT_ENDPOINT).toBe('/chat/completions');
+    describe('RESOURCES', () => {
+        it('should declare extension-relative resource paths', () => {
+            expect(RESOURCES.PACKS_DIR).toBe('resources/packs');
+            expect(RESOURCES.DEFAULT_PACK).toBe('resources/packs/default');
+            expect(RESOURCES.LOGO).toBe('resources/fahh-logo.jpeg');
         });
     });
 
-    describe('MESSAGES', () => {
-        it('should have user-facing messages', () => {
-            expect(MESSAGES.SOUND_UPDATED).toBe('Fahh sound updated.');
-            expect(MESSAGES.HISTORY_CLEARED).toBe('Failure history cleared.');
-        });
-
-        it('should have confirmation messages', () => {
-            expect(MESSAGES.CONFIRM.RESET_SETTINGS).toContain('reset all Fahh settings');
-            expect(MESSAGES.CONFIRM.FACTORY_RESET).toContain('reset all settings');
+    describe('WEBVIEW_PANELS', () => {
+        it('should expose unique view-type ids per webview', () => {
+            const ids = [WEBVIEW_PANELS.ERROR_EXPLANATION, WEBVIEW_PANELS.WELCOME, WEBVIEW_PANELS.AI_PROVIDER_WIZARD];
+            expect(new Set(ids).size).toBe(ids.length);
+            expect(WEBVIEW_PANELS.AI_PROVIDER_WIZARD).toBe('fahhAiProviderWizard');
         });
     });
 
     describe('Constants Availability', () => {
-        it('should export all constant objects', () => {
-            // Verify all main constant objects are defined
+        it('should export all constant objects in use at runtime', () => {
             expect(EXTENSION).toBeDefined();
             expect(CONFIG).toBeDefined();
-            expect(COMMANDS).toBeDefined();
             expect(SOUNDS).toBeDefined();
-            expect(TIMEOUTS).toBeDefined();
             expect(DEFAULTS).toBeDefined();
             expect(VALIDATION).toBeDefined();
-            expect(AI).toBeDefined();
-            expect(MESSAGES).toBeDefined();
+            expect(RESOURCES).toBeDefined();
+            expect(WEBVIEW_PANELS).toBeDefined();
         });
     });
 });

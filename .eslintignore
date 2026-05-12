@@ -1,0 +1,7 @@
+out/
+coverage/
+node_modules/
+resources/
+__mocks__/
+*.vsix
+*.tsbuildinfo

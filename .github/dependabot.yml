@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    ignore:
+      # Ignore major version bumps of VS Code API packages to avoid breaking changes
+      - dependency-name: "@types/vscode"
+        update-types: ["version-update:major"]

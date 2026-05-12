@@ -3,14 +3,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Logger } from '../utils/logger';
 import { isWSL, convertWSLPathToWindows } from '../integrations/wsl';
+import type { AudioOptions } from '../types';
 
-/**
- * Options for audio playback.
- */
-export interface AudioOptions {
-    /** Volume level from 0 (silent) to 100 (maximum) */
-    volume: number;
-}
+// Re-exported so existing imports from this module keep working.
+export type { AudioOptions };
 
 const MAX_QUEUE_SIZE = 10;
 
@@ -166,49 +162,44 @@ export class AudioPlayer {
     private spawn(filePath: string, options: AudioOptions, done: (err?: Error | null) => void): void {
         const volume01 = Math.min(Math.max(options.volume, 0), 100) / 100;
 
-        // WSL support: if on linux but in WSL, use powershell on windows host
-        isWSL().then(wsl => {
-            if (wsl) {
-                convertWSLPathToWindows(filePath).then(winPath => {
-                    if (!this.playing) {
-                        done(new Error('Audio playback stopped.'));
-                        return;
-                    }
-                    this.currentChild = this.playWindows(winPath, volume01, done);
-                }).catch(err => {
-                    this.logger.error('Failed to resolve WSL path', err);
-                    done(err instanceof Error ? err : new Error(String(err)));
-                });
-                return;
-            }
+        // Resolve the launch target asynchronously, then re-check `this.playing`
+        // *immediately* before spawning so that a `stop()` call during the WSL
+        // probe / path conversion doesn't leave a stray child process behind.
+        void (async () => {
+            try {
+                let targetPath = filePath;
+                let useWindowsPlayer = process.platform === 'win32';
 
-            if (!this.playing) {
-                done(new Error('Audio playback stopped.'));
-                return;
-            }
+                if (process.platform === 'linux' && await isWSL()) {
+                    targetPath = await convertWSLPathToWindows(filePath);
+                    useWindowsPlayer = true;
+                }
 
-            switch (process.platform) {
-                case 'win32': {
-                    this.currentChild = this.playWindows(filePath, volume01, done);
+                if (!this.playing) {
+                    done(new Error('Audio playback stopped.'));
                     return;
                 }
-                case 'darwin': {
+
+                if (useWindowsPlayer) {
+                    this.currentChild = this.playWindows(targetPath, volume01, done);
+                    return;
+                }
+
+                if (process.platform === 'darwin') {
                     this.currentChild = execFile(
                         'afplay',
-                        ['-v', volume01.toFixed(3), filePath],
+                        ['-v', volume01.toFixed(3), targetPath],
                         (err) => done(err)
                     );
                     return;
                 }
-                default: {
-                    this.currentChild = this.playLinux(filePath, volume01, done);
-                    return;
-                }
+
+                this.currentChild = this.playLinux(targetPath, volume01, done);
+            } catch (err) {
+                this.logger.error('Failed to spawn audio player', err);
+                done(err instanceof Error ? err : new Error(String(err)));
             }
-        }).catch(err => {
-            this.logger.error('Failed to check WSL status', err);
-            done(err instanceof Error ? err : new Error(String(err)));
-        });
+        })();
     }
 
     private playWindows(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {

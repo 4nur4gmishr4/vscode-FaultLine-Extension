@@ -2,14 +2,9 @@ import * as vscode from 'vscode';
 import { Logger } from '../utils/logger';
 import { IntegrationsManager } from '../integrations/integrations';
 
-/**
- * Represents a failure event from VS Code diagnostics, tasks, or terminals.
- */
-export interface FailureEvent {
-    source: string;
-    label: string;
-    timestamp: number;
-}
+import type { FailureEvent } from '../types';
+// Re-exported so existing imports from this module keep working.
+export type { FailureEvent };
 
 /**
  * Manages the error explanation webview panel that provides AI-powered
@@ -119,7 +114,7 @@ export class ErrorExplanationManager {
      */
     private sendFailureToWebview(failure: FailureEvent): void {
         if (this.panel) {
-            this.panel.webview.postMessage({
+            void this.panel.webview.postMessage({
                 command: 'showFailure',
                 failure: failure
             });
@@ -143,7 +138,7 @@ export class ErrorExplanationManager {
         try {
             // Show loading state
             this.logger.debug('Sending explanationLoading message');
-            this.panel.webview.postMessage({
+            void this.panel.webview.postMessage({
                 command: 'explanationLoading'
             });
 
@@ -160,13 +155,13 @@ export class ErrorExplanationManager {
 
             if (explanation) {
                 this.logger.debug('Sending explanationReady message');
-                this.panel.webview.postMessage({
+                void this.panel.webview.postMessage({
                     command: 'explanationReady',
                     explanation: explanation
                 });
             } else {
                 this.logger.debug('AI explanation unavailable, sending error message');
-                this.panel.webview.postMessage({
+                void this.panel.webview.postMessage({
                     command: 'explanationError',
                     error: 'AI explanation unavailable.\n\nTo fix this, open VS Code Settings (Ctrl+,) and search "fahh":\n• Set "fahh.aiProvider" to "openrouter"\n• Set "fahh.openrouterApiKey" to your OpenRouter API key\n• Set "fahh.openrouterModel" to "meta-llama/llama-3.2-3b-instruct:free"\n• Set "fahh.errorExplanation.enabled" to true'
                 });
@@ -174,7 +169,7 @@ export class ErrorExplanationManager {
         } catch (error) {
             this.logger.error('Error getting AI explanation', error);
             if (this.panel) {
-                this.panel.webview.postMessage({
+                void this.panel.webview.postMessage({
                     command: 'explanationError',
                     error: 'Failed to get explanation. Please check your internet connection and AI provider settings.'
                 });
@@ -191,7 +186,7 @@ export class ErrorExplanationManager {
         try {
             await vscode.env.clipboard.writeText(errorText);
             if (this.panel) {
-                this.panel.webview.postMessage({
+                void this.panel.webview.postMessage({
                     command: 'copySuccess'
                 });
             }
@@ -832,7 +827,7 @@ export class ErrorExplanationManager {
                 <div class="error-header">
                     <div class="error-icon">!</div>
                     <div class="error-info">
-                        <h2 class="error-title">Build Failure Detected</h2>
+                        <h2 class="error-title">\${capitalize(failure.source)} Failure Detected</h2>
                         <span class="error-source">\${failure.source.toUpperCase()}</span>
                     </div>
                 </div>

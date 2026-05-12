@@ -5,6 +5,7 @@ import * as https from 'https';
 import { Logger } from '../utils/logger';
 import { ConfigManager } from '../config/configManager';
 import { SecretManager } from '../config/secretManager';
+import { chatWithTimeout, getProvider } from './aiProviders';
 
 const MAX_SPEAK_QUEUE_SIZE = 5;
 const WEBHOOK_MAX_RETRIES = 3;
@@ -14,7 +15,9 @@ const WEBHOOK_RETRY_DELAY_MS = 1000; // Initial delay, doubles each retry
  * Manages external integrations including AI providers, webhooks, TTS, and gamification features.
  * 
  * This class provides integration with:
- * - AI providers (OpenRouter, Copilot) for error explanations and summaries
+ * - AI providers (any of the 10 registered in `aiProviders.ts`: Copilot, OpenRouter,
+ *   Groq, Gemini, Hugging Face, Mistral, Together, Cohere, OpenAI, Anthropic) for
+ *   error explanations and summaries
  * - Webhook notifications for failure events
  * - Text-to-speech (TTS) for audio labels
  * - Gamification features (boss fight mode, streak counter, daily summary)
@@ -184,19 +187,30 @@ export class IntegrationsManager {
         if (!cfg.webhookUrl) {
             return;
         }
-        
-        // Validate webhook URL
+
+        // Validate webhook URL: must be http(s) and (when set) on the user's allowlist.
+        let url: URL;
         try {
-            const url = new URL(cfg.webhookUrl);
-            if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-                this.logger.warn(`Invalid webhook URL protocol: ${url.protocol}. Must be http: or https:`);
-                return;
-            }
-        } catch (e) {
+            url = new URL(cfg.webhookUrl);
+        } catch {
             this.logger.warn(`Invalid webhook URL format: ${cfg.webhookUrl}`);
             return;
         }
-        
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            this.logger.warn(`Invalid webhook URL protocol: ${url.protocol}. Must be http: or https:`);
+            return;
+        }
+        if (cfg.webhookAllowedDomains.length > 0) {
+            const host = url.hostname.toLowerCase();
+            const allowed = cfg.webhookAllowedDomains.includes(host);
+            if (!allowed) {
+                this.logger.warn(
+                    `Webhook host "${host}" is not in fahh.webhookAllowedDomains. Skipping POST.`
+                );
+                return;
+            }
+        }
+
         this.postWebhookWithRetry(label, source, 0);
     }
 
@@ -297,12 +311,9 @@ export class IntegrationsManager {
             if (!cfg.aiSummaryEnabled && !cfg.errorExplanationEnabled) {
                 return null;
             }
-
-            if (cfg.aiProvider === 'openrouter') {
-                return await this.getOpenRouterSummary(label);
-            } else {
-                return await this.getCopilotSummary(label);
-            }
+            const prompt = `Summarize this build/shell failure in one short sentence: ${label}`;
+            const result = await this.callProvider(cfg.aiProvider, prompt, 80);
+            return result ? result.slice(0, 200) : null;
         } catch (err) {
             this.logger.error('Failed to get AI summary', err);
             return null;
@@ -310,25 +321,64 @@ export class IntegrationsManager {
     }
 
     /**
-     * Get a summary using GitHub Copilot.
-     * 
-     * @param label - The failure label to summarize
-     * @returns AI-generated summary, or null if unavailable
+     * Route a chat completion request to the user's currently configured AI provider.
+     *
+     * Copilot is handled inline because it uses VS Code's Language Model API and
+     * never leaves the editor. Every other provider goes through the shared
+     * `aiProviders` registry, retrieving the API key from SecretStorage.
+     *
+     * Returns `null` (instead of throwing) for any failure mode so callers can
+     * fall back to a non-AI code path without try/catch boilerplate.
+     *
+     * @param providerId - The active provider id from configuration
+     * @param prompt - The prompt to send
+     * @param maxTokens - Maximum tokens to generate
+     * @returns Trimmed text response, or null if unavailable
      * @private
      */
-    private async getCopilotSummary(label: string): Promise<string | null> {
+    private async callProvider(providerId: string, prompt: string, maxTokens: number): Promise<string | null> {
+        const normalized = (providerId || '').toLowerCase();
+
+        if (normalized === 'copilot') {
+            return await this.callCopilot(prompt);
+        }
+
+        const provider = getProvider(normalized);
+        if (!provider) {
+            this.logger.warn(`Unknown AI provider "${providerId}". Skipping AI call.`);
+            return null;
+        }
+
+        const apiKey = await this.secretManager.getApiKey(normalized);
+        if (!apiKey) {
+            this.logger.debug(`No API key configured for provider "${normalized}". Skipping AI call.`);
+            return null;
+        }
+
+        const model = this.resolveModelForProvider(normalized) ?? provider.info.defaultModel;
+        return await chatWithTimeout(provider, {
+            prompt,
+            maxTokens,
+            apiKey,
+            model
+        });
+    }
+
+    /**
+     * Send a single-turn prompt through the VS Code Language Model API (Copilot).
+     *
+     * @param prompt - The prompt text
+     * @returns Trimmed text response, or null if no LM is available
+     * @private
+     */
+    private async callCopilot(prompt: string): Promise<string | null> {
         try {
-            // VS Code Language Model API (requires Copilot or compatible extension)
             const models = await vscode.lm?.selectChatModels?.({});
             if (!models || models.length === 0) {
                 return null;
             }
             const model = models[0];
-            const messages = [
-                vscode.LanguageModelChatMessage.User(
-                    `You summarize build failures concisely in one sentence. Failure: ${label}`
-                )
-            ];
+            const messages = [vscode.LanguageModelChatMessage.User(prompt)];
             const tokenSource = new vscode.CancellationTokenSource();
             try {
                 const response = await model.sendRequest(messages, {}, tokenSource.token);
@@ -336,99 +386,47 @@ export class IntegrationsManager {
                 for await (const chunk of response.text) {
                     text += chunk;
                 }
-                return text.trim().slice(0, 200) || null;
+                return text.trim() || null;
             } finally {
                 tokenSource.dispose();
             }
         } catch (err) {
-            this.logger.debug(`Copilot summary unavailable: ${err instanceof Error ? err.message : String(err)}`);
+            this.logger.debug(`Copilot call unavailable: ${err instanceof Error ? err.message : String(err)}`);
             return null;
         }
     }
 
     /**
-     * Call OpenRouter API with a prompt.
-     * 
-     * **SECURITY FIX**: Uses SecretManager to retrieve API key securely instead of
-     * reading from plaintext configuration or using hardcoded credentials.
-     * 
-     * @param prompt - The prompt to send to the AI
-     * @param maxTokens - Maximum tokens in the response
-     * @returns AI-generated response, or null if unavailable
-     * @throws {Error} If the API call fails
+     * Look up the user-configured model name for the active provider.
+     *
+     * Falls back through `fahh.<provider>Model` (e.g. `fahh.openrouterModel`)
+     * and returns `undefined` if the user has not customized the model.
+     *
+     * @param providerId - Lowercased provider id
+     * @returns Configured model name or undefined
      * @private
      */
-    private async callOpenRouter(prompt: string, maxTokens: number): Promise<string | null> {
-        try {
-            // SECURITY FIX: Use SecretManager to retrieve API key securely
-            const apiKey = await this.secretManager.getApiKey('openrouter');
-            const cfg = this.configManager.readConfig();
-            const model = cfg.openrouterModel;
-
-            if (!apiKey) {
-                this.logger.debug('OpenRouter API key is missing. Skipping AI explanation.');
-                return null;
-            }
-
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://github.com/4nur4gmishr4/vscode-fahh-Extension',
-                    'X-Title': 'Fahh VS Code Extension'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: maxTokens
-                })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text().catch(() => '');
-                this.logger.debug(`OpenRouter API error: ${response.status} ${response.statusText} — ${errText}`);
-                return null;
-            }
-
-            const data = await response.json() as { choices?: { message?: { content?: string } }[] };
-            const content = data.choices?.[0]?.message?.content;
-            return content ? content.trim() : null;
-        } catch (err) {
-            this.logger.debug(`OpenRouter call failed: ${err instanceof Error ? err.message : String(err)}`);
-            return null;
-        }
-    }
-
-    /**
-     * Get a summary using OpenRouter API.
-     * 
-     * @param label - The failure label to summarize
-     * @returns AI-generated summary, or null if unavailable
-     * @private
-     */
-    private async getOpenRouterSummary(label: string): Promise<string | null> {
-        const result = await this.callOpenRouter(
-            `Summarize this build/shell failure in one short sentence: ${label}`,
-            80
-        );
-        return result ? result.slice(0, 200) : null;
+    private resolveModelForProvider(providerId: string): string | undefined {
+        const cfg = vscode.workspace.getConfiguration('fahh');
+        const key = `${providerId}Model`;
+        const value = cfg.get<string>(key, '');
+        return value && value.trim().length > 0 ? value.trim() : undefined;
     }
 
     /**
      * Get a detailed AI explanation of a failure.
-     * 
+     *
      * Provides a comprehensive explanation including:
      * 1. What caused the error
      * 2. How to fix it
      * 3. Relevant tips and best practices
-     * 
-     * **SECURITY FIX**: Uses SecretManager for API key retrieval.
-     * 
+     *
+     * Routes through the user's configured AI provider (any of the 10 supported)
+     * via `callProvider`, with API keys loaded from SecretStorage.
+     *
      * @param label - The failure label/message to explain
      * @returns Detailed AI-generated explanation, or null if unavailable
-     * @throws {Error} If the AI provider configuration is invalid
-     * 
+     *
      * @example
      * ```typescript
      * const explanation = await integrations.getAiExplanation('TypeError: Cannot read property "x" of undefined');
@@ -439,12 +437,13 @@ export class IntegrationsManager {
      */
     public async getAiExplanation(label: string): Promise<string | null> {
         try {
+            const cfg = this.configManager.readConfig();
             const prompt =
                 `You are an expert developer assistant. A VS Code terminal command or build task just failed.\n\n` +
                 `Error:\n${label}\n\n` +
                 `Please explain:\n1. What caused this error\n2. How to fix it\n3. Any relevant tips\n\n` +
                 `Be concise and practical. Use plain text, no markdown headers.`;
-            return await this.callOpenRouter(prompt, 500);
+            return await this.callProvider(cfg.aiProvider, prompt, 500);
         } catch (err) {
             this.logger.error('Failed to get AI explanation', err);
             return null;

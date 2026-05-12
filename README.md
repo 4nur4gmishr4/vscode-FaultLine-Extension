@@ -165,12 +165,22 @@ After changing sounds, run `Fahh: Play Test Sound` to verify it works.
 
 ### AI Provider Configuration
 
-Fahh supports two AI providers for error explanations and summaries:
+Fahh supports multiple AI providers for error explanations and summaries:
 
-1. **GitHub Copilot** (default) - Uses your existing Copilot subscription, no additional setup required
-2. **OpenRouter** - Free AI models, requires API key
+| Provider | API Key Required | Cost | Features | Setup |
+|---|---|---|---|---|
+| **GitHub Copilot** | No (uses existing subscription) | Included with Copilot | Full error explanations, summaries | Default - no setup needed |
+| **OpenRouter** | Yes (sk-or-v1-*) | Free tier available | Full error explanations, summaries, multiple models | Set `fahh.aiProvider` to `"openrouter"`, enter API key when prompted |
+| **OpenAI** | Yes (sk-*) | Pay-per-use | Full error explanations, summaries | Set `fahh.aiProvider` to `"openai"`, enter API key when prompted |
+| **Anthropic** | Yes (sk-ant-*) | Pay-per-use | Full error explanations, summaries | Set `fahh.aiProvider` to `"anthropic"`, enter API key when prompted |
+| **Google AI** | Yes (AIza*) | Free tier available | Full error explanations, summaries | Set `fahh.aiProvider` to `"google"`, enter API key when prompted |
+| **Hugging Face** | Yes (hf_*) | Free tier available | Full error explanations, summaries | Set `fahh.aiProvider` to `"huggingface"`, enter API key when prompted |
+| **Cohere** | Yes (sk-*) | Free tier available | Full error explanations, summaries | Set `fahh.aiProvider` to `"cohere"`, enter API key when prompted |
+| **Groq** | Yes (gsk_*) | Free tier available | Full error explanations, summaries | Set `fahh.aiProvider` to `"groq"`, enter API key when prompted |
+| **DeepSeek** | Yes (sk-*) | Free tier available | Full error explanations, summaries | Set `fahh.aiProvider` to `"deepseek"`, enter API key when prompted |
+| **Mistral** | Yes (sk-*) | Pay-per-use | Full error explanations, summaries | Set `fahh.aiProvider` to `"mistral"`, enter API key when prompted |
 
-**To use OpenRouter**:
+**Quick Setup for OpenRouter** (recommended for free AI):
 1. Get a free API key from [openrouter.ai](https://openrouter.ai)
 2. Set `fahh.aiProvider` to `"openrouter"`
 3. When prompted, enter your API key (starts with `sk-or-v1-`)

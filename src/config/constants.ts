@@ -11,8 +11,8 @@ export const EXTENSION = {
     ID: 'fahh',
     /** Display name */
     NAME: 'Fahh',
-    /** Current version */
-    VERSION: '2.1.0',
+    /** Current version (kept in sync with package.json `version` field). */
+    VERSION: '2.4.0',
     /** Extension publisher */
     PUBLISHER: '4nur4gmishr4'
 } as const;
@@ -58,6 +58,7 @@ export const CONFIG = {
         HISTORY_MAX: 'historyMax',
         SPEAK_LABEL: 'speakLabel',
         WEBHOOK_URL: 'webhookUrl',
+        WEBHOOK_ALLOWED_DOMAINS: 'webhookAllowedDomains',
         AI_SUMMARY_ENABLED: 'aiSummary.enabled',
         AI_PROVIDER: 'aiProvider',
         OPENROUTER_API_KEY: 'openrouterApiKey',
@@ -68,55 +69,6 @@ export const CONFIG = {
         ERROR_EXPLANATION_ENABLED: 'errorExplanation.enabled',
         ERROR_EXPLANATION_AUTO_SHOW: 'errorExplanation.autoShow'
     }
-} as const;
-
-/**
- * Command identifiers
- */
-export const COMMANDS = {
-    TEST: 'fahh.test',
-    TEST_SUCCESS: 'fahh.testSuccess',
-    TOGGLE: 'fahh.toggle',
-    TOGGLE_WORKSPACE: 'fahh.toggleWorkspace',
-    SELECT_SOUND: 'fahh.selectSound',
-    SELECT_SOUND_FOLDER: 'fahh.selectSoundFolder',
-    RESET_SOUND: 'fahh.resetSound',
-    PICK_SOUND_PACK: 'fahh.pickSoundPack',
-    STOP: 'fahh.stop',
-    SNOOZE: 'fahh.snooze',
-    CLEAR_HISTORY: 'fahh.clearHistory',
-    REPLAY_LAST: 'fahh.replayLast',
-    SHOW_HISTORY: 'fahh.showHistory',
-    SHOW_OUTPUT: 'fahh.showOutput',
-    RESET_SETTINGS: 'fahh.resetSettings',
-    FACTORY_RESET: 'fahh.factoryReset',
-    SHOW_WELCOME: 'fahh.showWelcome',
-    HISTORY_FOCUS: 'fahh.history.focus'
-} as const;
-
-/**
- * View identifiers
- */
-export const VIEWS = {
-    HISTORY: 'fahh.history'
-} as const;
-
-/**
- * Context value identifiers
- */
-export const CONTEXT_VALUES = {
-    HISTORY_ENTRY: 'fahh.historyEntry'
-} as const;
-
-/**
- * State keys for global/workspace state
- */
-export const STATE_KEYS = {
-    LAST_VERSION: 'lastVersion',
-    DAILY_FAIL_COUNT: 'fahh.dailyFailCount',
-    LAST_SUCCESS_STREAK: 'fahh.lastSuccessStreak',
-    BOSS_HP: 'fahh.bossHp',
-    HISTORY: 'fahh.history'
 } as const;
 
 /**
@@ -138,26 +90,6 @@ export const SOUNDS = {
         FAHH_BROKE: 'fahhbroke.mp3',
         OH_SHIT: 'ohshit.mp3'
     }
-} as const;
-
-/**
- * Timeout and interval values (in milliseconds)
- */
-export const TIMEOUTS = {
-    /** Cleanup interval for scheduler (1 minute) */
-    CLEANUP_INTERVAL_MS: 60000,
-    
-    /** Per-minute window for rate limiting (1 minute) */
-    PER_MINUTE_WINDOW_MS: 60000,
-    
-    /** Milliseconds per minute for snooze calculations */
-    MILLISECONDS_PER_MINUTE: 60000,
-    
-    /** Status bar flash duration */
-    STATUS_BAR_FLASH_MS: 500,
-    
-    /** Daily summary schedule interval (24 hours) */
-    DAILY_SUMMARY_INTERVAL_MS: 86400000
 } as const;
 
 /**
@@ -271,69 +203,21 @@ export const VALIDATION = {
 } as const;
 
 /**
- * Resource paths relative to extension root
+ * Resource paths relative to extension root.
+ *
+ * Only paths consumed by runtime code live here. Welcome-screen assets are
+ * read inline from `welcome.ts` via `vscode.Uri.joinPath`; if you migrate
+ * those reads to constants, add them back below.
  */
 export const RESOURCES = {
     /** Logo image path */
     LOGO: 'resources/fahh-logo.jpeg',
-    
+
     /** Sound packs directory */
     PACKS_DIR: 'resources/packs',
-    
+
     /** Default pack directory */
-    DEFAULT_PACK: 'resources/packs/default',
-    
-    /** Welcome screen resources */
-    WELCOME: {
-        CLIENT_JS: 'resources/welcome-client.js',
-        STEP1_MD: 'resources/step1.md',
-        STEP2_MD: 'resources/step2.md',
-        SETTINGS_PNG: 'resources/settings.png'
-    }
-} as const;
-
-/**
- * AI provider configuration
- */
-export const AI = {
-    /** Available AI providers */
-    PROVIDERS: {
-        COPILOT: 'copilot',
-        OPENROUTER: 'openrouter'
-    },
-    
-    /** OpenRouter API configuration */
-    OPENROUTER: {
-        BASE_URL: 'https://openrouter.ai/api/v1',
-        CHAT_ENDPOINT: '/chat/completions',
-        MODELS: {
-            LLAMA_3_2_3B: 'meta-llama/llama-3.2-3b-instruct:free',
-            GEMMA_4_31B: 'google/gemma-4-31b-it:free',
-            GEMMA_4_26B: 'google/gemma-4-26b-a4b-it:free',
-            HERMES_3_405B: 'nousresearch/hermes-3-llama-3.1-405b:free',
-            NEMOTRON_30B: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
-            LAGUNA_XS: 'poolside/laguna-xs.2:free',
-            LAGUNA_M: 'poolside/laguna-m.1:free'
-        }
-    },
-    
-    /** Request timeout for AI calls (milliseconds) */
-    REQUEST_TIMEOUT_MS: 30000
-} as const;
-
-/**
- * Gamification constants
- */
-export const GAMIFICATION = {
-    /** Boss fight mode */
-    BOSS: {
-        INITIAL_HP: 100,
-        DAMAGE_PER_FAILURE: 10,
-        HEAL_PER_SUCCESS: 5
-    },
-    
-    /** Streak counter milestones */
-    STREAK_MILESTONES: [5, 10, 25, 50, 100] as const
+    DEFAULT_PACK: 'resources/packs/default'
 } as const;
 
 /**
@@ -341,73 +225,7 @@ export const GAMIFICATION = {
  */
 export const WEBVIEW_PANELS = {
     ERROR_EXPLANATION: 'fahhErrorExplanation',
-    WELCOME: 'fahhWelcome'
+    WELCOME: 'fahhWelcome',
+    AI_PROVIDER_WIZARD: 'fahhAiProviderWizard'
 } as const;
 
-/**
- * Status bar configuration
- */
-export const STATUS_BAR = {
-    /** Icon when enabled */
-    ICON_ENABLED: '$(unmute)',
-    
-    /** Icon when disabled */
-    ICON_DISABLED: '$(mute)',
-    
-    /** Text prefix */
-    TEXT_PREFIX: 'Fahh'
-} as const;
-
-/**
- * File filters for file dialogs
- */
-export const FILE_FILTERS = {
-    AUDIO: {
-        Audio: ['mp3', 'wav', 'ogg', 'flac', 'm4a']
-    }
-} as const;
-
-/**
- * Notification messages
- */
-export const MESSAGES = {
-    SOUND_UPDATED: 'Fahh sound updated.',
-    SOUND_FOLDER_SET: 'Fahh sound folder set. Sounds will be random from this folder.',
-    SOUND_RESET: 'Fahh sound reset to default.',
-    HISTORY_CLEARED: 'Failure history cleared.',
-    NO_RECENT_FAILURE: 'No recent failure to replay.',
-    SETTINGS_RESET: 'Fahh settings have been reset.',
-    FACTORY_RESET_COMPLETE: 'Fahh has been factory reset.',
-    NO_SOUND_PACKS: 'No sound packs installed. Use custom sound instead.',
-    
-    /** Confirmation prompts */
-    CONFIRM: {
-        RESET_SETTINGS: 'Are you sure you want to reset all Fahh settings to default?',
-        FACTORY_RESET: 'This will reset all settings AND clear your failure history. Proceed?'
-    },
-    
-    /** Error messages */
-    ERRORS: {
-        NO_SOUND_RESOLVED: 'Fahh: no sound file resolved.',
-        NO_SUCCESS_SOUND: 'Fahh: no success sound resolved.',
-        PLAYBACK_FAILED: 'Fahh playback failed',
-        CHECK_OUTPUT_LOG: 'Open "Fahh: Show Output Log" for details.'
-    }
-} as const;
-
-/**
- * Logging prefixes and formats
- */
-export const LOGGING = {
-    /** Output channel name */
-    CHANNEL_NAME: 'Fahh',
-    
-    /** Log levels */
-    LEVELS: {
-        OFF: 'off',
-        ERROR: 'error',
-        WARN: 'warn',
-        INFO: 'info',
-        DEBUG: 'debug'
-    }
-} as const;

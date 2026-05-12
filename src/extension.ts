@@ -40,7 +40,9 @@ class FahhExtension {
     public constructor(private readonly ctx: vscode.ExtensionContext) {
         this.logger = new Logger('Fahh');
         this.player = new AudioPlayer(this.logger);
-        this.configManager = new ConfigManager(ctx.secrets);
+        // Pass the logger to ConfigManager so validation warnings flow through the
+        // structured output channel instead of console.warn.
+        this.configManager = new ConfigManager(ctx.secrets, this.logger);
         this.secretManager = new SecretManager(ctx.secrets);
         this.config = this.configManager.readConfig();
         this.logger.setLevel(this.config.logLevel);
@@ -57,7 +59,8 @@ class FahhExtension {
      * This method is called once during extension activation.
      */
     public start(): void {
-        this.logger.info(`Fahh v2.1.2 activating on ${process.platform} (VS Code ${vscode.version}).`);
+        const version = (this.ctx.extension.packageJSON?.version as string | undefined) ?? 'unknown';
+        this.logger.info(`Fahh v${version} activating on ${process.platform} (VS Code ${vscode.version}).`);
 
         this.statusBar.refresh();
         this.registerDetectors();
@@ -357,10 +360,11 @@ class FahhExtension {
      */
     private applyVolumeCurve(volume: number): number {
         if (this.config.volumeCurve === 'log') {
-            // Logarithmic curve: perceptually more natural
+            // Perceptually-smooth curve: log10(1 + 9x) maps [0,1] -> [0,1] exactly
+            // (log10(10) is 1, so the previous division was a no-op).
             if (volume <= 0) { return 0; }
             const normalized = volume / 100;
-            const logVal = Math.log10(1 + normalized * 9) / Math.log10(10);
+            const logVal = Math.log10(1 + normalized * 9);
             return Math.round(logVal * 100);
         }
         return volume;
@@ -489,7 +493,7 @@ class FahhExtension {
                 }
             }),
             vscode.commands.registerCommand('fahh.showHistory', () => {
-                vscode.commands.executeCommand('fahh.history.focus');
+                void vscode.commands.executeCommand('fahh.history.focus');
             }),
             vscode.commands.registerCommand('fahh.showOutput', () => {
                 this.logger.show();

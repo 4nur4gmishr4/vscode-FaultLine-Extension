@@ -1,23 +1,14 @@
 import * as vscode from 'vscode';
-import type { FahhConfig, FailureSource } from '../types';
+import type { FahhConfig, FailureHandler, SuccessHandler } from '../types';
 import { Logger } from '../utils/logger';
+
+// Re-exported so consumers can keep importing from this module if they prefer.
+export type { FailureHandler, SuccessHandler };
 
 // Constants for rate limiting and cleanup
 const TASK_START_TTL_MS = 1000 * 60 * 60; // 1 hour TTL for task starts to prevent memory leaks
 const CLEANUP_INTERVAL_MS = 1000 * 60 * 15; // Every 15 minutes
 const DIAGNOSTICS_DEBOUNCE_MS = 500; // Debounce 500ms
-
-/**
- * Handler function called when a failure is detected.
- * @param event - The failure event containing source and label
- */
-export type FailureHandler = (event: { source: FailureSource; label: string }) => void;
-
-/**
- * Handler function called when a success is detected.
- * @param event - The success event containing source and label
- */
-export type SuccessHandler = (event: { source: FailureSource; label: string }) => void;
 
 /**
  * Internal tracking information for task execution.
@@ -261,7 +252,7 @@ function registerDiagnosticsDetector(
     const lastDiagnosticCounts = new Map<string, number>();
     let diagTimeout: NodeJS.Timeout | null = null;
     const pendingUris = new Set<vscode.Uri>();
-    
+
     disposables.push(
         vscode.languages.onDidChangeDiagnostics((e) => {
             for (const uri of e.uris) {
@@ -270,9 +261,9 @@ function registerDiagnosticsDetector(
             if (diagTimeout) { clearTimeout(diagTimeout); }
             diagTimeout = setTimeout(() => {
                 const cfg = config();
-                if (!cfg.sources.has('diagnostics')) { 
+                if (!cfg.sources.has('diagnostics')) {
                     pendingUris.clear();
-                    return; 
+                    return;
                 }
 
                 let totalNewErrors = 0;
@@ -304,5 +295,23 @@ function registerDiagnosticsDetector(
             lastDiagnosticCounts.delete(doc.uri.toString());
         })
     );
+
+    // Defensive cleanup: long-running editors can accumulate counts for files that
+    // are navigated-away-from but never closed. Periodically drop entries whose
+    // documents are no longer reachable via VS Code's diagnostics API.
+    const diagCleanupInterval = setInterval(() => {
+        if (lastDiagnosticCounts.size === 0) { return; }
+        const live = new Set<string>();
+        for (const [uri] of vscode.languages.getDiagnostics()) {
+            live.add(uri.toString());
+        }
+        for (const key of lastDiagnosticCounts.keys()) {
+            if (!live.has(key)) {
+                lastDiagnosticCounts.delete(key);
+            }
+        }
+    }, CLEANUP_INTERVAL_MS);
+    diagCleanupInterval?.unref?.();
+    disposables.push({ dispose: () => clearInterval(diagCleanupInterval) });
 }
 
