@@ -92,10 +92,10 @@ export const SOUNDS = {
     /** Available sound packs */
     PACKS: {
         FAULTLINE: 'faultline.mp3',
-        FAHH_HARD: 'faultlinehard.mp3',
+        FAULTLINE_HARD: 'faultlinehard.mp3',
         FART_REVERB: 'fartreverb.mp3',
-        FAHH_DEEP: 'faultlinedeep.mp3',
-        FAHH_BROKE: 'faultlinebroke.mp3',
+        FAULTLINE_DEEP: 'faultlinedeep.mp3',
+        FAULTLINE_BROKE: 'faultlinebroke.mp3',
         OH_SHIT: 'ohshit.mp3'
     }
 } as const;

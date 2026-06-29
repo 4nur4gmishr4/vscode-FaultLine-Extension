@@ -213,11 +213,11 @@ WScript.Sleep 500
 While Sound.playState <> 1 And Sound.playState <> 8
     WScript.Sleep 100
 Wend
-WScript.Echo "FAHH_OK"
+WScript.Echo "FAULTLINE_OK"
 `;
         
         const os = require('os');
-        const vbsPath = path.join(os.tmpdir(), `fahh_play_${Date.now()}_${Math.floor(Math.random() * 1000)}.vbs`);
+        const vbsPath = path.join(os.tmpdir(), `faultline_play_${Date.now()}_${Math.floor(Math.random() * 1000)}.vbs`);
         fs.writeFileSync(vbsPath, scriptContent);
 
         this.logger.debug(`Spawning cscript.exe (vol=${vol}, file=${filePath})`);
@@ -240,8 +240,8 @@ WScript.Echo "FAHH_OK"
                     const trimmedErr = (stderr || '').trim().slice(0, 500);
                     const trimmedOut = (stdout || '').trim().slice(0, 500);
                     this.logger.error(`VBScript audio exited code=${err.code ?? '?'} stderr=${trimmedErr || '<empty>'} stdout=${trimmedOut || '<empty>'}`);
-                } else if (!/FAHH_OK/.test(stdout || '')) {
-                    this.logger.warn(`VBScript audio finished without FAHH_OK marker. stdout=${(stdout || '').trim().slice(0, 200)}`);
+                } else if (!/FAULTLINE_OK/.test(stdout || '')) {
+                    this.logger.warn(`VBScript audio finished without FAULTLINE_OK marker. stdout=${(stdout || '').trim().slice(0, 200)}`);
                 } else {
                     this.logger.debug('PowerShell audio finished cleanly.');
                 }

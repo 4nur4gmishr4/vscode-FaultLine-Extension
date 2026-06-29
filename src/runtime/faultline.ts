@@ -78,7 +78,7 @@ export class FaultLineRuntime {
             const files = fs.readdirSync(tmpDir);
             let cleaned = 0;
             for (const file of files) {
-                if (file.startsWith('fahh_play_') && file.endsWith('.vbs')) {
+                if (file.startsWith('faultline_play_') && file.endsWith('.vbs')) {
                     try {
                         fs.unlinkSync(path.join(tmpDir, file));
                         cleaned++;
