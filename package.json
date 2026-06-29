@@ -8,12 +8,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/4nur4gmishr4/vscode-fahh-Extension"
+    "url": "https://github.com/4nur4gmishr4/vscode-FaultLine-Extension"
   },
   "bugs": {
-    "url": "https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues"
+    "url": "https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues"
   },
-  "homepage": "https://github.com/4nur4gmishr4/vscode-fahh-Extension#readme",
+  "homepage": "https://github.com/4nur4gmishr4/vscode-FaultLine-Extension#readme",
   "engines": {
     "vscode": "^1.93.0",
     "node": ">=18.0.0"

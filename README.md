@@ -1,9 +1,9 @@
 # FaultLine
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-fahh-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/actions)
-[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues)
-[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/stargazers)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions)
+[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues)
+[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers)
 
 FaultLine is a VS Code extension that plays an audio notification when errors occur in your development workflow. By providing immediate auditory feedback, it allows you to maintain focus on your code without having to constantly monitor terminal outputs or task execution windows.
 

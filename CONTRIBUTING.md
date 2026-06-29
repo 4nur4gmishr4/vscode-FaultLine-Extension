@@ -1,9 +1,9 @@
 # Contributing to FaultLine
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-fahh-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/actions)
-[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues)
-[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/stargazers)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions)
+[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues)
+[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers)
 
 Thank you for your interest in contributing to FaultLine. This project relies on community contributions to remain robust and efficient. 
 
