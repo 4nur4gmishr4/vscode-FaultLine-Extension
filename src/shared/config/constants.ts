@@ -119,7 +119,7 @@ export const DEFAULTS = {
     SOURCES: ['task', 'shell', 'terminal'] as const,
     
     /** Default cooldown in milliseconds */
-    COOLDOWN_MS: 5000,
+    COOLDOWN_MS: 2000,
     
     /** Default max sounds per minute (0 = unlimited) */
     MAX_PER_MINUTE: 0,

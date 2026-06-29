@@ -27,7 +27,7 @@ export class AudioPlayer {
     private currentChild: ChildProcess | null = null;
     private warnedMissingPlayer = false;
     private lastPlayTime = 0;
-    private readonly COOLDOWN_MS = 5000;
+    private readonly COOLDOWN_MS = 2000;
     private queue: Array<{
         filePath: string;
         options: AudioOptions;

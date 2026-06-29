@@ -127,7 +127,7 @@
       },
       {
         "command": "faultline.openSettings",
-        "title": "FaultLine: Open Configuration",
+        "title": "Open Configuration",
         "category": "FaultLine"
       },
       {

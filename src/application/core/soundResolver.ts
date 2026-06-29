@@ -80,37 +80,42 @@ export class SoundResolver {
     public async resolveForFailure(source: FailureSource, isSuccess = false): Promise<string | null> {
         const cfg = this.config().audio;
 
-        // Priority 1: Success sound (if enabled and this is a success event)
+        // Success sound resolution
         if (isSuccess && cfg.successEnabled) {
-            if (cfg.successSound && await this.fileExists(cfg.successSound)) {
-                return cfg.successSound;
+            if (cfg.successSound) {
+                // If the user selected from the success pack
+                const successPackPath = path.join(this.packDir, 'success', path.basename(cfg.successSound));
+                if (await this.fileExists(successPackPath)) {
+                    return successPackPath;
+                }
+                // Fallback if absolute path was given
+                if (await this.fileExists(cfg.successSound)) {
+                    return cfg.successSound;
+                }
             }
-            return this.defaultSoundPath;
+            // Default success sound
+            const defaultSuccessPath = path.join(this.packDir, 'success', 'success_ding.mp3');
+            if (await this.fileExists(defaultSuccessPath)) {
+                return defaultSuccessPath;
+            }
+            return null;
         }
 
-        // Priority 2: Sound folder (random selection)
-        if (cfg.soundFolder && await this.fileExists(cfg.soundFolder)) {
-            const files = await this.listAudioFiles(cfg.soundFolder);
-            if (files.length > 0) {
-                const pick = files[Math.floor(Math.random() * files.length)];
-                return pick;
-            }
-        }
-
-        // Priority 3: Global sound path
+        // Error sound resolution
+        // Priority 1: Global sound path
         if (cfg.soundPath && await this.fileExists(cfg.soundPath)) {
             return cfg.soundPath;
         }
 
-        // Priority 4: Sound pack selection (fallback before default)
+        // Priority 2: Sound pack selection (from default error pack)
         if (cfg.soundPack) {
-            const packSoundPath = path.join(this.packDir, SOUNDS.DEFAULT_PACK_DIR.split('/').pop()!, path.basename(cfg.soundPack));
-            if (await this.fileExists(packSoundPath)) {
-                return packSoundPath;
+            const errorPackPath = path.join(this.packDir, 'default', path.basename(cfg.soundPack));
+            if (await this.fileExists(errorPackPath)) {
+                return errorPackPath;
             }
         }
 
-        // Priority 5: Default sound
+        // Priority 3: Default error sound
         if (await this.fileExists(this.defaultSoundPath)) {
             return this.defaultSoundPath;
         }
