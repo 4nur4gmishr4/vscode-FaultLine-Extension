@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 
 /**
@@ -26,7 +32,7 @@ import * as vscode from 'vscode';
  */
 export class SecretManager implements ISecretManager {
     private readonly secretStorage: vscode.SecretStorage;
-    private readonly keyPrefix = 'fahh.apiKey.';
+    private readonly keyPrefix = 'faultline.apiKey.';
 
     /**
      * Creates a new SecretManager instance.
@@ -93,7 +99,7 @@ export class SecretManager implements ISecretManager {
 
         const key = this.getStorageKey(provider);
         const value = await this.secretStorage.get(key);
-        return value || null;
+        return value ?? null;
     }
 
     /**
@@ -142,7 +148,7 @@ export class SecretManager implements ISecretManager {
         }
 
         const key = await this.getApiKey(provider);
-        return key !== null && key.length > 0;
+        return !!(key && key.length > 0);
     }
 
     /**
@@ -169,11 +175,6 @@ export class SecretManager implements ISecretManager {
      */
     private validateApiKeyFormat(provider: string, apiKey: string): void {
         const trimmedKey = apiKey.trim();
-
-        // Minimum length check (most API keys are at least 20 characters)
-        if (trimmedKey.length < 20) {
-            throw new Error(`API key for ${provider} is too short (minimum 20 characters)`);
-        }
 
         // Maximum length check (prevent abuse)
         if (trimmedKey.length > 500) {

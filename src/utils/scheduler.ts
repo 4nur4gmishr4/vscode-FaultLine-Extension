@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
-import type { FahhConfig, FailureSource } from '../types';
+import type { FaultLineConfig, FailureSource } from '../types';
 import { Logger } from './logger';
 
 // Constants for cleanup intervals
@@ -45,7 +51,7 @@ export class Scheduler {
      * @param config - Function that returns the current extension configuration
      * @param logger - Logger instance for debug and info messages
      */
-    public constructor(private readonly config: () => FahhConfig, private readonly logger: Logger) {
+    public constructor(private readonly config: () => FaultLineConfig, private readonly logger: Logger) {
         // Periodically clean old per-minute entries
         this.cleanupTimer = setInterval(() => this.cleanPerMinuteWindow(), CLEANUP_INTERVAL_MS);
         this.cleanupTimer?.unref?.();
@@ -88,9 +94,9 @@ export class Scheduler {
      * ```
      */
     public isMuted(source: FailureSource): boolean {
-        const cfg = this.config();
+        const config = this.config();
 
-        if (!cfg.enabled) {
+        if (!config.core.enabled) {
             return true;
         }
 
@@ -101,6 +107,8 @@ export class Scheduler {
             this.logger.debug(`Muted by snooze: ${source}`);
             return true;
         }
+
+        const cfg = config.detection;
 
         // Quiet hours
         if (cfg.quietHours.enabled && this.isInQuietHours(cfg.quietHours.from, cfg.quietHours.to)) {

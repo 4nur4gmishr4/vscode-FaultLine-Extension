@@ -28,6 +28,5 @@ jobs:
           name: coverage-${{ matrix.os }}
           path: coverage/
           if-no-files-found: ignore
-      - name: Run security audit
+      - name: Run audit
         run: npm audit --audit-level=moderate
-        continue-on-error: true

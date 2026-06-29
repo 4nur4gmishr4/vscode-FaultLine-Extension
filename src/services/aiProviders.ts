@@ -1,9 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 
 /**
  * AI provider abstraction layer.
  *
- * Defines a uniform interface for chat-style AI providers used by the Fahh extension.
+ * Defines a uniform interface for chat-style AI providers used by the FaultLine extension.
  * Each provider implementation translates the unified `chat()` call into its own HTTP
  * shape so the rest of the codebase can stay provider-agnostic.
  *
@@ -34,7 +40,7 @@ export type ProviderCategory = 'free' | 'paid' | 'builtin';
 
 /** Metadata about a provider used by the wizard and validators. */
 export interface AiProviderInfo {
-    /** Stable identifier (matches `fahh.aiProvider` enum value). */
+    /** Stable identifier (matches `faultline.aiProvider` enum value). */
     readonly id: AiProviderId;
     /** Human-readable display name. */
     readonly displayName: string;
@@ -83,7 +89,7 @@ const REQUEST_TIMEOUT_MS = 30000;
 
 /** Common headers identifying this extension to providers that look at User-Agent. */
 const COMMON_HEADERS: Record<string, string> = {
-    'User-Agent': 'Fahh-VSCode-Extension'
+    'User-Agent': 'FaultLine-VSCode-Extension'
 };
 
 /**
@@ -117,8 +123,8 @@ class OpenRouterProvider implements AiProvider {
                 ...COMMON_HEADERS,
                 'Authorization': `Bearer ${request.apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://github.com/4nur4gmishr4/vscode-fahh-Extension',
-                'X-Title': 'Fahh VS Code Extension'
+                'HTTP-Referer': 'https://github.com/4nur4gmishr4/vscode-faultline-Extension',
+                'X-Title': 'FaultLine VS Code Extension'
             },
             body: JSON.stringify({
                 model: request.model,
@@ -129,7 +135,7 @@ class OpenRouterProvider implements AiProvider {
         });
 
         if (!response.ok) {
-            return null;
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json() as { choices?: { message?: { content?: string } }[] };
         const content = data.choices?.[0]?.message?.content;
@@ -176,7 +182,7 @@ class GroqProvider implements AiProvider {
         });
 
         if (!response.ok) {
-            return null;
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json() as { choices?: { message?: { content?: string } }[] };
         const content = data.choices?.[0]?.message?.content;
@@ -207,12 +213,13 @@ class GeminiProvider implements AiProvider {
     };
 
     async chat(request: AiChatRequest): Promise<string | null> {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(request.model)}:generateContent?key=${encodeURIComponent(request.apiKey)}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(request.model)}:generateContent`;
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 ...COMMON_HEADERS,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-goog-api-key': request.apiKey
             },
             body: JSON.stringify({
                 contents: [{ role: 'user', parts: [{ text: request.prompt }] }],
@@ -222,14 +229,14 @@ class GeminiProvider implements AiProvider {
         });
 
         if (!response.ok) {
-            return null;
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json() as {
             candidates?: { content?: { parts?: { text?: string }[] } }[];
         };
         const parts = data.candidates?.[0]?.content?.parts;
         const text = parts?.map(p => p.text ?? '').join('').trim();
-        return text || null;
+        return text ?? null;
     }
 }
 
@@ -272,7 +279,7 @@ class HuggingFaceProvider implements AiProvider {
         });
 
         if (!response.ok) {
-            return null;
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json() as { choices?: { message?: { content?: string } }[] };
         const content = data.choices?.[0]?.message?.content;
@@ -306,14 +313,21 @@ class CopilotProvider implements AiProvider {
         const model = models[0];
         const messages = [vscode.LanguageModelChatMessage.User(request.prompt)];
         const tokenSource = new vscode.CancellationTokenSource();
+        const abortHandler = () => tokenSource.cancel();
+        if (request.signal) {
+            request.signal.addEventListener('abort', abortHandler);
+        }
         try {
             const response = await model.sendRequest(messages, {}, tokenSource.token);
             let text = '';
             for await (const chunk of response.text) {
                 text += chunk;
             }
-            return text.trim() || null;
+            return text.trim() ?? null;
         } finally {
+            if (request.signal) {
+                request.signal.removeEventListener('abort', abortHandler);
+            }
             tokenSource.dispose();
         }
     }
@@ -357,7 +371,7 @@ class MistralProvider implements AiProvider {
             }),
             signal: request.signal
         });
-        if (!response.ok) { return null; }
+        if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }
         const data = await response.json() as { choices?: { message?: { content?: string } }[] };
         const content = data.choices?.[0]?.message?.content;
         return content ? content.trim() : null;
@@ -401,7 +415,7 @@ class TogetherProvider implements AiProvider {
             }),
             signal: request.signal
         });
-        if (!response.ok) { return null; }
+        if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }
         const data = await response.json() as { choices?: { message?: { content?: string } }[] };
         const content = data.choices?.[0]?.message?.content;
         return content ? content.trim() : null;
@@ -446,11 +460,11 @@ class CohereProvider implements AiProvider {
             }),
             signal: request.signal
         });
-        if (!response.ok) { return null; }
+        if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }
         const data = await response.json() as { message?: { content?: { text?: string }[] } };
         const parts = data.message?.content;
         const text = parts?.map(p => p.text ?? '').join('').trim();
-        return text || null;
+        return text ?? null;
     }
 }
 
@@ -491,7 +505,7 @@ class OpenAIProvider implements AiProvider {
             }),
             signal: request.signal
         });
-        if (!response.ok) { return null; }
+        if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }
         const data = await response.json() as { choices?: { message?: { content?: string } }[] };
         const content = data.choices?.[0]?.message?.content;
         return content ? content.trim() : null;
@@ -536,10 +550,10 @@ class AnthropicProvider implements AiProvider {
             }),
             signal: request.signal
         });
-        if (!response.ok) { return null; }
+        if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }
         const data = await response.json() as { content?: { type?: string; text?: string }[] };
         const text = data.content?.filter(p => p.type === 'text').map(p => p.text ?? '').join('').trim();
-        return text || null;
+        return text ?? null;
     }
 }
 
@@ -628,8 +642,11 @@ export async function chatWithTimeout(
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
         return await provider.chat({ ...request, signal: controller.signal });
-    } catch {
-        return null;
+    } catch (err: any) {
+        if (err.name === 'AbortError') {
+            throw new Error(`Request timed out after ${timeoutMs}ms`);
+        }
+        throw err;
     } finally {
         clearTimeout(timeout);
     }

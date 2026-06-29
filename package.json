@@ -1,777 +1,695 @@
 {
-    "name": "fahh",
-    "displayName": "Fahh",
-    "description": "Plays a sound whenever a task, build, or terminal command fails.",
-    "version": "2.4.0",
-    "publisher": "4nur4gmishr4",
-    "author": "Anurag Mishra",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/4nur4gmishr4/vscode-fahh-Extension"
-    },
-    "bugs": {
-        "url": "https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues"
-    },
-    "homepage": "https://github.com/4nur4gmishr4/vscode-fahh-Extension#readme",
-    "engines": {
-        "vscode": "^1.93.0",
-        "node": ">=18.0.0"
-    },
-    "categories": [
-        "Other"
+  "name": "faultline",
+  "displayName": "FaultLine",
+  "description": "FaultLine (Previously FaultLine) - Intelligent auditory feedback for development failures.",
+  "version": "3.0.0",
+  "publisher": "FaultLine-Engineering",
+  "author": "Anurag Mishra",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/4nur4gmishr4/vscode-faultline-Extension"
+  },
+  "bugs": {
+    "url": "https://github.com/4nur4gmishr4/vscode-faultline-Extension/issues"
+  },
+  "homepage": "https://github.com/4nur4gmishr4/vscode-faultline-Extension#readme",
+  "engines": {
+    "vscode": "^1.93.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "sound",
+    "audio",
+    "fail",
+    "error",
+    "notification",
+    "build",
+    "terminal"
+  ],
+  "icon": "resources/faultline-logo.jpeg",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "faultline.test",
+        "title": "%command.faultline.test%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.testSuccess",
+        "title": "%command.faultline.testSuccess%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.toggle",
+        "title": "%command.faultline.toggle%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.toggleWorkspace",
+        "title": "%command.faultline.toggleWorkspace%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.selectSound",
+        "title": "%command.faultline.selectSound%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.selectSoundFolder",
+        "title": "%command.faultline.selectSoundFolder%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.resetSound",
+        "title": "%command.faultline.resetSound%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.pickSoundPack",
+        "title": "%command.faultline.pickSoundPack%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.stop",
+        "title": "%command.faultline.stop%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.snooze",
+        "title": "%command.faultline.snooze%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.clearHistory",
+        "title": "%command.faultline.clearHistory%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.replaySound",
+        "title": "%command.faultline.replaySound%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.showHistory",
+        "title": "%command.faultline.showHistory%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.showOutput",
+        "title": "%command.faultline.showOutput%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.resetSettings",
+        "title": "%command.faultline.resetSettings%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.factoryReset",
+        "title": "%command.faultline.factoryReset%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.showWelcome",
+        "title": "%command.faultline.showWelcome%",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.explainError",
+        "title": "FaultLine: Analyze Last Failure",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.exportHistoryCSV",
+        "title": "FaultLine: Export History (CSV)",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.exportHistoryJSON",
+        "title": "FaultLine: Export History (JSON)",
+        "category": "FaultLine"
+      },
+      {
+        "command": "faultline.openSettings",
+        "title": "FaultLine: Open Configuration",
+        "category": "FaultLine"
+      }
     ],
-    "keywords": [
-        "sound",
-        "audio",
-        "fail",
-        "error",
-        "notification",
-        "build",
-        "terminal"
-    ],
-    "icon": "resources/fahh-logo.jpeg",
-    "galleryBanner": {
-        "color": "#1e1e1e",
-        "theme": "dark"
-    },
-    "extensionKind": [
-        "ui",
-        "workspace"
-    ],
-    "activationEvents": [
-        "onStartupFinished"
-    ],
-    "main": "./out/extension.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "fahh.test",
-                "title": "%command.fahh.test%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.testSuccess",
-                "title": "%command.fahh.testSuccess%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.toggle",
-                "title": "%command.fahh.toggle%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.toggleWorkspace",
-                "title": "%command.fahh.toggleWorkspace%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.selectSound",
-                "title": "%command.fahh.selectSound%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.selectSoundFolder",
-                "title": "%command.fahh.selectSoundFolder%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.resetSound",
-                "title": "%command.fahh.resetSound%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.pickSoundPack",
-                "title": "%command.fahh.pickSoundPack%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.stop",
-                "title": "%command.fahh.stop%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.snooze",
-                "title": "%command.fahh.snooze%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.clearHistory",
-                "title": "%command.fahh.clearHistory%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.replayLast",
-                "title": "%command.fahh.replayLast%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.showHistory",
-                "title": "%command.fahh.showHistory%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.showOutput",
-                "title": "%command.fahh.showOutput%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.resetSettings",
-                "title": "%command.fahh.resetSettings%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.factoryReset",
-                "title": "%command.fahh.factoryReset%",
-                "category": "Fahh"
-            },
-            {
-                "command": "fahh.showWelcome",
-                "title": "%command.fahh.showWelcome%",
-                "category": "Fahh"
-            }
-        ],
-        "views": {
-            "fahh": [
-                {
-                    "id": "fahh.history",
-                    "name": "%view.fahh.history%",
-                    "icon": "$(output)"
-                }
-            ]
-        },
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "fahh",
-                    "title": "%viewContainer.fahh%",
-                    "icon": "$(unmute)"
-                }
-            ]
-        },
-        "walkthroughs": [
-            {
-                "id": "fahh.welcome",
-                "title": "%walkthrough.fahh.title%",
-                "description": "%walkthrough.fahh.description%",
-                "steps": [
-                    {
-                        "id": "fahh.welcome.test",
-                        "title": "%walkthrough.fahh.step1.title%",
-                        "description": "%walkthrough.fahh.step1.description%",
-                        "media": {
-                            "markdown": "resources/step1.md"
-                        }
-                    },
-                    {
-                        "id": "fahh.welcome.sound",
-                        "title": "%walkthrough.fahh.step2.title%",
-                        "description": "%walkthrough.fahh.step2.description%",
-                        "media": {
-                            "markdown": "resources/step2.md"
-                        }
-                    },
-                    {
-                        "id": "fahh.welcome.configure",
-                        "title": "%walkthrough.fahh.step3.title%",
-                        "description": "%walkthrough.fahh.step3.description%",
-                        "media": {
-                            "image": "resources/settings.png",
-                            "altText": "Fahh settings"
-                        }
-                    }
-                ]
-            }
-        ],
-        "configuration": {
-            "title": "%config.fahh.title%",
-            "properties": {
-                "fahh.soundPack": {
-                    "type": "string",
-                    "default": "fahh.mp3",
-                    "enum": [
-                        "fahh.mp3",
-                        "fahhhard.mp3",
-                        "fartreverb.mp3",
-                        "fahhdeep.mp3",
-                        "fahhbroke.mp3",
-                        "ohshit.mp3"
-                    ],
-                    "enumDescriptions": [
-                        "Classic Fahh (Default)",
-                        "Impact Strike",
-                        "Reverb Blast",
-                        "Deep Resonance",
-                        "System Crash",
-                        "Quick Expletive"
-                    ],
-                    "description": "Sound Pack to use for failure sounds"
-                },
-                "fahh.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enable/disable Fahh extension"
-                },
-                "fahh.soundPath": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Path to custom sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.soundFolder": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Folder containing random sound files",
-                    "scope": "machine-overridable"
-                },
-                "fahh.sounds.task": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Task failure sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.sounds.shell": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Shell failure sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.sounds.terminal": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Terminal failure sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.sounds.diagnostics": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Diagnostics error sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.sounds.build": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Build failure sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.sounds.longTask": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Long task failure sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.successEnabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable success sounds"
-                },
-                "fahh.successSound": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Success sound file",
-                    "scope": "machine-overridable"
-                },
-                "fahh.volumes.task": {
-                    "type": "number",
-                    "default": -1,
-                    "minimum": -1,
-                    "maximum": 100,
-                    "description": "Task volume (-1 = global)"
-                },
-                "fahh.volumes.shell": {
-                    "type": "number",
-                    "default": -1,
-                    "minimum": -1,
-                    "maximum": 100,
-                    "description": "Shell volume (-1 = global)"
-                },
-                "fahh.volumes.terminal": {
-                    "type": "number",
-                    "default": -1,
-                    "minimum": -1,
-                    "maximum": 100,
-                    "description": "%config.fahh.volumes.terminal%"
-                },
-                "fahh.volumes.diagnostics": {
-                    "type": "number",
-                    "default": -1,
-                    "minimum": -1,
-                    "maximum": 100,
-                    "description": "%config.fahh.volumes.diagnostics%"
-                },
-                "fahh.volumes.build": {
-                    "type": "number",
-                    "default": -1,
-                    "minimum": -1,
-                    "maximum": 100,
-                    "description": "%config.fahh.volumes.build%"
-                },
-                "fahh.volumes.longTask": {
-                    "type": "number",
-                    "default": -1,
-                    "minimum": -1,
-                    "maximum": 100,
-                    "description": "%config.fahh.volumes.longTask%"
-                },
-                "fahh.volume": {
-                    "type": "number",
-                    "default": 100,
-                    "minimum": 0,
-                    "maximum": 100,
-                    "description": "%config.fahh.volume%"
-                },
-                "fahh.volumeCurve": {
-                    "type": "string",
-                    "default": "linear",
-                    "enum": [
-                        "linear",
-                        "log"
-                    ],
-                    "description": "%config.fahh.volumeCurve%"
-                },
-                "fahh.showNotification": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%config.fahh.showNotification%"
-                },
-                "fahh.notificationLevel": {
-                    "type": "string",
-                    "default": "warning",
-                    "enum": [
-                        "info",
-                        "warning",
-                        "error",
-                        "none"
-                    ],
-                    "description": "%config.fahh.notificationLevel%"
-                },
-                "fahh.sources": {
-                    "type": "array",
-                    "default": [
-                        "task",
-                        "shell",
-                        "terminal"
-                    ],
-                    "description": "Sources to monitor for failures",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "task",
-                            "shell",
-                            "terminal",
-                            "diagnostics",
-                            "build",
-                            "longTask"
-                        ],
-                        "enumDescriptions": [
-                            "%config.fahh.sources.task%",
-                            "%config.fahh.sources.shell%",
-                            "%config.fahh.sources.terminal%",
-                            "%config.fahh.sources.diagnostics%",
-                            "%config.fahh.sources.build%",
-                            "%config.fahh.sources.longTask%"
-                        ]
-                    },
-                    "uniqueItems": true
-                },
-                "fahh.cooldownMs": {
-                    "type": "number",
-                    "default": 50,
-                    "minimum": 0,
-                    "maximum": 60000,
-                    "description": "%config.fahh.cooldownMs%"
-                },
-                "fahh.cooldownPerSource": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "%config.fahh.cooldownPerSource%"
-                },
-                "fahh.maxPerMinute": {
-                    "type": "number",
-                    "default": 0,
-                    "minimum": 0,
-                    "maximum": 120,
-                    "description": "%config.fahh.maxPerMinute%"
-                },
-                "fahh.ignorePatterns": {
-                    "type": "array",
-                    "default": [],
-                    "description": "%config.fahh.ignorePatterns%",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "fahh.showStatusBar": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%config.fahh.showStatusBar%"
-                },
-                "fahh.statusBarCounter": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%config.fahh.statusBarCounter%"
-                },
-                "fahh.flashStatusBar": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%config.fahh.flashStatusBar%"
-                },
-                "fahh.quietHours.enabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "%config.fahh.quietHours.enabled%"
-                },
-                "fahh.quietHours.from": {
-                    "type": "string",
-                    "default": "22:00",
-                    "pattern": "^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
-                    "description": "%config.fahh.quietHours.from%"
-                },
-                "fahh.quietHours.to": {
-                    "type": "string",
-                    "default": "08:00",
-                    "pattern": "^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
-                    "description": "%config.fahh.quietHours.to%"
-                },
-                "fahh.muteWhenFocused": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "%config.fahh.muteWhenFocused%"
-                },
-                "fahh.snoozeMinutes": {
-                    "type": "number",
-                    "default": 10,
-                    "minimum": 1,
-                    "maximum": 1440,
-                    "description": "%config.fahh.snoozeMinutes%"
-                },
-                "fahh.diagnosticsThreshold": {
-                    "type": "number",
-                    "default": 1,
-                    "minimum": 1,
-                    "maximum": 100,
-                    "description": "%config.fahh.diagnosticsThreshold%"
-                },
-                "fahh.longTaskThresholdMs": {
-                    "type": "number",
-                    "default": 60000,
-                    "minimum": 1000,
-                    "maximum": 3600000,
-                    "description": "%config.fahh.longTaskThresholdMs%"
-                },
-                "fahh.logLevel": {
-                    "type": "string",
-                    "default": "warn",
-                    "enum": [
-                        "off",
-                        "error",
-                        "warn",
-                        "info",
-                        "debug"
-                    ],
-                    "description": "%config.fahh.logLevel%"
-                },
-                "fahh.historyMax": {
-                    "type": "number",
-                    "default": 50,
-                    "minimum": 10,
-                    "maximum": 500,
-                    "description": "%config.fahh.historyMax%"
-                },
-                "fahh.speakLabel": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "%config.fahh.speakLabel%"
-                },
-                "fahh.webhookUrl": {
-                    "type": "string",
-                    "default": "",
-                    "description": "%config.fahh.webhookUrl%",
-                    "scope": "machine",
-                    "pattern": "^$|^https?://.+",
-                    "patternErrorMessage": "Webhook URL must start with http:// or https:// (or be empty to disable)."
-                },
-                "fahh.webhookAllowedDomains": {
-                    "type": "array",
-                    "default": [],
-                    "items": {
-                        "type": "string"
-                    },
-                    "description": "%config.fahh.webhookAllowedDomains%",
-                    "scope": "machine"
-                },
-                "fahh.aiSummary.enabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "%config.fahh.aiSummary.enabled%"
-                },
-                "fahh.aiProvider": {
-                    "type": "string",
-                    "default": "copilot",
-                    "enum": [
-                        "copilot",
-                        "openrouter",
-                        "groq",
-                        "gemini",
-                        "huggingface",
-                        "mistral",
-                        "together",
-                        "cohere",
-                        "openai",
-                        "anthropic"
-                    ],
-                    "enumDescriptions": [
-                        "GitHub Copilot (uses your existing Copilot subscription via VS Code Language Model API; no key required)",
-                        "OpenRouter (free Llama, Gemma, Mistral models; rate-limited)",
-                        "Groq (extremely fast inference; free tier with Llama, Gemma, Mixtral)",
-                        "Google Gemini (1500 req/day free on gemini-2.0-flash)",
-                        "Hugging Face (free inference API for open-source chat models)",
-                        "Mistral AI (free tier for open-mistral, ministral, Codestral)",
-                        "Together AI (free trial credit; 200+ open-source models)",
-                        "Cohere (free tier ~1000 req/month on Command R / R+)",
-                        "OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5; pay per token)",
-                        "Anthropic Claude (3.5 Sonnet/Haiku/Opus; pay per token)"
-                    ],
-                    "description": "%config.fahh.aiProvider%"
-                },
-                "fahh.openrouterApiKey": {
-                    "type": "string",
-                    "default": "",
-                    "scope": "machine",
-                    "description": "%config.fahh.openrouterApiKey%",
-                    "pattern": "^$|^sk-or-v1-[A-Za-z0-9_-]{20,}$",
-                    "patternErrorMessage": "OpenRouter API keys start with 'sk-or-v1-' followed by at least 20 characters.",
-                    "deprecationMessage": "Storing API keys in settings is insecure. Use the 'Fahh: Configure AI Provider' command to save your key in VS Code's encrypted SecretStorage.",
-                    "markdownDeprecationMessage": "Storing API keys in settings is insecure. Run **Fahh: Configure AI Provider** from the command palette to save your key in VS Code's encrypted SecretStorage. Existing values are migrated automatically on next activation."
-                },
-                "fahh.openrouterModel": {
-                    "type": "string",
-                    "default": "meta-llama/llama-3.2-3b-instruct:free",
-                    "description": "%config.fahh.openrouterModel%"
-                },
-                "fahh.groqModel": {
-                    "type": "string",
-                    "default": "llama-3.1-8b-instant",
-                    "enum": [
-                        "llama-3.3-70b-versatile",
-                        "llama-3.1-8b-instant",
-                        "gemma2-9b-it",
-                        "mixtral-8x7b-32768"
-                    ],
-                    "description": "%config.fahh.groqModel%"
-                },
-                "fahh.geminiModel": {
-                    "type": "string",
-                    "default": "gemini-2.0-flash",
-                    "enum": [
-                        "gemini-2.0-flash",
-                        "gemini-1.5-flash",
-                        "gemini-1.5-flash-8b",
-                        "gemini-1.5-pro"
-                    ],
-                    "description": "%config.fahh.geminiModel%"
-                },
-                "fahh.huggingfaceModel": {
-                    "type": "string",
-                    "default": "mistralai/Mistral-7B-Instruct-v0.3",
-                    "description": "%config.fahh.huggingfaceModel%"
-                },
-                "fahh.mistralModel": {
-                    "type": "string",
-                    "default": "open-mistral-nemo",
-                    "enum": [
-                        "open-mistral-nemo",
-                        "ministral-3b-latest",
-                        "ministral-8b-latest",
-                        "mistral-small-latest",
-                        "codestral-latest"
-                    ],
-                    "description": "%config.fahh.mistralModel%"
-                },
-                "fahh.togetherModel": {
-                    "type": "string",
-                    "default": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-                    "description": "%config.fahh.togetherModel%"
-                },
-                "fahh.cohereModel": {
-                    "type": "string",
-                    "default": "command-r-08-2024",
-                    "enum": [
-                        "command-r-plus-08-2024",
-                        "command-r-08-2024",
-                        "command-r",
-                        "command-light"
-                    ],
-                    "description": "%config.fahh.cohereModel%"
-                },
-                "fahh.openaiModel": {
-                    "type": "string",
-                    "default": "gpt-4o-mini",
-                    "enum": [
-                        "gpt-4o-mini",
-                        "gpt-4o",
-                        "gpt-4-turbo",
-                        "gpt-3.5-turbo"
-                    ],
-                    "description": "%config.fahh.openaiModel%"
-                },
-                "fahh.anthropicModel": {
-                    "type": "string",
-                    "default": "claude-3-5-haiku-latest",
-                    "enum": [
-                        "claude-3-5-haiku-latest",
-                        "claude-3-5-sonnet-latest",
-                        "claude-3-haiku-20240307",
-                        "claude-3-opus-latest"
-                    ],
-                    "description": "%config.fahh.anthropicModel%"
-                },
-                "fahh.dailySummary": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable daily summary"
-                },
-                "fahh.streakCounter": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable success streak counter"
-                },
-                "fahh.bossFightMode": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable boss fight mode"
-                },
-                "fahh.errorExplanation.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enable error explanations"
-                },
-                "fahh.errorExplanation.autoShow": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Auto-show error explanations on failure"
-                }
-            }
+    "views": {
+      "faultline": [
+        {
+          "id": "faultline.history",
+          "name": "%view.faultline.history%",
+          "icon": "$(output)"
         }
+      ]
     },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "clean": "node -e \"require('fs').rmSync('out', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('coverage', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('*.vsix', {force: true})\"",
-        "lint": "tsc --noEmit && eslint \"src/**/*.ts\"",
-        "lint:fix": "eslint \"src/**/*.ts\" --fix",
-        "test": "jest",
-        "test:coverage": "jest --coverage",
-        "test:watch": "jest --watch",
-        "prebuild": "npm run clean && npm run lint",
-        "build": "npm run compile",
-        "package": "npx @vscode/vsce package",
-        "package:prod": "npm run clean && npm run lint && npm run test && npm run compile && npx @vscode/vsce package"
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "faultline",
+          "title": "%viewContainer.faultline%",
+          "icon": "$(unmute)"
+        }
+      ]
     },
-    "devDependencies": {
-        "@types/jest": "^29.5.10",
-        "@types/node": "18.x",
-        "@types/vscode": "^1.93.0",
-        "@typescript-eslint/eslint-plugin": "^7.18.0",
-        "@typescript-eslint/parser": "^7.18.0",
-        "eslint": "^8.57.1",
-        "jest": "^29.7.0",
-        "jest-environment-jsdom": "^30.3.0",
-        "ts-jest": "^29.1.0",
-        "typescript": "^5.2.2"
-    },
-    "localizations": {
-        "translations": [
-            {
-                "id": "en",
-                "name": "English",
-                "translations": {
-                    "command.fahh.test": "Play Test Sound",
-                    "command.fahh.testSuccess": "Play Test Success Sound",
-                    "command.fahh.toggle": "Toggle Enable / Disable",
-                    "command.fahh.toggleWorkspace": "Toggle (This Workspace)",
-                    "command.fahh.selectSound": "Select Custom Sound File...",
-                    "command.fahh.selectSoundFolder": "Select Sound Folder (Random)",
-                    "command.fahh.resetSound": "Reset Sound to Default",
-                    "command.fahh.pickSoundPack": "Pick Sound Pack",
-                    "command.fahh.stop": "Stop Currently Playing Sound",
-                    "command.fahh.snooze": "Snooze for Configured Minutes",
-                    "command.fahh.clearHistory": "Clear Failure History",
-                    "command.fahh.replayLast": "Replay Last Failure Sound",
-                    "command.fahh.showHistory": "Show Failure History",
-                    "command.fahh.showOutput": "Show Output Log",
-                    "command.fahh.resetSettings": "Reset Settings",
-                    "command.fahh.factoryReset": "Factory Reset",
-                    "command.fahh.showWelcome": "Show Welcome Screen",
-                    "config.fahh.title": "Fahh",
-                    "config.fahh.enabled": "Enable Fahh",
-                    "config.fahh.soundPack": "Sound Pack",
-                    "config.fahh.soundPath": "Custom Sound File",
-                    "config.fahh.soundFolder": "Random Sound Folder",
-                    "config.fahh.sounds.task": "Task Failure Sound",
-                    "config.fahh.sounds.shell": "Shell Command Failure Sound",
-                    "config.fahh.sounds.terminal": "Terminal Failure Sound",
-                    "config.fahh.sounds.diagnostics": "Diagnostic Error Sound",
-                    "config.fahh.sounds.build": "Build Failure Sound",
-                    "config.fahh.sounds.longTask": "Long Task Failure Sound",
-                    "config.fahh.successEnabled": "Enable Success Sounds",
-                    "config.fahh.successSound": "Success Sound File",
-                    "config.fahh.volumes.task": "Task Volume (-1 = global)",
-                    "config.fahh.volumes.shell": "Shell Volume (-1 = global)",
-                    "config.fahh.volumes.terminal": "Terminal Volume (-1 = global)",
-                    "config.fahh.volumes.diagnostics": "Diagnostics Volume (-1 = global)",
-                    "config.fahh.volumes.build": "Build Volume (-1 = global)",
-                    "config.fahh.volumes.longTask": "Long Task Volume (-1 = global)",
-                    "config.fahh.volume": "Master Volume",
-                    "config.fahh.volumeCurve": "Volume Curve",
-                    "config.fahh.showNotification": "Show Notifications",
-                    "config.fahh.notificationLevel": "Notification Level",
-                    "config.fahh.sources": "Monitor These Sources",
-                    "config.fahh.sources.task": "Task failures",
-                    "config.fahh.sources.shell": "Shell command failures",
-                    "config.fahh.sources.terminal": "Terminal failures",
-                    "config.fahh.sources.diagnostics": "Diagnostic errors",
-                    "config.fahh.sources.build": "Build failures",
-                    "config.fahh.sources.longTask": "Long task failures",
-                    "config.fahh.cooldownMs": "Cooldown (ms)",
-                    "config.fahh.cooldownPerSource": "Separate Cooldowns per Source",
-                    "config.fahh.maxPerMinute": "Max Sounds per Minute",
-                    "config.fahh.ignorePatterns": "Ignore Patterns",
-                    "config.fahh.showStatusBar": "Show Status Bar Item",
-                    "config.fahh.statusBarCounter": "Show Failure Counter",
-                    "config.fahh.flashStatusBar": "Flash Status Bar on Failure",
-                    "config.fahh.quietHours.enabled": "Enable Quiet Hours",
-                    "config.fahh.quietHours.from": "Quiet Hours From",
-                    "config.fahh.quietHours.to": "Quiet Hours To",
-                    "config.fahh.muteWhenFocused": "Mute When VS Code is Focused",
-                    "config.fahh.snoozeMinutes": "Snooze Duration (minutes)",
-                    "config.fahh.diagnosticsThreshold": "Diagnostic Error Threshold",
-                    "config.fahh.longTaskThresholdMs": "Long Task Threshold (ms)",
-                    "config.fahh.logLevel": "Log Level",
-                    "config.fahh.historyMax": "Maximum History Entries",
-                    "config.fahh.speakLabel": "Speak Failure Labels",
-                    "config.fahh.webhookUrl": "Webhook URL",
-                    "config.fahh.webhookAllowedDomains": "Webhook Allowed Domains",
-                    "config.fahh.aiSummary.enabled": "Enable AI Summaries",
-                    "config.fahh.aiProvider": "AI Provider",
-                    "config.fahh.openrouterApiKey": "OpenRouter API Key (deprecated; use Fahh: Configure AI Provider)",
-                    "config.fahh.openrouterModel": "OpenRouter Model",
-                    "config.fahh.groqModel": "Groq Model",
-                    "config.fahh.geminiModel": "Google Gemini Model",
-                    "config.fahh.huggingfaceModel": "Hugging Face Model",
-                    "config.fahh.mistralModel": "Mistral AI Model",
-                    "config.fahh.togetherModel": "Together AI Model",
-                    "config.fahh.cohereModel": "Cohere Model",
-                    "config.fahh.openaiModel": "OpenAI Model",
-                    "config.fahh.anthropicModel": "Anthropic Claude Model",
-                    "config.fahh.dailySummary": "Daily Summary",
-                    "config.fahh.streakCounter": "Success Streak Counter",
-                    "config.fahh.bossFightMode": "Boss Fight Mode",
-                    "config.fahh.errorExplanation.enabled": "Enable Error Explanations",
-                    "config.fahh.errorExplanation.autoShow": "Auto-show Error Explanations"
-                }
+    "walkthroughs": [
+      {
+        "id": "faultline.welcome",
+        "title": "%walkthrough.faultline.title%",
+        "description": "%walkthrough.faultline.description%",
+        "steps": [
+          {
+            "id": "faultline.welcome.test",
+            "title": "%walkthrough.faultline.step1.title%",
+            "description": "%walkthrough.faultline.step1.description%",
+            "media": {
+              "markdown": "resources/step1.md"
             }
+          },
+          {
+            "id": "faultline.welcome.sound",
+            "title": "%walkthrough.faultline.step2.title%",
+            "description": "%walkthrough.faultline.step2.description%",
+            "media": {
+              "markdown": "resources/step2.md"
+            }
+          },
+          {
+            "id": "faultline.welcome.configure",
+            "title": "%walkthrough.faultline.step3.title%",
+            "description": "%walkthrough.faultline.step3.description%",
+            "media": {
+              "image": "resources/settings.png",
+              "altText": "FaultLine settings"
+            }
+          }
         ]
+      }
+    ],
+    "configuration": {
+      "title": "%config.faultline.title%",
+      "properties": {
+        "faultline.soundPack": {
+          "type": "string",
+          "default": "faultline.mp3",
+          "enum": [
+            "faultline.mp3",
+            "faultlinehard.mp3",
+            "fartreverb.mp3",
+            "faultlinedeep.mp3",
+            "faultlinebroke.mp3",
+            "ohshit.mp3"
+          ],
+          "enumDescriptions": [
+            "Classic FaultLine (Default)",
+            "Impact Strike",
+            "Reverb Blast",
+            "Deep Resonance",
+            "System Crash",
+            "Quick Expletive"
+          ],
+          "description": "Sound Pack to use for failure sounds"
+        },
+        "faultline.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable FaultLine extension"
+        },
+        "faultline.soundPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to custom sound file",
+          "scope": "machine-overridable"
+        },
+        "faultline.soundFolder": {
+          "type": "string",
+          "default": "",
+          "description": "Folder containing random sound files",
+          "scope": "machine-overridable"
+        },
+        "faultline.successEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable success sounds"
+        },
+        "faultline.successSound": {
+          "type": "string",
+          "default": "",
+          "description": "Success sound file",
+          "scope": "machine-overridable"
+        },
+        "faultline.volume": {
+          "type": "number",
+          "default": 100,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "%config.faultline.volume%"
+        },
+        "faultline.showNotification": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.faultline.showNotification%"
+        },
+        "faultline.notificationLevel": {
+          "type": "string",
+          "default": "warning",
+          "enum": [
+            "info",
+            "warning",
+            "error",
+            "none"
+          ],
+          "description": "%config.faultline.notificationLevel%"
+        },
+        "faultline.sources": {
+          "type": "array",
+          "default": [
+            "task",
+            "shell",
+            "terminal"
+          ],
+          "description": "Sources to monitor for failures",
+          "items": {
+            "type": "string",
+            "enum": [
+              "task",
+              "shell",
+              "terminal",
+              "diagnostics",
+              "build",
+              "longTask"
+            ],
+            "enumDescriptions": [
+              "%config.faultline.sources.task%",
+              "%config.faultline.sources.shell%",
+              "%config.faultline.sources.terminal%",
+              "%config.faultline.sources.diagnostics%",
+              "%config.faultline.sources.build%",
+              "%config.faultline.sources.longTask%"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "faultline.cooldownMs": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 60000,
+          "description": "%config.faultline.cooldownMs%"
+        },
+        "faultline.cooldownPerSource": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.faultline.cooldownPerSource%"
+        },
+        "faultline.maxPerMinute": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 120,
+          "description": "%config.faultline.maxPerMinute%"
+        },
+        "faultline.ignorePatterns": {
+          "type": "array",
+          "default": [],
+          "description": "%config.faultline.ignorePatterns%",
+          "items": {
+            "type": "string"
+          }
+        },
+        "faultline.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.faultline.showStatusBar%"
+        },
+        "faultline.statusBarCounter": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.faultline.statusBarCounter%"
+        },
+        "faultline.flashStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.faultline.flashStatusBar%"
+        },
+        "faultline.quietHours.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.faultline.quietHours.enabled%"
+        },
+        "faultline.quietHours.from": {
+          "type": "string",
+          "default": "22:00",
+          "pattern": "^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+          "description": "%config.faultline.quietHours.from%"
+        },
+        "faultline.quietHours.to": {
+          "type": "string",
+          "default": "08:00",
+          "pattern": "^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+          "description": "%config.faultline.quietHours.to%"
+        },
+        "faultline.muteWhenFocused": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.faultline.muteWhenFocused%"
+        },
+        "faultline.snoozeMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "%config.faultline.snoozeMinutes%"
+        },
+        "faultline.diagnosticsThreshold": {
+          "type": "number",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "%config.faultline.diagnosticsThreshold%"
+        },
+        "faultline.longTaskThresholdMs": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 1000,
+          "maximum": 3600000,
+          "description": "%config.faultline.longTaskThresholdMs%"
+        },
+        "faultline.logLevel": {
+          "type": "string",
+          "default": "warn",
+          "enum": [
+            "off",
+            "error",
+            "warn",
+            "info",
+            "debug"
+          ],
+          "description": "%config.faultline.logLevel%"
+        },
+        "faultline.historyMax": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "maximum": 500,
+          "description": "%config.faultline.historyMax%"
+        },
+        "faultline.webhookUrl": {
+          "type": "string",
+          "default": "",
+          "description": "%config.faultline.webhookUrl%",
+          "scope": "machine",
+          "pattern": "^$|^https?://.+",
+          "patternErrorMessage": "Webhook URL must start with http:// or https:// (or be empty to disable)."
+        },
+        "faultline.webhookAllowedDomains": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "%config.faultline.webhookAllowedDomains%",
+          "scope": "machine"
+        },
+        "faultline.aiSummary.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.faultline.aiSummary.enabled%"
+        },
+        "faultline.aiProvider": {
+          "type": "string",
+          "default": "copilot",
+          "enum": [
+            "copilot",
+            "openrouter",
+            "groq",
+            "gemini",
+            "huggingface",
+            "mistral",
+            "together",
+            "cohere",
+            "openai",
+            "anthropic"
+          ],
+          "enumDescriptions": [
+            "GitHub Copilot (uses your existing Copilot subscription via VS Code Language Model API; no key required)",
+            "OpenRouter (free Llama, Gemma, Mistral models; rate-limited)",
+            "Groq (extremely fast inference; free tier with Llama, Gemma, Mixtral)",
+            "Google Gemini (1500 req/day free on gemini-2.0-flash)",
+            "Hugging Face (free inference API for open-source chat models)",
+            "Mistral AI (free tier for open-mistral, ministral, Codestral)",
+            "Together AI (free trial credit; 200+ open-source models)",
+            "Cohere (free tier ~1000 req/month on Command R / R+)",
+            "OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5; pay per token)",
+            "Anthropic Claude (3.5 Sonnet/Haiku/Opus; pay per token)"
+          ],
+          "description": "%config.faultline.aiProvider%"
+        },
+        "faultline.dailySummary": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable daily summary"
+        },
+        "faultline.streakCounter": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable success streak counter"
+        },
+        "faultline.bossFightMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable boss fight mode"
+        },
+        "faultline.errorExplanation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable error explanations"
+        },
+        "faultline.errorExplanation.autoShow": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-show error explanations on failure"
+        },
+        "faultline.branchPatterns": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Git branch patterns to trigger on (empty = all branches). Supports glob patterns like 'main', 'feature/*', 'release/*'"
+        },
+        "faultline.jiraUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Jira instance URL (e.g., https://yourcompany.atlassian.net)"
+        },
+        "faultline.jiraProject": {
+          "type": "string",
+          "default": "",
+          "description": "Jira project key (e.g., PROJ)"
+        },
+        "faultline.jiraEmail": {
+          "type": "string",
+          "default": "",
+          "description": "Jira account email for API authentication"
+        },
+        "faultline.language": {
+          "type": "string",
+          "default": "en",
+          "enum": [
+            "en",
+            "es",
+            "fr",
+            "de",
+            "ja",
+            "zh-CN",
+            "zh-TW",
+            "ko",
+            "pt-BR",
+            "ru",
+            "it",
+            "nl"
+          ],
+          "enumDescriptions": [
+            "English",
+            "Spanish",
+            "French",
+            "German",
+            "Japanese",
+            "Simplified Chinese",
+            "Traditional Chinese",
+            "Korean",
+            "Portuguese (Brazil)",
+            "Russian",
+            "Italian",
+            "Dutch"
+          ],
+          "description": "Interface language for the extension"
+        },
+        "faultline.webhookFormat": {
+          "type": "string",
+          "default": "default",
+          "enum": [
+            "default",
+            "slack",
+            "discord"
+          ],
+          "enumDescriptions": [
+            "Default JSON format",
+            "Slack webhook format",
+            "Discord webhook format"
+          ],
+          "description": "Webhook payload format for notifications"
+        },
+        "faultline.ai.model": {
+          "type": "string",
+          "default": "meta-llama/llama-3.2-3b-instruct:free",
+          "description": "The AI model to use for the selected provider (e.g., gpt-4o, gemini-1.5-pro)."
+        }
+      }
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -noEmit && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "clean": "node -e \"require('fs').rmSync('out', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('coverage', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('*.vsix', {force: true})\"",
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "prebuild": "npm run clean && npm run lint",
+    "build": "npm run compile",
+    "package": "npx @vscode/vsce package",
+    "package:prod": "npm run clean && npm run lint && npm run test && npm run compile && npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.10",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.93.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "esbuild": "^0.28.1",
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "js-yaml": "^4.1.2"
+  },
+  "localizations": {
+    "translations": [
+      {
+        "id": "en",
+        "name": "English",
+        "translations": {
+          "command.faultline.test": "Play Test Sound",
+          "command.faultline.testSuccess": "Play Test Success Sound",
+          "command.faultline.toggle": "Toggle Enable / Disable",
+          "command.faultline.toggleWorkspace": "Toggle (This Workspace)",
+          "command.faultline.selectSound": "Select Custom Sound File...",
+          "command.faultline.selectSoundFolder": "Select Sound Folder (Random)",
+          "command.faultline.resetSound": "Reset Sound to Default",
+          "command.faultline.pickSoundPack": "Pick Sound Pack",
+          "command.faultline.stop": "Stop Currently Playing Sound",
+          "command.faultline.snooze": "Snooze for Configured Minutes",
+          "command.faultline.clearHistory": "Clear Failure History",
+          "command.faultline.replaySound": "Replay Last Failure Sound",
+          "command.faultline.showHistory": "Show Failure History",
+          "command.faultline.showOutput": "Show Output Log",
+          "command.faultline.resetSettings": "Reset Settings",
+          "command.faultline.factoryReset": "Factory Reset",
+          "command.faultline.showWelcome": "Show Welcome Screen",
+          "config.faultline.title": "FaultLine",
+          "config.faultline.enabled": "Enable FaultLine",
+          "config.faultline.soundPack": "Sound Pack",
+          "config.faultline.soundPath": "Custom Sound File",
+          "config.faultline.soundFolder": "Random Sound Folder",
+          "config.faultline.sounds.task": "Task Failure Sound",
+          "config.faultline.sounds.shell": "Shell Command Failure Sound",
+          "config.faultline.sounds.terminal": "Terminal Failure Sound",
+          "config.faultline.sounds.diagnostics": "Diagnostic Error Sound",
+          "config.faultline.sounds.build": "Build Failure Sound",
+          "config.faultline.sounds.longTask": "Long Task Failure Sound",
+          "config.faultline.successEnabled": "Enable Success Sounds",
+          "config.faultline.successSound": "Success Sound File",
+          "config.faultline.volumes.task": "Task Volume (-1 = global)",
+          "config.faultline.volumes.shell": "Shell Volume (-1 = global)",
+          "config.faultline.volumes.terminal": "Terminal Volume (-1 = global)",
+          "config.faultline.volumes.diagnostics": "Diagnostics Volume (-1 = global)",
+          "config.faultline.volumes.build": "Build Volume (-1 = global)",
+          "config.faultline.volumes.longTask": "Long Task Volume (-1 = global)",
+          "config.faultline.volume": "Master Volume",
+          "config.faultline.volumeCurve": "Volume Curve",
+          "config.faultline.showNotification": "Show Notifications",
+          "config.faultline.notificationLevel": "Notification Level",
+          "config.faultline.sources": "Monitor These Sources",
+          "config.faultline.sources.task": "Task failures",
+          "config.faultline.sources.shell": "Shell command failures",
+          "config.faultline.sources.terminal": "Terminal failures",
+          "config.faultline.sources.diagnostics": "Diagnostic errors",
+          "config.faultline.sources.build": "Build failures",
+          "config.faultline.sources.longTask": "Long task failures",
+          "config.faultline.cooldownMs": "Cooldown (ms)",
+          "config.faultline.cooldownPerSource": "Separate Cooldowns per Source",
+          "config.faultline.maxPerMinute": "Max Sounds per Minute",
+          "config.faultline.ignorePatterns": "Ignore Patterns",
+          "config.faultline.showStatusBar": "Show Status Bar Item",
+          "config.faultline.statusBarCounter": "Show Failure Counter",
+          "config.faultline.flashStatusBar": "Flash Status Bar on Failure",
+          "config.faultline.quietHours.enabled": "Enable Quiet Hours",
+          "config.faultline.quietHours.from": "Quiet Hours From",
+          "config.faultline.quietHours.to": "Quiet Hours To",
+          "config.faultline.muteWhenFocused": "Mute When VS Code is Focused",
+          "config.faultline.snoozeMinutes": "Snooze Duration (minutes)",
+          "config.faultline.diagnosticsThreshold": "Diagnostic Error Threshold",
+          "config.faultline.longTaskThresholdMs": "Long Task Threshold (ms)",
+          "config.faultline.logLevel": "Log Level",
+          "config.faultline.historyMax": "Maximum History Entries",
+          "config.faultline.speakLabel": "Speak Failure Labels",
+          "config.faultline.webhookUrl": "Webhook URL",
+          "config.faultline.webhookAllowedDomains": "Webhook Allowed Domains",
+          "config.faultline.aiSummary.enabled": "Enable AI Summaries",
+          "config.faultline.aiProvider": "AI Provider",
+          "config.faultline.openrouterApiKey": "OpenRouter API Key (deprecated; use FaultLine: Configure AI Provider)",
+          "config.faultline.openrouterModel": "OpenRouter Model",
+          "config.faultline.groqModel": "Groq Model",
+          "config.faultline.geminiModel": "Google Gemini Model",
+          "config.faultline.huggingfaceModel": "Hugging Face Model",
+          "config.faultline.mistralModel": "Mistral AI Model",
+          "config.faultline.togetherModel": "Together AI Model",
+          "config.faultline.cohereModel": "Cohere Model",
+          "config.faultline.openaiModel": "OpenAI Model",
+          "config.faultline.anthropicModel": "Anthropic Claude Model",
+          "config.faultline.dailySummary": "Daily Summary",
+          "config.faultline.streakCounter": "Success Streak Counter",
+          "config.faultline.bossFightMode": "Boss Fight Mode",
+          "config.faultline.errorExplanation.enabled": "Enable Error Explanations",
+          "config.faultline.errorExplanation.autoShow": "Auto-show Error Explanations"
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.45",
+    "@vscode/webview-ui-toolkit": "^1.4.0"
+  }
 }

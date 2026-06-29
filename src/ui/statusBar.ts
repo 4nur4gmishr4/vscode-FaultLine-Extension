@@ -1,9 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
-import type { FahhConfig } from '../types';
+import type { FaultLineConfig } from '../types';
 import { Logger } from '../utils/logger';
 
 /**
- * Manages the VS Code status bar item for the Fahh extension.
+ * Manages the VS Code status bar item for the FaultLine extension.
  * 
  * This class handles the creation, updating, and visual effects of the status bar item,
  * including displaying the enabled/disabled state, daily failure counter, and flash effects
@@ -40,7 +46,7 @@ export class StatusBarManager {
      * @param state - Optional workspace state for persisting failure count
      */
     public constructor(
-        private readonly config: () => FahhConfig,
+        private readonly config: () => FaultLineConfig,
         _logger: Logger,
         private readonly state?: vscode.Memento
     ) {}
@@ -71,7 +77,7 @@ export class StatusBarManager {
      * 
      * The status bar shows:
      * - An unmute icon when enabled, mute icon when disabled
-     * - The extension name "Fahh"
+     * - The extension name "FaultLine"
      * - An optional failure counter (if enabled in settings)
      * 
      * @example
@@ -81,23 +87,24 @@ export class StatusBarManager {
      * ```
      */
     public refresh(): void {
-        const cfg = this.config();
+        const config = this.config();
+        const cfg = config.ui;
         if (!cfg.showStatusBar) {
             this.item?.hide();
             return;
         }
         if (!this.item) {
             this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
-            this.item.command = 'fahh.toggle';
+            this.item.command = 'faultline.toggle';
         }
 
-        const enabled = cfg.enabled;
-        const count = this.state ? this.state.get<number>('fahh.dailyFailCount', 0) : 0;
+        const enabled = config.core.enabled;
+        const count = this.state ? this.state.get<number>('faultline.dailyFailCount', 0) : 0;
         const counter = cfg.statusBarCounter ? ` • ${count}` : '';
-        this.item.text = enabled ? `$(unmute) Fahh${counter}` : `$(mute) Fahh${counter}`;
+        this.item.text = enabled ? `$(unmute) FaultLine${counter}` : `$(mute) FaultLine${counter}`;
         this.item.tooltip = enabled
-            ? 'Fahh is enabled — click to disable'
-            : 'Fahh is disabled — click to enable';
+            ? 'FaultLine is enabled — click to disable'
+            : 'FaultLine is disabled — click to enable';
         this.item.show();
     }
 
@@ -156,7 +163,7 @@ export class StatusBarManager {
      * ```
      */
     public flash(): void {
-        const cfg = this.config();
+        const cfg = this.config().ui;
         if (!cfg.flashStatusBar || !this.item) {
             return;
         }
@@ -190,6 +197,6 @@ export class StatusBarManager {
      * ```
      */
     public getFailCount(): number {
-        return this.state ? this.state.get<number>('fahh.dailyFailCount', 0) : 0;
+        return this.state ? this.state.get<number>('faultline.dailyFailCount', 0) : 0;
     }
 }

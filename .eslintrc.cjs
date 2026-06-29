@@ -1,5 +1,5 @@
 /**
- * ESLint configuration for the Fahh extension.
+ * ESLint configuration for the FaultLine extension.
  *
  * Layout:
  *   - The root config is type-aware-free, so it lints any TypeScript file

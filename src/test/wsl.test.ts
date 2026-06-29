@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as fs from 'fs';
-import { isWSL, convertWSLPathToWindows } from './wsl';
+import { isWSL, convertWSLPathToWindows } from '../core/wsl';
 
 jest.mock('fs', () => ({
     promises: {
@@ -12,8 +18,10 @@ describe('WSL Utilities', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         // Clear caches
-        (require('./wsl') as any).cachedIsWSL = undefined;
-        const wslPathCache = (require('./wsl') as any).wslPathCache;
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
+        (require('../core/wsl') as any).cachedIsWSL = undefined;
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
+        const wslPathCache = (require('../core/wsl') as any).wslPathCache;
         if (wslPathCache) {
             wslPathCache.clear();
         }

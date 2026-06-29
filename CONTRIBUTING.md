@@ -1,6 +1,6 @@
-# Contributing to Fahh
+# Contributing to FaultLine
 
-Thank you for your interest in improving Fahh! With over 15,000 users, we strive to maintain high stability.
+Thank you for your interest in improving FaultLine! With over 15,000 users, we strive to maintain high stability.
 
 ## Development Workflow
 1. Fork the repo and create your branch.

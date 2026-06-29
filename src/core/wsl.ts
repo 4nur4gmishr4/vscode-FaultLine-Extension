@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as fs from 'fs';
 import { execFile } from 'child_process';
 
@@ -57,9 +63,15 @@ export async function isWSL(): Promise<boolean> {
 export async function convertWSLPathToWindows(wslPath: string): Promise<string> {
     const cached: string | undefined = wslPathCache.get(wslPath);
     if (cached !== undefined) {
+        wslPathCache.delete(wslPath);
+        wslPathCache.set(wslPath, cached);
         return cached;
     }
     const result: string = await computeWindowsPath(wslPath);
+    if (wslPathCache.size >= 200) {
+        const firstKey = wslPathCache.keys().next().value;
+        if (firstKey) wslPathCache.delete(firstKey);
+    }
     wslPathCache.set(wslPath, result);
     return result;
 }

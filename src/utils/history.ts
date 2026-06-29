@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
-import type { FahhConfig, HistoryEntry } from '../types';
+import type { FaultLineConfig, HistoryEntry } from '../types';
 import { Logger } from './logger';
 
 /**
@@ -43,11 +49,11 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      * @param state - VS Code Memento for persisting history across sessions
      */
     public constructor(
-        private readonly config: () => FahhConfig,
+        private readonly config: () => FaultLineConfig,
         private readonly logger: Logger,
         private readonly state: vscode.Memento
     ) {
-        this.entries = this.state.get<HistoryEntry[]>('fahh.history', []);
+        this.entries = this.state.get<HistoryEntry[]>('faultline.history', []);
     }
 
     /**
@@ -83,10 +89,10 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      * @param entry - The history entry to add
      */
     public add(entry: HistoryEntry): void {
-        const max = this.config().historyMax;
+        const max = this.config().core.historyMax;
         
         // Ensure we have the latest state before modifying
-        this.entries = this.state.get<HistoryEntry[]>('fahh.history', []);
+        this.entries = this.state.get<HistoryEntry[]>('faultline.history', []);
         
         this.entries.unshift(entry);
         if (this.entries.length > max) {
@@ -117,7 +123,7 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      */
     private persist(): void {
         this.persistQueue = this.persistQueue.then(() => 
-            this.state.update('fahh.history', this.entries)
+            this.state.update('faultline.history', this.entries)
         ).catch((err: unknown) => {
             this.logger.warn(`Failed to persist history: ${err instanceof Error ? err.message : String(err)}`);
         });
@@ -152,7 +158,7 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
 
 /**
  * Tree item representation of a history entry for VS Code's tree view.
- * Displays the timestamp and label, with a tooltip showing full details.
+ * Displays the timestamp, label, and optional execution time, with a tooltip showing full details.
  * 
  * @internal
  */
@@ -164,12 +170,15 @@ class HistoryItem extends vscode.TreeItem {
      */
     public constructor(public readonly entry: HistoryEntry) {
         const time = new Date(entry.timestamp).toLocaleTimeString();
-        super(`${time} — ${entry.label}`, vscode.TreeItemCollapsibleState.None);
-        this.tooltip = `${entry.source}: ${entry.label}\n${new Date(entry.timestamp).toLocaleString()}`;
-        this.contextValue = 'fahh.historyEntry';
+        const execTime = entry.executionTime !== undefined ? ` (${Math.round(entry.executionTime / 1000)}s)` : '';
+        super(`${time} — ${entry.label}${execTime}`, vscode.TreeItemCollapsibleState.None);
+        const execTimeTooltip = entry.executionTime !== undefined ? `\nExecution Time: ${Math.round(entry.executionTime / 1000)}s` : '';
+        this.tooltip = `${entry.source}: ${entry.label}${execTimeTooltip}\n${new Date(entry.timestamp).toLocaleString()}`;
+        this.contextValue = 'faultline.historyEntry';
         this.command = {
-            command: 'fahh.replayLast',
-            title: 'Replay'
+            command: 'faultline.replaySound',
+            title: 'Replay',
+            arguments: [this.entry]
         };
     }
 }

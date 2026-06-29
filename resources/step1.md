@@ -1,16 +1,10 @@
-# Welcome to Fahh!
+# Test the Sound engine
 
-Fahh is your development companion that provides audio feedback when things go wrong.
+Before you begin, make sure FaultLine's audio engine is correctly communicating with your operating system.
 
-### Test it out
-Run the command `Fahh: Play Test Sound` to verify audio is working.
+### How to test:
+1. Open the **Command Palette** (`Ctrl+Shift+P`).
+2. Type **FaultLine: Play Test Sound**.
+3. You should hear a short audio clip.
 
----
-
-### Troubleshooting
-If you don't hear anything:
-1. Check your system volume.
-2. Ensure you have an audio player installed (PowerShell on Windows, `afplay` on Mac, `ffplay` on Linux).
-3. Try a **Factory Reset** if things seem stuck.
-
-[Reset All Settings](command:fahh.resetSettings) | [Factory Reset](command:fahh.factoryReset)
+If you don't hear anything, check the **Output Log** (choose "FaultLine" from the dropdown) to see if there were any errors spawning the audio player.

@@ -1,10 +1,11 @@
-# Customize your sounds
+# Personalize Your Experience
 
-You can change the sound for every type of failure.
+FaultLine comes with several built-in sound packs, but you can also use your own audio files.
 
-- **Tasks**: VS Code tasks and builds.
-- **Terminal**: Commands run in the terminal.
-- **Diagnostics**: New errors in your code.
-- **Tests**: When a test suite fails.
+### 🔊 Built-in Sound Packs
+Run the command **FaultLine: Pick Sound Pack** to cycle through the available high-quality auditory signals.
 
-Use the `Fahh: Select Sound` command to choose your favorite audio file.
+### 📂 Custom Audio
+You can point FaultLine to a specific file or even a folder. If you select a folder, FaultLine will pick a random sound from it every time an error occurs!
+- **FaultLine: Select Custom Sound File...**
+- **FaultLine: Select Sound Folder (Random)**

@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { ConfigManager } from './configManager';
 
@@ -21,6 +27,7 @@ describe('ConfigManager', () => {
     beforeEach(() => {
         // Reset all mocks
         jest.clearAllMocks();
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
 
         // Mock SecretStorage
         mockSecretStorage = {
@@ -36,7 +43,7 @@ describe('ConfigManager', () => {
                 // Return defaults for most keys
                 const defaults: Record<string, any> = {
                     'enabled': true,
-                    'soundPack': 'fahh.mp3',
+                    'soundPack': 'faultline.mp3',
                     'soundPath': '',
                     'soundFolder': '',
                     'volume': 100,
@@ -95,11 +102,11 @@ describe('ConfigManager', () => {
         it('should read configuration with default values', () => {
             const config = configManager.readConfig();
 
-            expect(config.enabled).toBe(true);
-            expect(config.soundPack).toBe('fahh.mp3');
-            expect(config.volume).toBe(100);
-            expect(config.aiProvider).toBe('copilot');
-            expect(config.logLevel).toBe('warn');
+            expect(config.core.enabled).toBe(true);
+            expect(config.audio.soundPack).toBe('faultline.mp3');
+            expect(config.audio.volume).toBe(100);
+            expect(config.ai.provider).toBe('copilot');
+            expect(config.core.logLevel).toBe('warn');
         });
 
         it('should read aiProvider from user config instead of hardcoding', () => {
@@ -113,7 +120,7 @@ describe('ConfigManager', () => {
 
             const config = configManager.readConfig();
 
-            expect(config.aiProvider).toBe('openrouter');
+            expect(config.ai.provider).toBe('openrouter');
             expect(mockConfiguration.get).toHaveBeenCalledWith('aiProvider', 'copilot');
         });
 
@@ -127,7 +134,7 @@ describe('ConfigManager', () => {
 
             const config = configManager.readConfig();
 
-            expect(config.volume).toBe(100); // Clamped to max
+            expect(config.audio.volume).toBe(100); // Clamped to max
         });
 
         it('should validate quiet hours time format', () => {
@@ -144,8 +151,8 @@ describe('ConfigManager', () => {
             const config = configManager.readConfig();
 
             // Should fall back to defaults for invalid times
-            expect(config.quietHours.from).toBe('22:00');
-            expect(config.quietHours.to).toBe('08:00');
+            expect(config.detection.quietHours.from).toBe('22:00');
+            expect(config.detection.quietHours.to).toBe('08:00');
         });
 
         it('should filter invalid failure sources', () => {
@@ -158,9 +165,9 @@ describe('ConfigManager', () => {
 
             const config = configManager.readConfig();
 
-            expect(config.sources.has('task')).toBe(true);
-            expect(config.sources.has('shell')).toBe(true);
-            expect(config.sources.has('invalid-source' as any)).toBe(false);
+            expect(config.detection.sources.has('task')).toBe(true);
+            expect(config.detection.sources.has('shell')).toBe(true);
+            expect(config.detection.sources.has('invalid-source' as any)).toBe(false);
         });
 
         it('should compile valid regex patterns and skip invalid ones', () => {
@@ -173,8 +180,8 @@ describe('ConfigManager', () => {
 
             const config = configManager.readConfig();
 
-            expect(config.ignorePatterns).toHaveLength(1);
-            expect(config.ignorePatterns[0].test('valid-pattern')).toBe(true);
+            expect(config.detection.ignorePatterns).toHaveLength(1);
+            expect(config.detection.ignorePatterns[0].test('valid-pattern')).toBe(true);
         });
     });
 
@@ -192,7 +199,7 @@ describe('ConfigManager', () => {
             const apiKey = await configManager.getAiApiKey();
 
             expect(apiKey).toBe('sk-or-v1-test-key');
-            expect(mockSecretStorage.get).toHaveBeenCalledWith('fahh.apiKey.openrouter');
+            expect(mockSecretStorage.get).toHaveBeenCalledWith('faultline.apiKey.openrouter');
         });
 
         it('should return null for Copilot provider (no API key needed)', async () => {
@@ -289,24 +296,24 @@ describe('ConfigManager', () => {
         });
     });
 
-    describe('affectsFahh', () => {
-        it('should return true when configuration change affects Fahh', () => {
+    describe('affectsFaultLine', () => {
+        it('should return true when configuration change affects FaultLine', () => {
             const mockEvent = {
                 affectsConfiguration: jest.fn().mockReturnValue(true)
             } as any;
 
-            const result = configManager.affectsFahh(mockEvent);
+            const result = configManager.affectsFaultLine(mockEvent);
 
             expect(result).toBe(true);
-            expect(mockEvent.affectsConfiguration).toHaveBeenCalledWith('fahh');
+            expect(mockEvent.affectsConfiguration).toHaveBeenCalledWith('faultline');
         });
 
-        it('should return false when configuration change does not affect Fahh', () => {
+        it('should return false when configuration change does not affect FaultLine', () => {
             const mockEvent = {
                 affectsConfiguration: jest.fn().mockReturnValue(false)
             } as any;
 
-            const result = configManager.affectsFahh(mockEvent);
+            const result = configManager.affectsFaultLine(mockEvent);
 
             expect(result).toBe(false);
         });
@@ -351,7 +358,7 @@ describe('ConfigManager', () => {
             });
 
             const config1 = configManager.readConfig();
-            expect(config1.aiProvider).toBe('copilot'); // Default should be copilot
+            expect(config1.ai.provider).toBe('copilot'); // Default should be copilot
 
             // Test user-configured value (openrouter)
             mockConfiguration.get.mockImplementation((key: string, defaultValue?: any) => {
@@ -362,7 +369,7 @@ describe('ConfigManager', () => {
             });
 
             const config2 = configManager.readConfig();
-            expect(config2.aiProvider).toBe('openrouter'); // Should respect user setting
+            expect(config2.ai.provider).toBe('openrouter'); // Should respect user setting
         });
     });
 });

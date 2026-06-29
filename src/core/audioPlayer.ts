@@ -2,7 +2,7 @@ import { execFile, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Logger } from '../utils/logger';
-import { isWSL, convertWSLPathToWindows } from '../integrations/wsl';
+import { isWSL, convertWSLPathToWindows } from './wsl';
 import type { AudioOptions } from '../types';
 
 // Re-exported so existing imports from this module keep working.

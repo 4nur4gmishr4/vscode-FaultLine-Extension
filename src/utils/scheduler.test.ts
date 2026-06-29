@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Scheduler } from './scheduler';
-import type { FahhConfig, FailureSource } from '../types';
+import type { FaultLineConfig, FailureSource } from '../types';
 
 jest.mock('vscode', () => ({
     window: { state: { focused: false } }
@@ -7,48 +13,79 @@ jest.mock('vscode', () => ({
 
 import * as vscode from 'vscode';
 
-function baseConfig(overrides: Partial<FahhConfig> = {}): FahhConfig {
-    return {
-        enabled: true,
-        soundPack: '',
-        soundPath: '',
-        soundFolder: '',
-        sounds: { task: '', shell: '', terminal: '', diagnostics: '', build: '', longTask: '' },
-        successEnabled: false,
-        successSound: '',
-        volumes: { task: -1, shell: -1, terminal: -1, diagnostics: -1, build: -1, longTask: -1 },
-        volume: 100,
-        volumeCurve: 'linear',
-        showNotification: false,
-        notificationLevel: 'warning',
-        sources: new Set<FailureSource>(['task', 'shell', 'terminal']),
-        cooldownMs: 0,
-        cooldownPerSource: false,
-        maxPerMinute: 0,
-        ignorePatterns: [],
-        showStatusBar: true,
-        statusBarCounter: false,
-        flashStatusBar: false,
-        quietHours: { enabled: false, from: '22:00', to: '08:00' },
-        muteWhenFocused: false,
-        snoozeMinutes: 10,
-        diagnosticsThreshold: 1,
-        longTaskThresholdMs: 60000,
-        logLevel: 'off',
-        historyMax: 50,
-        speakLabel: false,
-        webhookUrl: '',
-        webhookAllowedDomains: [],
-        aiSummaryEnabled: false,
-        aiProvider: 'copilot',
-        openrouterModel: '',
-        dailySummary: false,
-        streakCounter: false,
-        bossFightMode: false,
-        errorExplanationEnabled: false,
-        errorExplanationAutoShow: false,
-        ...overrides
+function baseConfig(overrides: any = {}): FaultLineConfig {
+    const config = {
+        core: {
+            enabled: true,
+            logLevel: 'off' as const,
+            historyMax: 50,
+            snoozeMinutes: 10,
+            language: 'en',
+            dailySummary: false,
+            streakCounter: false,
+            bossFightMode: false
+        },
+        audio: {
+            soundPack: '',
+            soundPath: '',
+            soundFolder: '',
+            sounds: { task: '', shell: '', terminal: '', diagnostics: '', build: '', longTask: '' },
+            successEnabled: false,
+            successSound: '',
+            volumes: { task: -1, shell: -1, terminal: -1, diagnostics: -1, build: -1, longTask: -1 },
+            volume: 100,
+            volumeCurve: 'linear' as const,
+            soundMixingEnabled: false,
+            soundFadeInDuration: 0,
+            soundFadeOutDuration: 0,
+            speakLabel: false,
+            ttsVoice: ''
+        },
+        detection: {
+            sources: new Set<FailureSource>(['task', 'shell', 'terminal']),
+            cooldownMs: 0,
+            cooldownPerSource: false,
+            maxPerMinute: 0,
+            ignorePatterns: [],
+            diagnosticsThreshold: 1,
+            longTaskThresholdMs: 60000,
+            branchPatterns: [],
+            quietHours: { enabled: false, from: '22:00', to: '08:00' },
+            muteWhenFocused: false
+        },
+        webhook: {
+            url: '',
+            allowedDomains: [],
+            format: 'default' as const,
+            jiraUrl: '',
+            jiraProject: '',
+            jiraEmail: ''
+        },
+        ai: {
+            summaryEnabled: false,
+            provider: 'copilot',
+            openrouterModel: '',
+            errorExplanationEnabled: false,
+            errorExplanationAutoShow: false
+        },
+        ui: {
+            showNotification: false,
+            notificationLevel: 'warning' as const,
+            showStatusBar: true,
+            statusBarCounter: false,
+            flashStatusBar: false
+        }
     };
+
+    // Deep merge overrides for core and detection which are primarily tested here
+    if (overrides.enabled !== undefined) config.core.enabled = overrides.enabled;
+    if (overrides.muteWhenFocused !== undefined) config.detection.muteWhenFocused = overrides.muteWhenFocused;
+    if (overrides.quietHours !== undefined) config.detection.quietHours = overrides.quietHours;
+    if (overrides.maxPerMinute !== undefined) config.detection.maxPerMinute = overrides.maxPerMinute;
+    if (overrides.cooldownMs !== undefined) config.detection.cooldownMs = overrides.cooldownMs;
+    if (overrides.cooldownPerSource !== undefined) config.detection.cooldownPerSource = overrides.cooldownPerSource;
+
+    return config as unknown as FaultLineConfig;
 }
 
 const stubLogger = {

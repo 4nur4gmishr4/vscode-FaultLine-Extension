@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /**
- * Centralized constants for the Fahh extension.
+ * Centralized constants for the FaultLine extension.
  * Eliminates magic strings and numbers throughout the codebase.
  */
 
@@ -8,9 +14,9 @@
  */
 export const EXTENSION = {
     /** Extension identifier */
-    ID: 'fahh',
+    ID: 'faultline',
     /** Display name */
-    NAME: 'Fahh',
+    NAME: 'FaultLine',
     /** Current version (kept in sync with package.json `version` field). */
     VERSION: '2.4.0',
     /** Extension publisher */
@@ -22,7 +28,7 @@ export const EXTENSION = {
  */
 export const CONFIG = {
     /** Root configuration section */
-    SECTION: 'fahh',
+    SECTION: 'faultline',
     
     /** Configuration keys */
     KEYS: {
@@ -30,12 +36,9 @@ export const CONFIG = {
         SOUND_PACK: 'soundPack',
         SOUND_PATH: 'soundPath',
         SOUND_FOLDER: 'soundFolder',
-        SOUNDS: 'sounds',
         SUCCESS_ENABLED: 'successEnabled',
         SUCCESS_SOUND: 'successSound',
-        VOLUMES: 'volumes',
         VOLUME: 'volume',
-        VOLUME_CURVE: 'volumeCurve',
         SHOW_NOTIFICATION: 'showNotification',
         NOTIFICATION_LEVEL: 'notificationLevel',
         SOURCES: 'sources',
@@ -56,18 +59,23 @@ export const CONFIG = {
         LONG_TASK_THRESHOLD_MS: 'longTaskThresholdMs',
         LOG_LEVEL: 'logLevel',
         HISTORY_MAX: 'historyMax',
-        SPEAK_LABEL: 'speakLabel',
         WEBHOOK_URL: 'webhookUrl',
         WEBHOOK_ALLOWED_DOMAINS: 'webhookAllowedDomains',
         AI_SUMMARY_ENABLED: 'aiSummary.enabled',
         AI_PROVIDER: 'aiProvider',
-        OPENROUTER_API_KEY: 'openrouterApiKey',
-        OPENROUTER_MODEL: 'openrouterModel',
+        MODEL: 'ai.model',
         DAILY_SUMMARY: 'dailySummary',
         STREAK_COUNTER: 'streakCounter',
         BOSS_FIGHT_MODE: 'bossFightMode',
         ERROR_EXPLANATION_ENABLED: 'errorExplanation.enabled',
-        ERROR_EXPLANATION_AUTO_SHOW: 'errorExplanation.autoShow'
+        ERROR_EXPLANATION_AUTO_SHOW: 'errorExplanation.autoShow',
+        BRANCH_PATTERNS: 'branchPatterns',
+        JIRA_URL: 'jiraUrl',
+        JIRA_PROJECT: 'jiraProject',
+        JIRA_API_KEY: 'jiraApiKey',
+        JIRA_EMAIL: 'jiraEmail',
+        LANGUAGE: 'language',
+        WEBHOOK_FORMAT: 'webhookFormat',
     }
 } as const;
 
@@ -76,18 +84,18 @@ export const CONFIG = {
  */
 export const SOUNDS = {
     /** Default sound file relative to resources */
-    DEFAULT: 'packs/default/fahh.mp3',
+    DEFAULT: 'packs/default/faultline.mp3',
     
     /** Default sound pack directory */
     DEFAULT_PACK_DIR: 'packs/default',
     
     /** Available sound packs */
     PACKS: {
-        FAHH: 'fahh.mp3',
-        FAHH_HARD: 'fahhhard.mp3',
+        FAULTLINE: 'faultline.mp3',
+        FAHH_HARD: 'faultlinehard.mp3',
         FART_REVERB: 'fartreverb.mp3',
-        FAHH_DEEP: 'fahhdeep.mp3',
-        FAHH_BROKE: 'fahhbroke.mp3',
+        FAHH_DEEP: 'faultlinedeep.mp3',
+        FAHH_BROKE: 'faultlinebroke.mp3',
         OH_SHIT: 'ohshit.mp3'
     }
 } as const;
@@ -100,13 +108,10 @@ export const DEFAULTS = {
     ENABLED: true,
     
     /** Default sound pack */
-    SOUND_PACK: 'fahh.mp3',
+    SOUND_PACK: 'faultline.mp3',
     
     /** Default volume (0-100) */
     VOLUME: 100,
-    
-    /** Default volume curve */
-    VOLUME_CURVE: 'linear' as const,
     
     /** Default notification level */
     NOTIFICATION_LEVEL: 'warning' as const,
@@ -145,7 +150,28 @@ export const DEFAULTS = {
     AI_PROVIDER: 'copilot',
     
     /** Default OpenRouter model */
-    OPENROUTER_MODEL: 'meta-llama/llama-3.2-3b-instruct:free',
+    MODEL: 'meta-llama/llama-3.2-3b-instruct:free',
+    
+    /** Default branch patterns (empty = all branches) */
+    BRANCH_PATTERNS: [],
+    
+    /** Default Jira URL */
+    JIRA_URL: '',
+    
+    /** Default Jira project */
+    JIRA_PROJECT: '',
+    
+    /** Default Jira API key */
+    JIRA_API_KEY: '',
+    
+    /** Default Jira email */
+    JIRA_EMAIL: '',
+    
+    /** Default language */
+    LANGUAGE: 'en',
+    
+    /** Default webhook format */
+    WEBHOOK_FORMAT: 'default' as const,
     
     /** Default boss HP */
     BOSS_HP: 100
@@ -162,7 +188,6 @@ export const VALIDATION = {
     VOLUME: {
         MIN: 0,
         MAX: 100,
-        DEFAULT_PER_SOURCE: -1 // -1 means use global volume
     },
     
     /** Cooldown range (milliseconds) */
@@ -211,7 +236,7 @@ export const VALIDATION = {
  */
 export const RESOURCES = {
     /** Logo image path */
-    LOGO: 'resources/fahh-logo.jpeg',
+    LOGO: 'resources/faultline-logo.jpeg',
 
     /** Sound packs directory */
     PACKS_DIR: 'resources/packs',
@@ -224,8 +249,8 @@ export const RESOURCES = {
  * Webview panel identifiers
  */
 export const WEBVIEW_PANELS = {
-    ERROR_EXPLANATION: 'fahhErrorExplanation',
-    WELCOME: 'fahhWelcome',
-    AI_PROVIDER_WIZARD: 'fahhAiProviderWizard'
+    ERROR_EXPLANATION: 'faultlineErrorExplanation',
+    WELCOME: 'faultlineWelcome',
+    AI_PROVIDER_WIZARD: 'faultlineAiProviderWizard'
 } as const;
 

@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
 import { CONFIG, DEFAULTS, VALIDATION } from './constants';
 import { SecretManager, ISecretManager } from './secretManager';
-import { getProvider, listProviders } from '../integrations/aiProviders';
+import { getProvider, listProviders } from '../services/aiProviders';
 import type { Logger } from '../utils/logger';
 import type {
-    FahhConfig,
+    FaultLineConfig,
     FailureSource,
     NotificationLevel,
-    VolumeCurve,
-    PerSourceSounds,
-    PerSourceVolumes,
+    
+    
+    
     LogLevel
 } from '../types';
 
@@ -41,7 +41,7 @@ export class ConfigManager {
         'task', 'shell', 'terminal', 'diagnostics', 'build', 'longTask'
     ]);
     private readonly knownProviders: ReadonlySet<string> = new Set(
-        listProviders().map(p => p.id)
+        listProviders().map((p: { id: string }) => p.id)
     );
 
     /**
@@ -87,10 +87,10 @@ export class ConfigManager {
      * ```typescript
      * const config = configManager.readConfig();
      * console.log(`Extension enabled: ${config.enabled}`);
-     * console.log(`AI provider: ${config.aiProvider}`);
+     * console.log(`AI provider: ${config.ai.provider}`);
      * ```
      */
-    readConfig(): FahhConfig {
+    readConfig(): FaultLineConfig {
         const cfg = vscode.workspace.getConfiguration(CONFIG.SECTION);
 
         // Read and validate sources
@@ -103,19 +103,6 @@ export class ConfigManager {
         const rawPatterns = cfg.get<string[]>(CONFIG.KEYS.IGNORE_PATTERNS, []);
         const ignorePatterns = this.compilePatterns(rawPatterns);
 
-        // Read per-source sounds and volumes
-        const sounds = {} as PerSourceSounds;
-        const volumes = {} as PerSourceVolumes;
-        
-        for (const source of this.validSources) {
-            sounds[source] = cfg.get<string>(`${CONFIG.KEYS.SOUNDS}.${source}`, '').trim();
-            volumes[source] = this.clamp(
-                cfg.get<number>(`${CONFIG.KEYS.VOLUMES}.${source}`, VALIDATION.VOLUME.DEFAULT_PER_SOURCE),
-                VALIDATION.VOLUME.DEFAULT_PER_SOURCE,
-                VALIDATION.VOLUME.MAX
-            );
-        }
-
         // Validate quiet hours format
         const quietHoursFrom = cfg.get<string>(CONFIG.KEYS.QUIET_HOURS_FROM, DEFAULTS.QUIET_HOURS_FROM);
         const quietHoursTo = cfg.get<string>(CONFIG.KEYS.QUIET_HOURS_TO, DEFAULTS.QUIET_HOURS_TO);
@@ -127,8 +114,6 @@ export class ConfigManager {
             this.warn(`Invalid quiet hours 'to' format: ${quietHoursTo}. Using default ${DEFAULTS.QUIET_HOURS_TO}`);
         }
 
-        // Validate aiProvider against the registry; fall back to default for unknown ids
-        // so a typo in settings.json does not silently break AI features.
         const rawProvider = cfg.get<string>(CONFIG.KEYS.AI_PROVIDER, DEFAULTS.AI_PROVIDER).toLowerCase();
         const aiProvider = this.knownProviders.has(rawProvider) ? rawProvider : DEFAULTS.AI_PROVIDER;
         if (rawProvider !== aiProvider) {
@@ -136,82 +121,95 @@ export class ConfigManager {
         }
 
         return {
-            enabled: cfg.get<boolean>(CONFIG.KEYS.ENABLED, DEFAULTS.ENABLED),
-            soundPack: cfg.get<string>(CONFIG.KEYS.SOUND_PACK, DEFAULTS.SOUND_PACK),
-            soundPath: cfg.get<string>(CONFIG.KEYS.SOUND_PATH, '').trim(),
-            soundFolder: cfg.get<string>(CONFIG.KEYS.SOUND_FOLDER, '').trim(),
-            sounds,
-            successEnabled: cfg.get<boolean>(CONFIG.KEYS.SUCCESS_ENABLED, false),
-            successSound: cfg.get<string>(CONFIG.KEYS.SUCCESS_SOUND, '').trim(),
-            volumes,
-            volume: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.VOLUME, DEFAULTS.VOLUME),
-                VALIDATION.VOLUME.MIN,
-                VALIDATION.VOLUME.MAX
-            ),
-            volumeCurve: cfg.get<VolumeCurve>(CONFIG.KEYS.VOLUME_CURVE, DEFAULTS.VOLUME_CURVE),
-            showNotification: cfg.get<boolean>(CONFIG.KEYS.SHOW_NOTIFICATION, true),
-            notificationLevel: cfg.get<NotificationLevel>(CONFIG.KEYS.NOTIFICATION_LEVEL, DEFAULTS.NOTIFICATION_LEVEL),
-            sources,
-            cooldownMs: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.COOLDOWN_MS, DEFAULTS.COOLDOWN_MS),
-                VALIDATION.COOLDOWN.MIN,
-                VALIDATION.COOLDOWN.MAX
-            ),
-            cooldownPerSource: cfg.get<boolean>(CONFIG.KEYS.COOLDOWN_PER_SOURCE, false),
-            maxPerMinute: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.MAX_PER_MINUTE, DEFAULTS.MAX_PER_MINUTE),
-                VALIDATION.MAX_PER_MINUTE.MIN,
-                VALIDATION.MAX_PER_MINUTE.MAX
-            ),
-            ignorePatterns,
-            showStatusBar: cfg.get<boolean>(CONFIG.KEYS.SHOW_STATUS_BAR, true),
-            statusBarCounter: cfg.get<boolean>(CONFIG.KEYS.STATUS_BAR_COUNTER, true),
-            flashStatusBar: cfg.get<boolean>(CONFIG.KEYS.FLASH_STATUS_BAR, true),
-            quietHours: {
-                enabled: cfg.get<boolean>(CONFIG.KEYS.QUIET_HOURS_ENABLED, false),
-                from: VALIDATION.TIME_FORMAT.test(quietHoursFrom) ? quietHoursFrom : DEFAULTS.QUIET_HOURS_FROM,
-                to: VALIDATION.TIME_FORMAT.test(quietHoursTo) ? quietHoursTo : DEFAULTS.QUIET_HOURS_TO
+            core: {
+                enabled: cfg.get<boolean>(CONFIG.KEYS.ENABLED, DEFAULTS.ENABLED),
+                logLevel: cfg.get<LogLevel>(CONFIG.KEYS.LOG_LEVEL, DEFAULTS.LOG_LEVEL),
+                historyMax: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.HISTORY_MAX, DEFAULTS.HISTORY_MAX),
+                    VALIDATION.HISTORY.MIN,
+                    VALIDATION.HISTORY.MAX
+                ),
+                snoozeMinutes: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.SNOOZE_MINUTES, DEFAULTS.SNOOZE_MINUTES),
+                    VALIDATION.SNOOZE.MIN,
+                    VALIDATION.SNOOZE.MAX
+                ),
+                language: cfg.get<string>(CONFIG.KEYS.LANGUAGE, DEFAULTS.LANGUAGE),
+                dailySummary: cfg.get<boolean>(CONFIG.KEYS.DAILY_SUMMARY, false),
+                streakCounter: cfg.get<boolean>(CONFIG.KEYS.STREAK_COUNTER, false),
+                bossFightMode: cfg.get<boolean>(CONFIG.KEYS.BOSS_FIGHT_MODE, false),
             },
-            muteWhenFocused: cfg.get<boolean>(CONFIG.KEYS.MUTE_WHEN_FOCUSED, false),
-            snoozeMinutes: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.SNOOZE_MINUTES, DEFAULTS.SNOOZE_MINUTES),
-                VALIDATION.SNOOZE.MIN,
-                VALIDATION.SNOOZE.MAX
-            ),
-            diagnosticsThreshold: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.DIAGNOSTICS_THRESHOLD, DEFAULTS.DIAGNOSTICS_THRESHOLD),
-                VALIDATION.DIAGNOSTICS_THRESHOLD.MIN,
-                VALIDATION.DIAGNOSTICS_THRESHOLD.MAX
-            ),
-            longTaskThresholdMs: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.LONG_TASK_THRESHOLD_MS, DEFAULTS.LONG_TASK_THRESHOLD_MS),
-                VALIDATION.LONG_TASK_THRESHOLD.MIN,
-                VALIDATION.LONG_TASK_THRESHOLD.MAX
-            ),
-            logLevel: cfg.get<LogLevel>(CONFIG.KEYS.LOG_LEVEL, DEFAULTS.LOG_LEVEL),
-            historyMax: this.clamp(
-                cfg.get<number>(CONFIG.KEYS.HISTORY_MAX, DEFAULTS.HISTORY_MAX),
-                VALIDATION.HISTORY.MIN,
-                VALIDATION.HISTORY.MAX
-            ),
-            speakLabel: cfg.get<boolean>(CONFIG.KEYS.SPEAK_LABEL, false),
-            webhookUrl: cfg.get<string>(CONFIG.KEYS.WEBHOOK_URL, '').trim(),
-            webhookAllowedDomains: this.normalizeDomainList(
-                cfg.get<string[]>(CONFIG.KEYS.WEBHOOK_ALLOWED_DOMAINS, [])
-            ),
-            aiSummaryEnabled: cfg.get<boolean>(CONFIG.KEYS.AI_SUMMARY_ENABLED, false),
-            // SECURITY FIX: Read aiProvider from user config instead of hardcoding "openrouter"
-            // and validate against the registry so unknown ids are not accepted.
-            aiProvider,
-            openrouterModel: cfg.get<string>(CONFIG.KEYS.OPENROUTER_MODEL, DEFAULTS.OPENROUTER_MODEL),
-            dailySummary: cfg.get<boolean>(CONFIG.KEYS.DAILY_SUMMARY, false),
-            streakCounter: cfg.get<boolean>(CONFIG.KEYS.STREAK_COUNTER, false),
-            bossFightMode: cfg.get<boolean>(CONFIG.KEYS.BOSS_FIGHT_MODE, false),
-            errorExplanationEnabled: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_ENABLED, true),
-            errorExplanationAutoShow: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_AUTO_SHOW, true)
+            audio: {
+                soundPack: cfg.get<string>(CONFIG.KEYS.SOUND_PACK, DEFAULTS.SOUND_PACK),
+                soundPath: cfg.get<string>(CONFIG.KEYS.SOUND_PATH, '').trim(),
+                soundFolder: cfg.get<string>(CONFIG.KEYS.SOUND_FOLDER, '').trim(),
+                successEnabled: cfg.get<boolean>(CONFIG.KEYS.SUCCESS_ENABLED, false),
+                successSound: cfg.get<string>(CONFIG.KEYS.SUCCESS_SOUND, '').trim(),
+                volume: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.VOLUME, DEFAULTS.VOLUME),
+                    VALIDATION.VOLUME.MIN,
+                    VALIDATION.VOLUME.MAX
+                ),
+            },
+            detection: {
+                sources,
+                cooldownMs: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.COOLDOWN_MS, DEFAULTS.COOLDOWN_MS),
+                    VALIDATION.COOLDOWN.MIN,
+                    VALIDATION.COOLDOWN.MAX
+                ),
+                cooldownPerSource: cfg.get<boolean>(CONFIG.KEYS.COOLDOWN_PER_SOURCE, false),
+                maxPerMinute: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.MAX_PER_MINUTE, DEFAULTS.MAX_PER_MINUTE),
+                    VALIDATION.MAX_PER_MINUTE.MIN,
+                    VALIDATION.MAX_PER_MINUTE.MAX
+                ),
+                ignorePatterns,
+                diagnosticsThreshold: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.DIAGNOSTICS_THRESHOLD, DEFAULTS.DIAGNOSTICS_THRESHOLD),
+                    VALIDATION.DIAGNOSTICS_THRESHOLD.MIN,
+                    VALIDATION.DIAGNOSTICS_THRESHOLD.MAX
+                ),
+                longTaskThresholdMs: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.LONG_TASK_THRESHOLD_MS, DEFAULTS.LONG_TASK_THRESHOLD_MS),
+                    VALIDATION.LONG_TASK_THRESHOLD.MIN,
+                    VALIDATION.LONG_TASK_THRESHOLD.MAX
+                ),
+                branchPatterns: cfg.get<string[]>(CONFIG.KEYS.BRANCH_PATTERNS, []),
+                quietHours: {
+                    enabled: cfg.get<boolean>(CONFIG.KEYS.QUIET_HOURS_ENABLED, false),
+                    from: VALIDATION.TIME_FORMAT.test(quietHoursFrom) ? quietHoursFrom : DEFAULTS.QUIET_HOURS_FROM,
+                    to: VALIDATION.TIME_FORMAT.test(quietHoursTo) ? quietHoursTo : DEFAULTS.QUIET_HOURS_TO
+                },
+                muteWhenFocused: cfg.get<boolean>(CONFIG.KEYS.MUTE_WHEN_FOCUSED, false),
+            },
+            webhook: {
+                url: cfg.get<string>(CONFIG.KEYS.WEBHOOK_URL, '').trim(),
+                allowedDomains: this.normalizeDomainList(
+                    cfg.get<string[]>(CONFIG.KEYS.WEBHOOK_ALLOWED_DOMAINS, [])
+                ),
+                format: cfg.get<'default' | 'slack' | 'discord'>(CONFIG.KEYS.WEBHOOK_FORMAT, DEFAULTS.WEBHOOK_FORMAT),
+                jiraUrl: cfg.get<string>(CONFIG.KEYS.JIRA_URL, DEFAULTS.JIRA_URL).trim(),
+                jiraProject: cfg.get<string>(CONFIG.KEYS.JIRA_PROJECT, DEFAULTS.JIRA_PROJECT).trim(),
+                jiraEmail: cfg.get<string>(CONFIG.KEYS.JIRA_EMAIL, DEFAULTS.JIRA_EMAIL).trim()
+            },
+            ai: {
+                summaryEnabled: cfg.get<boolean>(CONFIG.KEYS.AI_SUMMARY_ENABLED, false),
+                provider: aiProvider,
+                model: cfg.get<string>(CONFIG.KEYS.MODEL, DEFAULTS.MODEL),
+                errorExplanationEnabled: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_ENABLED, true),
+                errorExplanationAutoShow: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_AUTO_SHOW, true)
+            },
+            ui: {
+                showNotification: cfg.get<boolean>(CONFIG.KEYS.SHOW_NOTIFICATION, true),
+                notificationLevel: cfg.get<NotificationLevel>(CONFIG.KEYS.NOTIFICATION_LEVEL, DEFAULTS.NOTIFICATION_LEVEL),
+                showStatusBar: cfg.get<boolean>(CONFIG.KEYS.SHOW_STATUS_BAR, true),
+                statusBarCounter: cfg.get<boolean>(CONFIG.KEYS.STATUS_BAR_COUNTER, true),
+                flashStatusBar: cfg.get<boolean>(CONFIG.KEYS.FLASH_STATUS_BAR, true)
+            }
         };
     }
+
 
     /**
      * Get the AI provider API key securely from SecretManager.
@@ -238,7 +236,7 @@ export class ConfigManager {
      */
     async getAiApiKey(): Promise<string | null> {
         const config = this.readConfig();
-        const provider = config.aiProvider.toLowerCase();
+        const provider = config.ai.provider.toLowerCase();
 
         // Copilot uses VS Code's Language Model API (no key needed)
         if (provider === 'copilot') {
@@ -322,14 +320,14 @@ export class ConfigManager {
      * @example
      * ```typescript
      * vscode.workspace.onDidChangeConfiguration(event => {
-     *     if (configManager.affectsFahh(event)) {
+     *     if (configManager.affectsFaultLine(event)) {
      *         console.log('Fahh configuration changed - reloading...');
      *         const newConfig = configManager.readConfig();
      *     }
      * });
      * ```
      */
-    affectsFahh(event: vscode.ConfigurationChangeEvent): boolean {
+    affectsFaultLine(event: vscode.ConfigurationChangeEvent): boolean {
         return event.affectsConfiguration(CONFIG.SECTION);
     }
 

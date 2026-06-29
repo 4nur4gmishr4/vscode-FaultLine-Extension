@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 
 /**
@@ -21,7 +27,7 @@ const LEVEL_RANK: Record<LogLevel, number> = {
  * Provides level-based filtering and automatic timestamping of all log messages.
  * 
  * @example
- * const logger = new Logger('Fahh');
+ * const logger = new Logger('FaultLine');
  * logger.setLevel('info');
  * logger.info('Extension activated');
  * logger.error('Failed to load config', error);

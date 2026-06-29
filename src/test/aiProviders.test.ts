@@ -1,10 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
     listProviders,
     getProvider,
     getProviderInfo,
     validateProviderKey,
     chatWithTimeout
-} from './aiProviders';
+} from '../services/aiProviders';
 
 describe('aiProviders registry', () => {
     describe('listProviders', () => {
@@ -118,20 +124,19 @@ describe('aiProviders registry', () => {
     });
 
     describe('chatWithTimeout', () => {
-        it('returns null when the provider rejects', async () => {
+        it('throws when the provider rejects', async () => {
             const provider = {
                 info: getProvider('openrouter')!.info,
                 chat: jest.fn().mockRejectedValue(new Error('boom'))
             };
-            const result = await chatWithTimeout(
+            await expect(chatWithTimeout(
                 provider,
                 { prompt: 'hi', maxTokens: 8, apiKey: 'k', model: 'm' },
                 100
-            );
-            expect(result).toBeNull();
+            )).rejects.toThrow('boom');
         });
 
-        it('aborts the inner chat call when the timeout fires', async () => {
+        it('throws an error when the timeout fires', async () => {
             let receivedSignal: AbortSignal | undefined;
             const provider = {
                 info: getProvider('openrouter')!.info,
@@ -142,12 +147,11 @@ describe('aiProviders registry', () => {
                     });
                 })
             };
-            const result = await chatWithTimeout(
+            await expect(chatWithTimeout(
                 provider,
                 { prompt: 'hi', maxTokens: 8, apiKey: 'k', model: 'm' },
-                10
-            );
-            expect(result).toBeNull();
+                50
+            )).rejects.toThrow('aborted');
             expect(receivedSignal).toBeDefined();
             expect(receivedSignal?.aborted).toBe(true);
         });

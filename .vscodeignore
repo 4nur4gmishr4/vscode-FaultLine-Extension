@@ -8,7 +8,15 @@ out/**/*.test.js
 out/**/*.spec.js
 __mocks__/**
 jest.config.js
-node_modules/**
+node_modules/*
+!node_modules/@vscode
+node_modules/@vscode/*
+!node_modules/@vscode/webview-ui-toolkit
+node_modules/@vscode/webview-ui-toolkit/*
+!node_modules/@vscode/webview-ui-toolkit/dist
+!node_modules/@vscode/codicons
+node_modules/@vscode/codicons/*
+!node_modules/@vscode/codicons/dist
 .gitignore
 tsconfig.json
 tsconfig.test.json

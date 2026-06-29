@@ -1,8 +1,8 @@
-# Fahh Architecture Documentation
+# FaultLine Architecture Documentation
 
 ## Overview
 
-Fahh is a VS Code extension that provides audio feedback for build failures, terminal errors, and diagnostic issues. This document describes the internal architecture for developers who want to contribute or extend the extension.
+FaultLine is a VS Code extension that provides audio feedback for build failures, terminal errors, and diagnostic issues. This document describes the internal architecture for developers who want to contribute or extend the extension.
 
 ## Core Principles
 
@@ -39,7 +39,7 @@ Fahh is a VS Code extension that provides audio feedback for build failures, ter
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │ integrations/│    │ utils/       │    │ types/       │
 │              │    │              │    │              │
-│ Integrations │    │ Scheduler    │    │ FahhConfig   │
+│ Integrations │    │ Scheduler    │    │ FaultLineConfig   │
 │ WSL          │    │ History      │    │ HistoryEntry │
 │              │    │ Logger       │    │ FailureSource│
 └──────────────┘    └──────────────┘    └──────────────┘
@@ -47,7 +47,7 @@ Fahh is a VS Code extension that provides audio feedback for build failures, ter
 
 ## Layered Architecture
 
-Fahh follows a clean, modular architecture with clear separation of concerns:
+FaultLine follows a clean, modular architecture with clear separation of concerns:
 
 ### Core Layer (`src/core/`)
 Business logic for audio playback, failure detection, and sound resolution.
@@ -93,7 +93,7 @@ Shared TypeScript type definitions used across all modules.
 **Responsibility:** Orchestrates all subsystems and handles the extension lifecycle.
 
 **Key Classes:**
-- `FahhExtension` - Main extension class
+- `FaultLineExtension` - Main extension class
 
 **Key Methods:**
 - `start()` - Initializes all subsystems
