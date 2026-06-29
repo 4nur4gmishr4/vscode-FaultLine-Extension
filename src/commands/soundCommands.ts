@@ -9,6 +9,21 @@ import { FaultLineRuntime } from '../runtime/faultline';
 
 export function registerSoundCommands(ext: FaultLineRuntime, disposables: vscode.Disposable[]): void {
     disposables.push(
+        vscode.commands.registerCommand('faultline.testSound', async (soundFile, volume) => {
+            try {
+                const path = require('path');
+                let absolutePath = soundFile;
+                if (!path.isAbsolute(soundFile)) {
+                    absolutePath = path.join((ext as any).ctx.extensionPath, 'resources', 'packs', 'default', soundFile);
+                }
+                const vol = volume ? Number(volume) : ext.configManager.readConfig().audio.volume;
+                await ext.player.play(absolutePath, { volume: vol });
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                void vscode.window.showErrorMessage('FaultLine playback failed: ' + msg);
+            }
+        }),
+
         vscode.commands.registerCommand('faultline.test', async () => {
             const soundPath = await ext.resolver.resolveForFailure('task', false);
             if (!soundPath) {

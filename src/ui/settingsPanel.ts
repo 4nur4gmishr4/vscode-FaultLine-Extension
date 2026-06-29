@@ -60,6 +60,10 @@ export class SettingsPanel {
                     case 'apply':
                         await this.applyChanges();
                         return;
+                    
+                    case 'testSound':
+                        vscode.commands.executeCommand('faultline.testSound', (message as any).sound, (message as any).volume);
+                        return;
                     case 'reset':
                         this.isDirty = false;
                         this.pendingConfig = {};
@@ -243,20 +247,32 @@ export class SettingsPanel {
                 <vscode-text-field id="volume" type="number" min="0" max="100" value="${config.audio.volume}"></vscode-text-field>
             </div>
             <div class="setting-item">
-                <label class="setting-label">Sound Pack</label>
+                                <label class="setting-label">Sound Pack</label>
                 <div class="setting-description">Choose the personality of your notifications.</div>
-                <vscode-dropdown id="soundPack">
-                    <vscode-option value="faultline.mp3" ${config.audio.soundPack === 'faultline.mp3' ? 'selected' : ''}>Classic FaultLine</vscode-option>
-                    <vscode-option value="faultlinehard.mp3" ${config.audio.soundPack === 'faultlinehard.mp3' ? 'selected' : ''}>Impact Strike</vscode-option>
-                    <vscode-option value="fartreverb.mp3" ${config.audio.soundPack === 'fartreverb.mp3' ? 'selected' : ''}>Reverb Blast</vscode-option>
-                    <vscode-option value="faultlinedeep.mp3" ${config.audio.soundPack === 'faultlinedeep.mp3' ? 'selected' : ''}>Deep Resonance</vscode-option>
-                    <vscode-option value="faultlinebroke.mp3" ${config.audio.soundPack === 'faultlinebroke.mp3' ? 'selected' : ''}>System Crash</vscode-option>
-                    <vscode-option value="ohshit.mp3" ${config.audio.soundPack === 'ohshit.mp3' ? 'selected' : ''}>Quick Expletive</vscode-option>
-                </vscode-dropdown>
+                <div style="display: flex; gap: 8px;">
+                    <vscode-dropdown id="soundPack" style="flex: 1;">
+                        <vscode-option value="faultline.mp3" ${config.audio.soundPack === 'faultline.mp3' ? 'selected' : ''}>Classic FaultLine</vscode-option>
+                        <vscode-option value="faultlinehard.mp3" ${config.audio.soundPack === 'faultlinehard.mp3' ? 'selected' : ''}>Impact Strike</vscode-option>
+                        <vscode-option value="fartreverb.mp3" ${config.audio.soundPack === 'fartreverb.mp3' ? 'selected' : ''}>Reverb Blast</vscode-option>
+                        <vscode-option value="faultlinedeep.mp3" ${config.audio.soundPack === 'faultlinedeep.mp3' ? 'selected' : ''}>Deep Resonance</vscode-option>
+                        <vscode-option value="faultlinebroke.mp3" ${config.audio.soundPack === 'faultlinebroke.mp3' ? 'selected' : ''}>System Crash</vscode-option>
+                        <vscode-option value="ohshit.mp3" ${config.audio.soundPack === 'ohshit.mp3' ? 'selected' : ''}>Quick Expletive</vscode-option>
+                    </vscode-dropdown>
+                    <vscode-button id="testErrorSoundBtn" appearance="secondary"><span class="codicon codicon-play"></span> Play</vscode-button>
+                </div>
             </div>
             <div class="setting-item">
-                <vscode-checkbox id="successEnabled" ${config.audio.successEnabled ? 'checked' : ''}>Success Sounds</vscode-checkbox>
+                                <vscode-checkbox id="successEnabled" ${config.audio.successEnabled ? 'checked' : ''}>Success Sounds</vscode-checkbox>
                 <div class="setting-description">Celebrate your victories! Plays a short tone when a build or test passes.</div>
+                <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;" id="success-sound-container">
+                    <label class="setting-label">Success Sound:</label>
+                    <vscode-dropdown id="successSound" style="flex: 1;">
+                        <vscode-option value="faultline.mp3" ${config.audio.successSound === 'faultline.mp3' ? 'selected' : ''}>Classic Success</vscode-option>
+                        <vscode-option value="fartreverb.mp3" ${config.audio.successSound === 'fartreverb.mp3' ? 'selected' : ''}>Victory Reverb</vscode-option>
+                        <vscode-option value="ohshit.mp3" ${config.audio.successSound === 'ohshit.mp3' ? 'selected' : ''}>Short Beep</vscode-option>
+                    </vscode-dropdown>
+                    <vscode-button id="testSuccessSoundBtn" appearance="secondary"><span class="codicon codicon-play"></span> Play</vscode-button>
+                </div>
             </div>
         </div>
 
@@ -295,6 +311,7 @@ export class SettingsPanel {
                 enabled: document.getElementById('enabled').checked,
                 volume: parseInt(document.getElementById('volume').value),
                 soundPack: document.getElementById('soundPack').value,
+                successSound: document.getElementById('successSound').value,
                 successEnabled: document.getElementById('successEnabled').checked,
                 aiProvider: document.getElementById('aiProvider').value,
                 'aiSummary.enabled': document.getElementById('aiSummaryEnabled').checked
@@ -316,8 +333,22 @@ export class SettingsPanel {
 
         document.getElementById('enabled').addEventListener('change', notifyChange);
         document.getElementById('volume').addEventListener('input', notifyChange);
+        
         document.getElementById('soundPack').addEventListener('change', notifyChange);
-        document.getElementById('successEnabled').addEventListener('change', notifyChange);
+        document.getElementById('successSound').addEventListener('change', notifyChange);
+        document.getElementById('successEnabled').addEventListener('change', (e) => {
+            document.getElementById('success-sound-container').style.opacity = e.target.checked ? '1' : '0.5';
+            document.getElementById('success-sound-container').style.pointerEvents = e.target.checked ? 'auto' : 'none';
+            notifyChange();
+        });
+        
+        document.getElementById('testErrorSoundBtn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'testSound', sound: document.getElementById('soundPack').value, volume: document.getElementById('volume').value });
+        });
+        document.getElementById('testSuccessSoundBtn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'testSound', sound: document.getElementById('successSound').value, volume: document.getElementById('volume').value });
+        });
+
         document.getElementById('aiProvider').addEventListener('change', (e) => {
             document.getElementById('api-key-container').style.display = e.target.value === 'copilot' ? 'none' : 'flex';
             notifyChange();

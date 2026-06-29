@@ -149,6 +149,11 @@
         "command": "faultline.openSettings",
         "title": "FaultLine: Open Configuration",
         "category": "FaultLine"
+      },
+      {
+        "command": "faultline.testSound",
+        "title": "%command.faultline.testSound%",
+        "category": "FaultLine"
       }
     ],
     "views": {
@@ -251,9 +256,8 @@
         },
         "faultline.successSound": {
           "type": "string",
-          "default": "",
-          "description": "Success sound file",
-          "scope": "machine-overridable"
+          "default": "faultline.mp3",
+          "description": "%config.successSound.description%"
         },
         "faultline.volume": {
           "type": "number",
@@ -309,7 +313,7 @@
         },
         "faultline.cooldownMs": {
           "type": "number",
-          "default": 50,
+          "default": 5000,
           "minimum": 0,
           "maximum": 60000,
           "description": "%config.faultline.cooldownMs%"
