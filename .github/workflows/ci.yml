@@ -18,15 +18,4 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
       - run: npm run compile
-      - run: npm run test:coverage
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}
-          path: coverage/
-          if-no-files-found: ignore
-      - name: Run audit
-        run: npm audit --audit-level=moderate

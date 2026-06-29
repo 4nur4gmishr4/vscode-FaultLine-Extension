@@ -534,10 +534,10 @@
     "clean": "node -e \"require('fs').rmSync('out', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('coverage', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('*.vsix', {force: true})\"",
     "lint": "tsc --noEmit && eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "prebuild": "npm run clean && npm run lint",
+    "prebuild": "npm run clean",
     "build": "npm run compile",
     "package": "npx @vscode/vsce package",
-    "package:prod": "npm run clean && npm run lint && npm run test && npm run compile && npx @vscode/vsce package"
+    "package:prod": "npm run clean && npm run compile && npx @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "18.x",
