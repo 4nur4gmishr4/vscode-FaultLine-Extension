@@ -5,10 +5,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
-import { FaultLineRuntime } from './runtime/faultline';
-import { registerCommands } from './commands';
-import { WelcomePanel } from './ui/welcome';
-import { setLanguage } from './utils/i18n';
+import { FaultLineRuntime } from './application/runtime/faultline';
+import { registerCommands } from './presentation/commands/index';
+import { WelcomePanel } from './presentation/ui/welcome';
+import { setLanguage } from './shared/utils/i18n';
 
 let runtime: FaultLineRuntime | null = null;
 

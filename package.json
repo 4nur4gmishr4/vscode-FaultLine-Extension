@@ -61,6 +61,11 @@
         "category": "FaultLine"
       },
       {
+        "command": "faultline.toggleSounds",
+        "title": "%command.faultline.toggleSounds%",
+        "category": "FaultLine"
+      },
+      {
         "command": "faultline.toggleWorkspace",
         "title": "%command.faultline.toggleWorkspace%",
         "category": "FaultLine"
@@ -194,6 +199,11 @@
           "default": true,
           "description": "Enable/disable FaultLine extension"
         },
+        "faultline.soundsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.faultline.soundsEnabled%"
+        },
         "faultline.soundPath": {
           "type": "string",
           "default": "",
@@ -213,7 +223,7 @@
         },
         "faultline.successSound": {
           "type": "string",
-          "default": "faultline.mp3",
+          "default": "success_ding.mp3",
           "description": "%config.successSound.description%"
         },
         "faultline.volume": {
@@ -270,7 +280,7 @@
         },
         "faultline.cooldownMs": {
           "type": "number",
-          "default": 5000,
+          "default": 2000,
           "minimum": 0,
           "maximum": 60000,
           "description": "%config.faultline.cooldownMs%"
@@ -426,17 +436,7 @@
         "faultline.dailySummary": {
           "type": "boolean",
           "default": false,
-          "description": "Enable daily summary"
-        },
-        "faultline.streakCounter": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable success streak counter"
-        },
-        "faultline.bossFightMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable boss fight mode"
+          "description": "%config.faultline.dailySummary%"
         },
         "faultline.errorExplanation.enabled": {
           "type": "boolean",
@@ -547,6 +547,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^8.57.1",
     "jest-environment-jsdom": "^30.3.0",
+    "ts-morph": "^28.0.0",
     "typescript": "^5.9.3"
   },
   "overrides": {
@@ -637,8 +638,6 @@
           "config.faultline.openaiModel": "OpenAI Model",
           "config.faultline.anthropicModel": "Anthropic Claude Model",
           "config.faultline.dailySummary": "Daily Summary",
-          "config.faultline.streakCounter": "Success Streak Counter",
-          "config.faultline.bossFightMode": "Boss Fight Mode",
           "config.faultline.errorExplanation.enabled": "Enable Error Explanations",
           "config.faultline.errorExplanation.autoShow": "Auto-show Error Explanations"
         }

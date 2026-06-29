@@ -24,4 +24,28 @@ The AI Service is responsible for generating root-cause analysis based on captur
 ### Configuration and Settings UI
 Configuration properties are mapped between the native `settings.json` file and a Webview-based GUI. The Settings Panel manages bidirectional data flow, handling user input for standard preferences, advanced limits (cooldowns, maximum triggers), and secure credential storage via VS Code `SecretStorage`.
 
+## Project Structure
+
+The project follows a clean, production-grade architecture separating presentation, application, domain, and infrastructure layers.
+
+```
+src/
+├── presentation/      # UI Layer (Webviews, Status Bar, Commands)
+│   ├── ui/
+│   └── commands/
+├── application/       # Application Logic (Runtime, Core audio processing)
+│   ├── runtime/
+│   └── core/
+├── domain/            # Domain Entities and Types
+│   └── types/
+├── infrastructure/    # External Integrations, Detectors, Services
+│   ├── detectors/
+│   ├── services/
+│   ├── security/
+│   └── state/
+└── shared/            # Common Utilities and Configs
+    ├── config/
+    └── utils/
+```
+
 Developed by Anurag Mishra (4nur4gmishr4).
