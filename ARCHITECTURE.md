@@ -1,5 +1,10 @@
 # FaultLine Architecture
 
+[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-fahh-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/actions)
+[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues)
+[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/stargazers)
+
 FaultLine is constructed as a modular VS Code extension designed to intercept development failures and provide immediate auditory and analytical feedback.
 
 ## Core Components

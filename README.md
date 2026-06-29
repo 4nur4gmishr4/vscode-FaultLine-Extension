@@ -1,7 +1,9 @@
 # FaultLine
 
-[![CI](https://github.com/4nur4gmishr4/vscode-faultline-Extension/actions/workflows/ci.yml/badge.svg)](https://github.com/4nur4gmishr4/vscode-faultline-Extension/actions/workflows/ci.yml)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/4nur4gmishr4.faultline)](https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.faultline)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-fahh-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/actions)
+[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/issues)
+[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-fahh-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-fahh-Extension/stargazers)
 
 FaultLine is a VS Code extension that plays an audio notification when errors occur in your development workflow. By providing immediate auditory feedback, it allows you to maintain focus on your code without having to constantly monitor terminal outputs or task execution windows.
 
