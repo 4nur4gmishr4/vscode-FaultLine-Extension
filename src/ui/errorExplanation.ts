@@ -41,7 +41,7 @@ export class ErrorExplanationManager {
         this.panel = vscode.window.createWebviewPanel(
             ErrorExplanationManager.viewType,
             'FaultLine Error Analysis',
-            vscode.ViewColumn.Beside,
+            vscode.ViewColumn.One,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,

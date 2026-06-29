@@ -272,7 +272,12 @@ export class SettingsPanel {
             <div class="setting-item" id="api-key-container" style="display: ${config.ai.provider === 'copilot' ? 'none' : 'flex'}">
                 <label class="setting-label">API Key</label>
                 <div class="setting-description">Your key will be stored securely in VS Code's encrypted SecretStorage. It is never saved to disk in plain text.</div>
-                <vscode-text-field id="apiKey" type="password" placeholder="Enter API key..."></vscode-text-field>
+                
+                <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
+                    <vscode-text-field id="apiKey" type="password" placeholder="Enter API key..." style="flex: 1;"></vscode-text-field>
+                    <vscode-button id="apiKeySubmit">Save API Key</vscode-button>
+                </div>
+                <div id="apiKeyStatus" style="color: var(--vscode-charts-green); margin-top: 4px; font-size: 12px; height: 16px;"></div>
             </div>
             <div class="setting-item">
                 <vscode-checkbox id="aiSummaryEnabled" ${config.ai.summaryEnabled ? 'checked' : ''}>Enable AI Summaries</vscode-checkbox>
