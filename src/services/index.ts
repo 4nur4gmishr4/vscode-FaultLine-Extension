@@ -6,4 +6,3 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 export * from './aiService';
 export * from './webhookService';
-export * from './gamificationService';

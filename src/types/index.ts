@@ -69,19 +69,14 @@ export interface UIConfig {
     showNotification: boolean;
     notificationLevel: NotificationLevel;
     showStatusBar: boolean;
-    statusBarCounter: boolean;
     flashStatusBar: boolean;
 }
 
 export interface CoreConfig {
     enabled: boolean;
     logLevel: LogLevel;
-    historyMax: number;
     snoozeMinutes: number;
     language: string;
-    dailySummary: boolean;
-    streakCounter: boolean;
-    bossFightMode: boolean;
 }
 
 export interface FaultLineConfig {

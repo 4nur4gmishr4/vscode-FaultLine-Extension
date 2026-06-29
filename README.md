@@ -1,53 +1,47 @@
-# FaultLine! 🔊
+# FaultLine
 
 [![CI](https://github.com/4nur4gmishr4/vscode-faultline-Extension/actions/workflows/ci.yml/badge.svg)](https://github.com/4nur4gmishr4/vscode-faultline-Extension/actions/workflows/ci.yml)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/4nur4gmishr4.faultline)](https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.faultline)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/4nur4gmishr4.faultline)](https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.faultline&ssr=false#review-details)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> Plays a sound when things go wrong in your development workflow.
+FaultLine is a VS Code extension that plays an audio notification when errors occur in your development workflow. By providing immediate auditory feedback, it allows you to maintain focus on your code without having to constantly monitor terminal outputs or task execution windows.
 
-FaultLine v3.0 is a security-first failure notification engine for VS Code. It monitors your tasks, terminal sessions, and code diagnostics. When something fails, it plays a sound immediately—allowing you to stay in flow even when looking away from the screen.
+Developed by Anurag Mishra (4nur4gmishr4).
 
-## ✨ Key Features
+## Features
 
--   **Multi-Source Detection**: Triggers on Task failures, Terminal exit codes, and new Diagnostic errors (red squiggly lines).
--   **AI-Powered Explanations**: Uses **VS Code Copilot** or **OpenRouter** to analyze and explain your errors instantly.
--   **Validated Webhooks**: Send failure notifications to Slack, Discord, or custom JSON endpoints with built-in SSRF protection.
--   **Secure by Design**: All API keys and tokens are stored in VS Code's encrypted **SecretStorage**.
--   **Sound Packs**: Choose from built-in sounds or point to a custom folder for randomized feedback.
--   **Quiet Hours & Snooze**: Respects your focus time with configurable quiet hours and a one-click snooze command.
+- **Terminal and Task Monitoring**: FaultLine automatically attaches to your integrated VS Code terminals and build tasks. If a process exits with a non-zero code, it triggers a notification.
+- **Zero-Latency Audio**: The audio playback engine uses a highly optimized VBScript and Windows Media Player COM object implementation, ensuring instant, lag-free sound without blocking the main editor thread.
+- **AI Error Explanations**: FaultLine can automatically capture the raw terminal output buffer and send it to an AI provider (GitHub Copilot, OpenRouter, OpenAI, etc.) to generate a detailed explanation of the error.
+- **Success Notifications**: You can optionally configure FaultLine to play a specific sound when tasks complete successfully.
+- **Custom Sound Packs**: The extension includes multiple default audio files, but you can configure it to play any local MP3 or WAV file on your system.
+- **Advanced Configuration**: Customize cooldown periods, set a maximum number of alerts per minute, or enable "Mute When Focused" to only play sounds when VS Code is in the background.
+- **Webhook Integrations**: Automatically forward error logs and AI summaries to external platforms like Discord or Slack via customizable webhooks.
 
-## 🚀 Getting Started
+## Installation
 
-1.  **Install** the extension from the VS Code Marketplace.
-2.  **Open the Welcome Page** by running `FaultLine: Show Welcome Page` from the Command Palette (`Ctrl+Shift+P`).
-3.  **Test the engine** using the "Play Test Sound" button.
-4.  **Configure AI** (Optional) in Settings to get automated root-cause analysis.
+1. Install the extension from the VS Code Marketplace.
+2. Open the Settings Panel by executing `FaultLine: Open Configuration` from the Command Palette.
+3. Test your audio output using the "Play" buttons in the configuration panel.
 
-## 🔒 Security & Privacy
+## Configuration Options
 
--   **Secret Storage**: FaultLine v3.0 has migrated all credentials to VS Code `SecretStorage`. No API keys are stored in plaintext configuration.
--   **SSRF Protection**: Webhooks block private network IPs by default.
--   **PII Redaction**: Personally Identifiable Information (emails, tokens, file paths) is sanitized locally before being sent to AI providers or webhooks.
+FaultLine provides a rich graphical interface for managing settings. You can also modify your `settings.json` file directly:
 
-## 🛠️ Commands
+- `faultline.audio.volume`: Master volume level (0-100).
+- `faultline.audio.soundPack`: Select the default sound to play on failure.
+- `faultline.audio.successSound`: Select the default sound to play on success.
+- `faultline.detection.cooldownMs`: The minimum time in milliseconds to wait before playing another sound.
+- `faultline.detection.maxPerMinute`: The maximum number of sounds to play within a 60-second window.
+- `faultline.detection.muteWhenFocused`: Prevents sound playback if the VS Code window is currently active.
+- `faultline.webhook.url`: The webhook endpoint URL to send failure data.
 
--   `FaultLine: Play Test Sound` - Verify your audio setup.
--   `FaultLine: Toggle Enable / Disable` - Quickly turn sounds on or off.
--   `FaultLine: Snooze` - Mute sounds for a configurable duration.
--   `FaultLine: Show History` - View a history of recent failures in the sidebar.
--   `FaultLine: Clear History` - Wipe your local failure history.
--   `FaultLine: Export History (CSV/JSON)` - Export logs for analysis.
+## Commands
 
-## ⚙️ Configuration
+- `FaultLine: Open Configuration` - Opens the primary settings webview.
+- `FaultLine: Toggle Enable / Disable` - Quickly turn the extension on or off.
+- `FaultLine: Snooze` - Temporarily disable audio notifications for a set duration.
+- `FaultLine: Reset Settings` - Restore all configurations to their default values.
 
-Open your VS Code Settings (`Ctrl+,`) and search for `faultline` to customize:
--   `faultline.audio.volume` - Master volume (0-100).
--   `faultline.detection.sources` - Choose which events trigger sounds.
--   `faultline.ai.provider` - Select between Copilot, OpenRouter, OpenAI, Gemini, and more.
--   `faultline.webhook.url` - Destination for failure payloads.
+## License
 
----
-
-MIT © Anurag Mishra
+This project is licensed under the MIT License. Developed by Anurag Mishra (4nur4gmishr4).

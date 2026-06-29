@@ -1,15 +1,27 @@
 # Contributing to FaultLine
 
-Thank you for your interest in improving FaultLine! With over 15,000 users, we strive to maintain high stability.
+Thank you for your interest in contributing to FaultLine. This project relies on community contributions to remain robust and efficient. 
 
-## Development Workflow
-1. Fork the repo and create your branch.
-2. Run `npm install` to fetch dependencies.
-3. Use `npm run compile` or `Ctrl+Shift+B` to build.
-4. Run `npm test` to ensure no regressions.
-5. Submit a Pull Request with a clear description of changes.
+## Development Setup
 
-## Areas for Contribution
-- **Audio Engines**: Improving Linux/Mac playback reliability.
-- **Sound Packs**: Creating new collections in `resources/packs`.
-- **Localization**: Adding support for more languages in `package.nls.*.json`.
+To set up the project locally:
+
+1. Ensure you have Node.js and npm installed on your machine.
+2. Clone the repository and navigate into the project directory.
+3. Install the required dependencies:
+   ```bash
+   npm install
+   ```
+4. Compile the extension and package it:
+   ```bash
+   npm run compile
+   npx vsce package
+   ```
+
+## Development Guidelines
+
+- **Code Quality**: Ensure that all new features or bug fixes maintain strict type safety. Do not leave orphaned configurations or unused variables in the codebase.
+- **Testing**: Test the extension locally by installing the `.vsix` file in your VS Code environment or by using the VS Code Extension Development Host (F5). Ensure audio playback has zero latency and terminal detection operates without blocking the main editor thread.
+- **Pull Requests**: Submit clear and concise pull requests. Detail the issue you are resolving and the architectural decisions made in your implementation.
+
+Developed by Anurag Mishra (4nur4gmishr4).

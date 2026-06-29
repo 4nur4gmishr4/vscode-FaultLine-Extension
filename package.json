@@ -96,21 +96,6 @@
         "category": "FaultLine"
       },
       {
-        "command": "faultline.clearHistory",
-        "title": "%command.faultline.clearHistory%",
-        "category": "FaultLine"
-      },
-      {
-        "command": "faultline.replaySound",
-        "title": "%command.faultline.replaySound%",
-        "category": "FaultLine"
-      },
-      {
-        "command": "faultline.showHistory",
-        "title": "%command.faultline.showHistory%",
-        "category": "FaultLine"
-      },
-      {
         "command": "faultline.showOutput",
         "title": "%command.faultline.showOutput%",
         "category": "FaultLine"
@@ -136,16 +121,6 @@
         "category": "FaultLine"
       },
       {
-        "command": "faultline.exportHistoryCSV",
-        "title": "FaultLine: Export History (CSV)",
-        "category": "FaultLine"
-      },
-      {
-        "command": "faultline.exportHistoryJSON",
-        "title": "FaultLine: Export History (JSON)",
-        "category": "FaultLine"
-      },
-      {
         "command": "faultline.openSettings",
         "title": "FaultLine: Open Configuration",
         "category": "FaultLine"
@@ -156,24 +131,6 @@
         "category": "FaultLine"
       }
     ],
-    "views": {
-      "faultline": [
-        {
-          "id": "faultline.history",
-          "name": "%view.faultline.history%",
-          "icon": "$(output)"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "faultline",
-          "title": "%viewContainer.faultline%",
-          "icon": "$(unmute)"
-        }
-      ]
-    },
     "walkthroughs": [
       {
         "id": "faultline.welcome",

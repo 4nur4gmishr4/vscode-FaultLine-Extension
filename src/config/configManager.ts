@@ -124,20 +124,12 @@ export class ConfigManager {
             core: {
                 enabled: cfg.get<boolean>(CONFIG.KEYS.ENABLED, DEFAULTS.ENABLED),
                 logLevel: cfg.get<LogLevel>(CONFIG.KEYS.LOG_LEVEL, DEFAULTS.LOG_LEVEL),
-                historyMax: this.clamp(
-                    cfg.get<number>(CONFIG.KEYS.HISTORY_MAX, DEFAULTS.HISTORY_MAX),
-                    VALIDATION.HISTORY.MIN,
-                    VALIDATION.HISTORY.MAX
-                ),
                 snoozeMinutes: this.clamp(
                     cfg.get<number>(CONFIG.KEYS.SNOOZE_MINUTES, DEFAULTS.SNOOZE_MINUTES),
                     VALIDATION.SNOOZE.MIN,
                     VALIDATION.SNOOZE.MAX
                 ),
                 language: cfg.get<string>(CONFIG.KEYS.LANGUAGE, DEFAULTS.LANGUAGE),
-                dailySummary: cfg.get<boolean>(CONFIG.KEYS.DAILY_SUMMARY, false),
-                streakCounter: cfg.get<boolean>(CONFIG.KEYS.STREAK_COUNTER, false),
-                bossFightMode: cfg.get<boolean>(CONFIG.KEYS.BOSS_FIGHT_MODE, false),
             },
             audio: {
                 soundPack: cfg.get<string>(CONFIG.KEYS.SOUND_PACK, DEFAULTS.SOUND_PACK),
@@ -204,7 +196,6 @@ export class ConfigManager {
                 showNotification: cfg.get<boolean>(CONFIG.KEYS.SHOW_NOTIFICATION, true),
                 notificationLevel: cfg.get<NotificationLevel>(CONFIG.KEYS.NOTIFICATION_LEVEL, DEFAULTS.NOTIFICATION_LEVEL),
                 showStatusBar: cfg.get<boolean>(CONFIG.KEYS.SHOW_STATUS_BAR, true),
-                statusBarCounter: cfg.get<boolean>(CONFIG.KEYS.STATUS_BAR_COUNTER, true),
                 flashStatusBar: cfg.get<boolean>(CONFIG.KEYS.FLASH_STATUS_BAR, true)
             }
         };

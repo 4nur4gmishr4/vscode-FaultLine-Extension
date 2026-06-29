@@ -14,7 +14,7 @@ import { AudioPlayer } from '../core/audioPlayer';
 import { SoundResolver } from '../core/soundResolver';
 import { StatusBarManager } from '../ui/statusBar';
 import { HistoryManager } from '../utils/history';
-import { AIService, WebhookService, GamificationService } from '../services';
+import { AIService, WebhookService } from '../services';
 import { TaskDetector, TerminalDetector, DiagnosticDetector } from '../detectors';
 import { FailureEvent } from '../types';
 import { sanitizePII } from '../security/pii';
@@ -39,7 +39,6 @@ export class FaultLineRuntime {
     public readonly ai: AIService;
     public readonly webhook: WebhookService;
 
-    public readonly gamification: GamificationService;
 
     private detectors: vscode.Disposable | null = null;
 
@@ -54,12 +53,11 @@ export class FaultLineRuntime {
         this.scheduler = new Scheduler(configFn, this.logger);
         this.player = new AudioPlayer(this.logger);
         this.resolver = new SoundResolver(this.ctx.extensionPath, configFn, this.logger);
-        this.statusBar = new StatusBarManager(configFn, this.logger, ctx.globalState);
+        this.statusBar = new StatusBarManager(configFn, this.logger);
         this.history = new HistoryManager(configFn, this.logger, ctx.globalState);
 
         this.ai = new AIService(this.configManager, this.secretManager, this.logger);
         this.webhook = new WebhookService(this.configManager, this.secretManager, this.logger);
-        this.gamification = new GamificationService(this.configManager, this.stateStore, this.logger);
         this.errorExplanation = new ErrorExplanationManager(this.logger, this.ai, this.ctx.extensionUri);
 
         this.logger.setLevel(configFn().core.logLevel);
@@ -151,11 +149,6 @@ export class FaultLineRuntime {
             void this.webhook.postWebhook(sanitizedLabel, source);
             void this.webhook.postToJira(sanitizedLabel, source);
 
-            const bossMsg = await this.gamification.recordFailure();
-            if (bossMsg) {
-                void vscode.window.showInformationMessage(bossMsg);
-            }
-
             this.history.add({
                 id: `${Date.now()}-${Math.random()}`,
                 timestamp: Date.now(),
@@ -202,10 +195,6 @@ export class FaultLineRuntime {
                 void this.player.play(soundPath, { volume });
             }
             
-            const streakMsg = await this.gamification.recordSuccess();
-            if (streakMsg) {
-                void vscode.window.showInformationMessage(streakMsg);
-            }
 
             this.statusBar.refresh();
         } catch (err) {
@@ -217,6 +206,5 @@ export class FaultLineRuntime {
         this.detectors?.dispose();
         this.player.dispose();
         this.statusBar.dispose();
-        this.gamification.dispose();
     }
 }

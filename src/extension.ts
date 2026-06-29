@@ -36,7 +36,6 @@ export function activate(ctx: vscode.ExtensionContext): void {
                 runtime.logger.setLevel(newConfig.core.logLevel);
                 setLanguage(newConfig.core.language);
                 runtime.statusBar.refresh();
-                runtime.gamification.onConfigChanged();
                 runtime.registerDetectors();
                 runtime.logger.debug('Configuration reloaded.');
             }

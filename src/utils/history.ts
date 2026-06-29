@@ -49,7 +49,7 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      * @param state - VS Code Memento for persisting history across sessions
      */
     public constructor(
-        private readonly config: () => FaultLineConfig,
+        _config: () => FaultLineConfig,
         private readonly logger: Logger,
         private readonly state: vscode.Memento
     ) {
@@ -89,7 +89,7 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      * @param entry - The history entry to add
      */
     public add(entry: HistoryEntry): void {
-        const max = this.config().core.historyMax;
+        const max = 100;
         
         // Ensure we have the latest state before modifying
         this.entries = this.state.get<HistoryEntry[]>('faultline.history', []);

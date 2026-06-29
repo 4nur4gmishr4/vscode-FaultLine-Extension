@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import { FaultLineRuntime } from '../runtime/faultline';
 import { registerSoundCommands } from './soundCommands';
 import { registerStateCommands } from './stateCommands';
-import { registerHistoryCommands } from './historyCommands';
 import { registerUICommands } from './uiCommands';
 
 /**
@@ -17,6 +16,5 @@ import { registerUICommands } from './uiCommands';
 export function registerCommands(ext: FaultLineRuntime, extensionUri: vscode.Uri, disposables: vscode.Disposable[]): void {
     registerSoundCommands(ext, disposables);
     registerStateCommands(ext, disposables);
-    registerHistoryCommands(ext, disposables);
     registerUICommands(ext, extensionUri, disposables);
 }

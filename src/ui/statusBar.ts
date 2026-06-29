@@ -48,7 +48,7 @@ export class StatusBarManager {
     public constructor(
         private readonly config: () => FaultLineConfig,
         _logger: Logger,
-        private readonly state?: vscode.Memento
+        /* private readonly state?: vscode.Memento */
     ) {}
 
     /**
@@ -99,9 +99,7 @@ export class StatusBarManager {
         }
 
         const enabled = config.core.enabled;
-        const count = this.state ? this.state.get<number>('faultline.dailyFailCount', 0) : 0;
-        const counter = cfg.statusBarCounter ? ` • ${count}` : '';
-        this.item.text = enabled ? `$(unmute) FaultLine${counter}` : `$(mute) FaultLine${counter}`;
+                        this.item.text = enabled ? `$(unmute) FaultLine` : `$(mute) FaultLine`;
         this.item.tooltip = enabled
             ? 'FaultLine is enabled — click to disable'
             : 'FaultLine is disabled — click to enable';
@@ -196,7 +194,4 @@ export class StatusBarManager {
      * console.log(`Failures today: ${count}`);
      * ```
      */
-    public getFailCount(): number {
-        return this.state ? this.state.get<number>('faultline.dailyFailCount', 0) : 0;
-    }
 }

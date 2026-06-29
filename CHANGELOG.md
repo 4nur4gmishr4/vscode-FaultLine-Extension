@@ -1,38 +1,32 @@
 # Changelog
 
-All notable changes to the "faultline" extension will be documented in this file.
+All notable changes to the FaultLine extension will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [3.0.0] - 2026-06-03
+## [3.0.0]
 
 ### Added
-- **Security-First Architecture**: Complete migration of all API keys to VS Code `SecretStorage`.
-- **Domain-Driven Configuration**: Reorganized settings into structured nested models (`audio`, `detection`, `ai`, `ui`, `webhook`).
-- **AI-Powered Root Cause Analysis**: Support for VS Code Copilot and OpenRouter providers to explain failures.
-- **Integrated Setup**: Embedded selectors for AI Providers and Sound Packs in the Welcome screen.
-- **Analyze Last Failure**: New command to instantly trigger AI analysis of the most recent error.
-- **SSRF Protection**: Built-in private IP blocking for outbound webhooks.
-- **Automated PII Redaction**: Local sanitization of emails, tokens, and paths before external transmission.
-- **CSV/JSON History Export**: Capability to export local failure logs with formula injection protection.
-- **Native UI**: Rewritten Welcome and Error Analysis webviews using the VS Code Webview UI Toolkit.
-- **Production QA Suite**: 14 test suites verifying lifecycle, command parity, and security regressions.
-
-### Fixed
-- Fatal TypeScript compile errors and critical ESLint "Floating Promise" violations.
-- RCE vulnerability in PowerShell Text-to-Speech engine via Base64 encoding.
-- GraphQL injection vulnerability in project management integrations.
-- Broken test fixtures caused by legacy configuration drift.
+- Advanced Settings user interface for configuring cooldowns, maximum alerts per minute, and window focus muting.
+- Intelligent AI terminal streaming. The extension now safely buffers terminal chunks during execution to provide AI models with exact contextual error logs.
+- Dedicated success sound configuration and UI testing buttons.
+- Webhook configuration interface for Discord and Slack integrations.
 
 ### Changed
-- Refactored monolithic `extension.ts` into modular components: `runtime`, `services`, `detectors`, and `commands`.
-- Simplified configuration schema by removing 42 redundant or non-functional settings.
+- Completely rewrote the Windows audio engine. Replaced the legacy PowerShell and C# dynamic compilation with a highly optimized VBScript wrapper, eliminating all playback lag.
+- Cleaned up the extension bundle by removing unused gamification services, legacy history views, and unnecessary image assets.
+- Refactored the AI trigger logic to ensure error explanations display correctly regardless of standard VS Code notification settings.
 
-### Removed
-- Hallucinated "placeholder" modules (Sentry, PagerDuty, Jira direct, TeamSync, GitHub PRs).
-- Decorative but non-accessible UI effects (Glassmorphism, Particle loops).
-- Unsafe shell-based testing framework hooks.
+### Fixed
+- Addressed temporary file leakage by implementing an automated garbage collection routine on extension activation to clean orphaned VBScript files.
 
----
-MIT © Anurag Mishra
+## [2.0.0]
+
+### Added
+- Support for multiple AI providers (Copilot, OpenRouter, OpenAI, Gemini).
+- VS Code SecretStorage integration for secure API key management.
+
+## [1.0.0]
+
+### Added
+- Initial release of FaultLine.
+- Basic terminal and task failure detection.
+- Sound playback configuration.
