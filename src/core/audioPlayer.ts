@@ -8,7 +8,7 @@ import type { AudioOptions } from '../types';
 // Re-exported so existing imports from this module keep working.
 export type { AudioOptions };
 
-const MAX_QUEUE_SIZE = 10;
+
 
 /**
  * Cross-platform audio player that supports Windows, macOS, Linux, and WSL.
@@ -26,6 +26,8 @@ export class AudioPlayer {
     private playing = false;
     private currentChild: ChildProcess | null = null;
     private warnedMissingPlayer = false;
+    private lastPlayTime = 0;
+    private readonly COOLDOWN_MS = 5000;
     private queue: Array<{
         filePath: string;
         options: AudioOptions;
@@ -72,17 +74,14 @@ export class AudioPlayer {
         }
 
         return new Promise<void>((resolve, reject) => {
-            if (this.playing) {
-                if (this.queue.length >= MAX_QUEUE_SIZE) {
-                    const msg = `Audio queue full (${MAX_QUEUE_SIZE} items). Dropping sound.`;
-                    this.logger.warn(msg);
-                    reject(new Error(msg));
-                    return;
-                }
-                this.queue.push({ filePath: absolutePath, options, resolve, reject });
-                this.logger.debug('Audio queued.');
+            const now = Date.now();
+            if (this.playing || (now - this.lastPlayTime < this.COOLDOWN_MS)) {
+                const msg = 'Audio dropped due to 5-second cooldown or currently playing.';
+                this.logger.debug(msg);
+                reject(new Error(msg));
                 return;
             }
+            this.lastPlayTime = now;
             this.playInternal(absolutePath, options, resolve, reject);
         });
     }

@@ -9,9 +9,11 @@ import * as vscode from 'vscode';
  */
 type WelcomeMessage =
     | { command: 'test' }
+    | { command: 'testSuccess' }
     | { command: 'reset' }
     | { command: 'error'; text?: string }
-    | { command: 'setSound'; sound?: string };
+    | { command: 'setSound'; sound?: string }
+    | { command: 'setSuccessSound'; sound?: string };
 
 /**
  * Manages the welcome webview panel for first-run experience.
@@ -80,6 +82,9 @@ export class WelcomePanel {
             case 'test':
                 await vscode.commands.executeCommand('faultline.test');
                 return;
+            case 'testSuccess':
+                await vscode.commands.executeCommand('faultline.testSuccess');
+                return;
             case 'reset':
                 await vscode.commands.executeCommand('faultline.resetSettings');
                 return;
@@ -95,6 +100,15 @@ export class WelcomePanel {
                     ).fsPath;
                     await vscode.workspace.getConfiguration('faultline')
                         .update('soundPath', soundPath, vscode.ConfigurationTarget.Global);
+                }
+                return;
+            case 'setSuccessSound':
+                if (typeof message.sound === 'string' && /^[\w.-]+\.(mp3|wav|ogg|flac|m4a)$/i.test(message.sound)) {
+                    const soundPath = vscode.Uri.joinPath(
+                        extensionUri, 'resources', 'packs', 'default', message.sound
+                    ).fsPath;
+                    await vscode.workspace.getConfiguration('faultline')
+                        .update('successSound', soundPath, vscode.ConfigurationTarget.Global);
                 }
                 return;
         }
@@ -128,8 +142,7 @@ export class WelcomePanel {
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
         const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'faultline-logo.jpeg')).toString();
         const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'faultline.mp3'));
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'welcome-client.js'));
-        const nonce = generateNonce();
+                const nonce = generateNonce();
 
         return `<!DOCTYPE html>
 <html lang="en">
@@ -377,7 +390,7 @@ export class WelcomePanel {
         </div>
 
         <div class="sound-selector">
-            <label for="sound-select" class="selector-label">Choose Your Sound</label>
+            <label for="sound-select" class="selector-label">Choose Failure Sound</label>
             <select id="sound-select" class="sound-select">
                 <option value="faultline.mp3">Classic FaultLine (Default)</option>
                 <option value="faultlinehard.mp3">Impact Strike</option>
@@ -386,9 +399,21 @@ export class WelcomePanel {
                 <option value="faultlinebroke.mp3">System Crash</option>
                 <option value="ohshit.mp3">Quick Expletive</option>
             </select>
+            <button id="test-btn" class="btn" style="margin-top: 10px;" type="button">Test Failure Audio Now</button>
         </div>
 
-        <button id="test-btn" class="btn" type="button">Test Audio Now</button>
+        <div class="sound-selector" style="margin-top: 20px;">
+            <label for="success-sound-select" class="selector-label">Choose Success Sound</label>
+            <select id="success-sound-select" class="sound-select">
+                <option value="faultline.mp3">Classic FaultLine</option>
+                <option value="faultlinehard.mp3">Impact Strike</option>
+                <option value="fartreverb.mp3">Reverb Blast</option>
+                <option value="faultlinedeep.mp3">Deep Resonance</option>
+                <option value="faultlinebroke.mp3">System Crash</option>
+                <option value="ohshit.mp3">Quick Expletive</option>
+            </select>
+            <button id="test-success-btn" class="btn" style="margin-top: 10px;" type="button">Test Success Audio Now</button>
+        </div>
 
         <div id="visualizer" class="visualizer">
             <div class="bar"></div>
@@ -401,7 +426,41 @@ export class WelcomePanel {
         <audio id="faultline-audio" src="${audioUri.toString()}" preload="auto"></audio>
     </div>
 
-    <script nonce="${nonce}" src="${scriptUri.toString()}"></script>
+    <script nonce="${nonce}">
+        (function() {
+            const vscode = acquireVsCodeApi();
+            
+            document.getElementById('test-btn')?.addEventListener('click', () => {
+                vscode.postMessage({ command: 'test' });
+            });
+            document.getElementById('test-success-btn')?.addEventListener('click', () => {
+                vscode.postMessage({ command: 'testSuccess' });
+            });
+            document.getElementById('reset-btn')?.addEventListener('click', () => {
+                vscode.postMessage({ command: 'reset' });
+            });
+            
+            document.getElementById('sound-select')?.addEventListener('change', (e) => {
+                const select = e.target;
+                if (select) {
+                    vscode.postMessage({ 
+                        command: 'setSound',
+                        sound: select.value
+                    });
+                }
+            });
+
+            document.getElementById('success-sound-select')?.addEventListener('change', (e) => {
+                const select = e.target;
+                if (select) {
+                    vscode.postMessage({ 
+                        command: 'setSuccessSound',
+                        sound: select.value
+                    });
+                }
+            });
+        })();
+    </script>
 </body>
 </html>`;
     }
