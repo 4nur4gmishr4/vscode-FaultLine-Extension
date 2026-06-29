@@ -40,8 +40,8 @@ export class WelcomePanel {
         }
 
         const panel = vscode.window.createWebviewPanel(
-            'fahhWelcome',
-            'Welcome to Fahh!',
+            'faultlineWelcome',
+            'Welcome to FaultLine!',
             column ?? vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -78,10 +78,10 @@ export class WelcomePanel {
         }
         switch (message.command) {
             case 'test':
-                await vscode.commands.executeCommand('fahh.test');
+                await vscode.commands.executeCommand('faultline.test');
                 return;
             case 'reset':
-                await vscode.commands.executeCommand('fahh.resetSettings');
+                await vscode.commands.executeCommand('faultline.resetSettings');
                 return;
             case 'error':
                 if (typeof message.text === 'string') {
@@ -93,7 +93,7 @@ export class WelcomePanel {
                     const soundPath = vscode.Uri.joinPath(
                         extensionUri, 'resources', 'packs', 'default', message.sound
                     ).fsPath;
-                    await vscode.workspace.getConfiguration('fahh')
+                    await vscode.workspace.getConfiguration('faultline')
                         .update('soundPath', soundPath, vscode.ConfigurationTarget.Global);
                 }
                 return;
@@ -126,8 +126,8 @@ export class WelcomePanel {
      * @returns The complete HTML string for the webview
      */
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'fahh-logo.jpeg')).toString();
-        const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'fahh.mp3'));
+        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'faultline-logo.jpeg')).toString();
+        const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'faultline.mp3'));
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'welcome-client.js'));
         const nonce = generateNonce();
 
@@ -137,7 +137,7 @@ export class WelcomePanel {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; media-src ${webview.cspSource}; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';">
-    <title>Welcome to Fahh</title>
+    <title>Welcome to FaultLine</title>
     <style>
         :root {
             --accent-color: #ffffff;
@@ -356,9 +356,9 @@ export class WelcomePanel {
 
     <div class="container">
         <div class="logo-container">
-            <img src="${logoUri}" class="logo" alt="Fahh Logo">
+            <img src="${logoUri}" class="logo" alt="FaultLine Logo">
         </div>
-        <h1>Fahh!</h1>
+        <h1>FaultLine!</h1>
         <div class="tagline">Audio error feedback</div>
 
         <div class="grid">
@@ -379,11 +379,11 @@ export class WelcomePanel {
         <div class="sound-selector">
             <label for="sound-select" class="selector-label">Choose Your Sound</label>
             <select id="sound-select" class="sound-select">
-                <option value="fahh.mp3">Classic Fahh (Default)</option>
-                <option value="fahhhard.mp3">Impact Strike</option>
+                <option value="faultline.mp3">Classic FaultLine (Default)</option>
+                <option value="faultlinehard.mp3">Impact Strike</option>
                 <option value="fartreverb.mp3">Reverb Blast</option>
-                <option value="fahhdeep.mp3">Deep Resonance</option>
-                <option value="fahhbroke.mp3">System Crash</option>
+                <option value="faultlinedeep.mp3">Deep Resonance</option>
+                <option value="faultlinebroke.mp3">System Crash</option>
                 <option value="ohshit.mp3">Quick Expletive</option>
             </select>
         </div>
@@ -398,7 +398,7 @@ export class WelcomePanel {
             <div class="bar"></div>
         </div>
 
-        <audio id="fahh-audio" src="${audioUri.toString()}" preload="auto"></audio>
+        <audio id="faultline-audio" src="${audioUri.toString()}" preload="auto"></audio>
     </div>
 
     <script nonce="${nonce}" src="${scriptUri.toString()}"></script>

@@ -303,16 +303,16 @@ export class ConfigManager {
     }
 
     /**
-     * Check if a configuration change event affects the Fahh extension.
+     * Check if a configuration change event affects the FaultLine extension.
      * 
      * @param event - VS Code configuration change event
-     * @returns True if the change affects Fahh configuration
+     * @returns True if the change affects FaultLine configuration
      * 
      * @example
      * ```typescript
      * vscode.workspace.onDidChangeConfiguration(event => {
      *     if (configManager.affectsFaultLine(event)) {
-     *         console.log('Fahh configuration changed - reloading...');
+     *         console.log('FaultLine configuration changed - reloading...');
      *         const newConfig = configManager.readConfig();
      *     }
      * });
@@ -323,7 +323,7 @@ export class ConfigManager {
     }
 
     /**
-     * Reset all Fahh settings to their default values.
+     * Reset all FaultLine settings to their default values.
      * 
      * This method removes all user-configured values at all configuration levels
      * (Global, Workspace, WorkspaceFolder), effectively resetting the extension
