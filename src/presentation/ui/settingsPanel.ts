@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import { ConfigManager } from '../../shared/config/configManager';
 import { SecretManager } from '../../shared/config/secretManager';
 import { Logger } from '../../shared/utils/logger';
-import { listProviders } from '../../infrastructure/services/aiProviders';
+import { listProviders, getProvider } from '../../infrastructure/services/aiProviders';
 
 /**
  * Manages the custom FaultLine Settings webview.
@@ -75,6 +75,21 @@ export class SettingsPanel {
                         }
                         return;
                     
+                    case 'fetchModels':
+                        if (message.provider && message.key) {
+                            const providerObj = getProvider(message.provider);
+                            if (providerObj) {
+                                let models: {id: string, name: string}[] = [];
+                                if (providerObj.fetchModels) {
+                                    models = await providerObj.fetchModels(message.key);
+                                }
+                                if (!models || models.length === 0) {
+                                    models = providerObj.info.models.map(m => ({ id: m, name: m }));
+                                }
+                                void SettingsPanel.currentPanel?.panel.webview.postMessage({ command: 'modelsFetched', models });
+                            }
+                        }
+                        return;
                     case 'testSound':
                         void vscode.commands.executeCommand('faultline.testSound', (message as any).sound, (message as any).volume);
                         return;
@@ -309,6 +324,17 @@ export class SettingsPanel {
                 </div>
                 <div id="apiKeyStatus" style="color: var(--vscode-charts-green); margin-top: 4px; font-size: 12px; height: 16px;"></div>
             </div>
+            
+            <div class="setting-item" id="model-container" style="display: ${config.ai.provider === 'copilot' ? 'none' : 'flex'}">
+                <label class="setting-label">AI Model</label>
+                <div class="setting-description">Select a model for the provider. Fetch to see available free-tier models.</div>
+                <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
+                    <vscode-dropdown id="aiModel" style="flex: 1;">
+                        <vscode-option value="${config.ai.model}" selected>${config.ai.model}</vscode-option>
+                    </vscode-dropdown>
+                    <vscode-button id="fetchModelsBtn" appearance="secondary">Fetch Models</vscode-button>
+                </div>
+            </div>
             <div class="setting-item">
                 <vscode-checkbox id="aiSummaryEnabled" ${config.ai.summaryEnabled ? 'checked' : ''}>Enable AI Summaries</vscode-checkbox>
                 <div class="setting-description">Automatically generate a concise summary of every failure in the output log.</div>
@@ -328,6 +354,7 @@ export class SettingsPanel {
                 successSound: document.getElementById('successSound').value,
                 successEnabled: document.getElementById('successEnabled').checked,
                 aiProvider: document.getElementById('aiProvider').value,
+                'ai.model': document.getElementById('aiModel').value,
                 'aiSummary.enabled': document.getElementById('aiSummaryEnabled').checked
             };
             
@@ -344,6 +371,17 @@ export class SettingsPanel {
             });
             document.getElementById('apply-container').style.display = 'flex';
         }
+
+        document.getElementById('aiProvider').addEventListener('change', (e) => {
+            if (e.target.value === 'copilot') {
+                document.getElementById('api-key-container').style.display = 'none';
+                document.getElementById('model-container').style.display = 'none';
+            } else {
+                document.getElementById('api-key-container').style.display = 'flex';
+                document.getElementById('model-container').style.display = 'flex';
+            }
+            notifyChange();
+        });
 
         document.getElementById('enabled').addEventListener('change', notifyChange);
         document.getElementById('volume').addEventListener('input', notifyChange);
@@ -363,12 +401,28 @@ export class SettingsPanel {
             vscode.postMessage({ command: 'testSound', sound: document.getElementById('successSound').value, volume: document.getElementById('volume').value });
         });
 
-        document.getElementById('aiProvider').addEventListener('change', (e) => {
-            document.getElementById('api-key-container').style.display = e.target.value === 'copilot' ? 'none' : 'flex';
-            notifyChange();
-        });
+
         document.getElementById('apiKey').addEventListener('input', notifyChange);
         document.getElementById('aiSummaryEnabled').addEventListener('change', notifyChange);
+        document.getElementById('aiModel').addEventListener('change', notifyChange);
+
+        const fetchModelsBtn = document.getElementById('fetchModelsBtn');
+        const aiModelDropdown = document.getElementById('aiModel');
+
+        if (fetchModelsBtn) {
+            fetchModelsBtn.addEventListener('click', () => {
+                const provider = document.getElementById('aiProvider').value;
+                const apiKey = document.getElementById('apiKey').value;
+                if (!apiKey) {
+                    document.getElementById('apiKeyStatus').textContent = 'Please enter API key first.';
+                    document.getElementById('apiKeyStatus').style.color = 'var(--vscode-charts-red)';
+                    return;
+                }
+                document.getElementById('apiKeyStatus').textContent = '';
+                fetchModelsBtn.textContent = 'Fetching...';
+                vscode.postMessage({ command: 'fetchModels', provider, key: apiKey });
+            });
+        }
 
         document.getElementById('apiKeySubmit').addEventListener('click', () => {
             const apiKey = document.getElementById('apiKey').value;
@@ -399,6 +453,21 @@ export class SettingsPanel {
                         el.style.transition = 'background-color 1s ease';
                         el.style.backgroundColor = 'transparent';
                     }, 1000);
+                }
+            } else if (message.command === 'modelsFetched') {
+                const btn = document.getElementById('fetchModelsBtn');
+                if (btn) btn.textContent = 'Fetch Models';
+                const dd = document.getElementById('aiModel');
+                if (message.models && message.models.length > 0) {
+                    dd.innerHTML = message.models.map(m => 
+                        \`<vscode-option value="\${m.id}">\${m.name}</vscode-option>\`
+                    ).join('');
+                    document.getElementById('apiKeyStatus').textContent = 'Models fetched successfully.';
+                    document.getElementById('apiKeyStatus').style.color = 'var(--vscode-charts-green)';
+                    notifyChange();
+                } else {
+                    document.getElementById('apiKeyStatus').textContent = 'No models available or fetch failed.';
+                    document.getElementById('apiKeyStatus').style.color = 'var(--vscode-charts-red)';
                 }
             }
         });

@@ -82,6 +82,13 @@ export interface AiProvider {
      * @returns The provider's text response, or `null` if the call failed.
      */
     chat(request: AiChatRequest): Promise<string | null>;
+    
+    /**
+     * Fetch the list of available free models from the provider.
+     * @param apiKey The API key for the provider.
+     * @returns A promise resolving to a list of models with their id and display name.
+     */
+    fetchModels?(apiKey: string): Promise<{id: string, name: string}[]>;
 }
 
 /** HTTP request timeout for any provider call. */
@@ -115,6 +122,28 @@ class OpenRouterProvider implements AiProvider {
         defaultModel: 'meta-llama/llama-3.2-3b-instruct:free',
         category: 'free'
     };
+
+    async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
+        try {
+            const res = await fetch('https://openrouter.ai/api/v1/models', {
+                headers: { ...COMMON_HEADERS, Authorization: `Bearer ${apiKey}` },
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+            });
+            if (!res.ok) return [];
+            const data = await res.json() as { data?: { id: string; name: string; pricing?: { prompt: string; completion: string } }[] };
+            if (!data || !data.data) return [];
+            // Filter only free models
+            return data.data
+                .filter(m => {
+                    const p = m.pricing?.prompt;
+                    const c = m.pricing?.completion;
+                    return p === "0" && c === "0";
+                })
+                .map(m => ({ id: m.id, name: m.name || m.id }));
+        } catch {
+            return [];
+        }
+    }
 
     async chat(request: AiChatRequest): Promise<string | null> {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -165,6 +194,21 @@ class GroqProvider implements AiProvider {
         category: 'free'
     };
 
+    async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
+        try {
+            const res = await fetch('https://api.groq.com/openai/v1/models', {
+                headers: { ...COMMON_HEADERS, Authorization: `Bearer ${apiKey}` },
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+            });
+            if (!res.ok) return [];
+            const data = await res.json() as { data?: { id: string }[] };
+            if (!data || !data.data) return [];
+            return data.data.map(m => ({ id: m.id, name: m.id }));
+        } catch {
+            return [];
+        }
+    }
+
     async chat(request: AiChatRequest): Promise<string | null> {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -211,6 +255,25 @@ class GeminiProvider implements AiProvider {
         defaultModel: 'gemini-2.0-flash',
         category: 'free'
     };
+
+    async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+                headers: COMMON_HEADERS,
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+            });
+            if (!res.ok) return [];
+            const data = await res.json() as { models?: { name: string; displayName: string }[] };
+            if (!data || !data.models) return [];
+            // Remove 'models/' prefix from name for id
+            return data.models.map(m => ({ 
+                id: m.name.replace('models/', ''), 
+                name: m.displayName || m.name 
+            }));
+        } catch {
+            return [];
+        }
+    }
 
     async chat(request: AiChatRequest): Promise<string | null> {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(request.model)}:generateContent`;
