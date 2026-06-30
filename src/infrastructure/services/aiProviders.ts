@@ -131,7 +131,7 @@ class OpenRouterProvider implements AiProvider {
             });
             if (!res.ok) return [];
             const data = await res.json() as { data?: { id: string; name: string; pricing?: { prompt: string; completion: string } }[] };
-            if (!data || !data.data) return [];
+            if (!data?.data) return [];
             // Filter only free models
             return data.data
                 .filter(m => {
@@ -202,7 +202,7 @@ class GroqProvider implements AiProvider {
             });
             if (!res.ok) return [];
             const data = await res.json() as { data?: { id: string }[] };
-            if (!data || !data.data) return [];
+            if (!data?.data) return [];
             return data.data.map(m => ({ id: m.id, name: m.id }));
         } catch {
             return [];
@@ -264,7 +264,7 @@ class GeminiProvider implements AiProvider {
             });
             if (!res.ok) return [];
             const data = await res.json() as { models?: { name: string; displayName: string }[] };
-            if (!data || !data.models) return [];
+            if (!data?.models) return [];
             // Remove 'models/' prefix from name for id
             return data.models.map(m => ({ 
                 id: m.name.replace('models/', ''), 

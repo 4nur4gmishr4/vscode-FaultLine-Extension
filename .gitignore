@@ -38,9 +38,6 @@ Thumbs.db
 *.swo
 *~
 
-# Local AI tooling caches
-.commandcode/
-.kiro/
 
 # Temporary files
 _test_output.txt
