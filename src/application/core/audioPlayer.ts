@@ -1,6 +1,7 @@
 import { execFile, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { Logger } from '../../shared/utils/logger';
 import { isWSL, convertWSLPathToWindows } from './wsl';
 import type { AudioOptions } from '../../domain/types/index';
@@ -215,7 +216,6 @@ Wend
 WScript.Echo "FAULTLINE_OK"
 `;
         
-        const os = require('os');
         const vbsPath = path.join(os.tmpdir(), `faultline_play_${Date.now()}_${Math.floor(Math.random() * 1000)}.vbs`);
         fs.writeFileSync(vbsPath, scriptContent);
 

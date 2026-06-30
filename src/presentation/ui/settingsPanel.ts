@@ -64,6 +64,7 @@ export class SettingsPanel {
                         if (message.provider && message.key) {
                             await this.secretManager.storeApiKey(message.provider, message.key);
                             const config = vscode.workspace.getConfiguration('faultline');
+                            await config.update('aiProvider', undefined, vscode.ConfigurationTarget.Workspace);
                             await config.update('aiProvider', message.provider, vscode.ConfigurationTarget.Global);
                             void vscode.window.showInformationMessage(`FaultLine: API key and AI Provider saved securely.`);
                             
@@ -75,7 +76,7 @@ export class SettingsPanel {
                         return;
                     
                     case 'testSound':
-                        vscode.commands.executeCommand('faultline.testSound', (message as any).sound, (message as any).volume);
+                        void vscode.commands.executeCommand('faultline.testSound', (message as any).sound, (message as any).volume);
                         return;
                     case 'reset':
                         this.isDirty = false;
@@ -133,6 +134,7 @@ export class SettingsPanel {
             
             // Save standard settings
             for (const [key, value] of Object.entries(this.pendingConfig)) {
+                await config.update(key, undefined, vscode.ConfigurationTarget.Workspace);
                 await config.update(key, value, vscode.ConfigurationTarget.Global);
             }
 

@@ -5,6 +5,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Logger } from '../../shared/utils/logger';
 import { ConfigManager } from '../../shared/config/configManager';
 import { SecretManager } from '../../shared/config/secretManager';
@@ -71,9 +74,7 @@ export class FaultLineRuntime {
 
     private cleanOrphanedTempFiles(): void {
         try {
-            const os = require('os');
-            const fs = require('fs');
-            const path = require('path');
+
             const tmpDir = os.tmpdir();
             const files = fs.readdirSync(tmpDir);
             let cleaned = 0;
