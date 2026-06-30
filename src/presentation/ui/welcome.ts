@@ -135,14 +135,16 @@ export class WelcomePanel {
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
         const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'faultline-logo.jpeg')).toString();
         const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'faultline.mp3'));
-                const nonce = generateNonce();
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'));
+        const nonce = generateNonce();
 
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; media-src ${webview.cspSource}; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; media-src ${webview.cspSource}; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline';">
+    <link href="${codiconsUri.toString()}" rel="stylesheet" />
     <title>Welcome to FaultLine</title>
     <style>
         :root {

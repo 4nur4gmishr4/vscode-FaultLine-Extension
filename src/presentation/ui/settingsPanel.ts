@@ -76,12 +76,20 @@ export class SettingsPanel {
                         return;
                     
                     case 'fetchModels':
-                        if (message.provider && message.key) {
+                        if (message.provider) {
+                            let keyToUse = message.key;
+                            if (!keyToUse) {
+                                keyToUse = await this.secretManager.getApiKey(message.provider);
+                            }
+                            if (!keyToUse) {
+                                void SettingsPanel.currentPanel?.panel.webview.postMessage({ command: 'modelsFetched', error: 'No API key provided or found in storage.' });
+                                return;
+                            }
                             const providerObj = getProvider(message.provider);
                             if (providerObj) {
                                 let models: {id: string, name: string}[] = [];
                                 if (providerObj.fetchModels) {
-                                    models = await providerObj.fetchModels(message.key);
+                                    models = await providerObj.fetchModels(keyToUse);
                                 }
                                 if (!models || models.length === 0) {
                                     models = providerObj.info.models.map(m => ({ id: m, name: m }));
@@ -440,11 +448,6 @@ export class SettingsPanel {
             fetchModelsBtn.addEventListener('click', () => {
                 const provider = document.getElementById('aiProvider').value;
                 const apiKey = document.getElementById('apiKey').value;
-                if (!apiKey) {
-                    document.getElementById('apiKeyStatus').textContent = 'Please enter API key first.';
-                    document.getElementById('apiKeyStatus').style.color = 'var(--vscode-charts-red)';
-                    return;
-                }
                 document.getElementById('apiKeyStatus').textContent = '';
                 fetchModelsBtn.textContent = 'Fetching...';
                 vscode.postMessage({ command: 'fetchModels', provider, key: apiKey });
@@ -484,6 +487,13 @@ export class SettingsPanel {
             } else if (message.command === 'modelsFetched') {
                 const btn = document.getElementById('fetchModelsBtn');
                 if (btn) btn.textContent = 'Fetch Models';
+                
+                if (message.error) {
+                    document.getElementById('apiKeyStatus').textContent = message.error;
+                    document.getElementById('apiKeyStatus').style.color = 'var(--vscode-charts-red)';
+                    return;
+                }
+
                 const dd = document.getElementById('aiModel');
                 if (message.models && message.models.length > 0) {
                     dd.innerHTML = message.models.map(m => 
