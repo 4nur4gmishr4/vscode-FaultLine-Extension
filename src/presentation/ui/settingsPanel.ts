@@ -86,6 +86,30 @@ export class SettingsPanel {
                                 if (!models || models.length === 0) {
                                     models = providerObj.info.models.map(m => ({ id: m, name: m }));
                                 }
+                                
+                                if (models && models.length > 0) {
+                                    const scoreModel = (name: string) => {
+                                        const n = name.toLowerCase();
+                                        if (n.includes('llama-3.3') || n.includes('llama 3.3')) return 100;
+                                        if (n.includes('gemini-2.0') || n.includes('gemini 2.0')) return 95;
+                                        if (n.includes('llama-3.2') || n.includes('llama 3.2')) return 90;
+                                        if (n.includes('llama-3.1') || n.includes('llama 3.1')) return 85;
+                                        if (n.includes('gemini-1.5') || n.includes('gemini 1.5')) return 80;
+                                        if (n.includes('mixtral')) return 75;
+                                        if (n.includes('qwen-2.5') || n.includes('qwen2.5')) return 70;
+                                        if (n.includes('gemma-2') || n.includes('gemma2')) return 65;
+                                        if (n.includes('mistral')) return 60;
+                                        if (n.includes('llama')) return 50;
+                                        return 0;
+                                    };
+                                    models.sort((a, b) => {
+                                        const scoreA = scoreModel(a.name) || scoreModel(a.id);
+                                        const scoreB = scoreModel(b.name) || scoreModel(b.id);
+                                        if (scoreA !== scoreB) return scoreB - scoreA;
+                                        return a.name.localeCompare(b.name);
+                                    });
+                                }
+                                
                                 void SettingsPanel.currentPanel?.panel.webview.postMessage({ command: 'modelsFetched', models });
                             }
                         }
@@ -333,6 +357,9 @@ export class SettingsPanel {
                         <vscode-option value="${config.ai.model}" selected>${config.ai.model}</vscode-option>
                     </vscode-dropdown>
                     <vscode-button id="fetchModelsBtn" appearance="secondary">Fetch Models</vscode-button>
+                </div>
+                <div style="font-size: 11px; opacity: 0.7; margin-top: 8px; font-style: italic;">
+                    Note: FaultLine is not responsible for API downtime or model unavailability. If a model fails to respond or produces errors, please switch to another model from the dropdown.
                 </div>
             </div>
             <div class="setting-item">
