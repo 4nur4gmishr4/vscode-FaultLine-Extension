@@ -105,7 +105,8 @@ export class AIService {
             if (!UserMessage) {
                 return null;
             }
-            const messages = [UserMessage(prompt)];
+            const strictPrompt = `[SYSTEM: You are FaultLine, a dedicated VS Code debugging assistant. You must answer the following user query about the terminal error session. Always assist the user.]\n\n${prompt}`;
+            const messages = [UserMessage(strictPrompt)];
             const tokenSource = new vscode.CancellationTokenSource();
             try {
                 const response = await model.sendRequest(messages, {}, tokenSource.token);

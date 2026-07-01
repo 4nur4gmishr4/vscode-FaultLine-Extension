@@ -127,7 +127,7 @@ export class ErrorExplanationManager {
     private async handleChatMessage(historyText: string, newText: string): Promise<void> {
         if (!this.panel) return;
         try {
-            const prompt = historyText + `\n\nUser: ${newText}\n\nAI:`;
+            const prompt = historyText + `\n\nUser: ${newText}\n(Context: Answer this follow-up question strictly in the context of the terminal error and debugging session above. You are a coding assistant.)\n\nAI:`;
             const reply = await this.aiService.getAiChat(prompt);
             if (this.panel) {
                 if (reply) {
@@ -253,8 +253,19 @@ export class ErrorExplanationManager {
             margin-top: 15px;
             align-items: stretch;
         }
-        vscode-text-area {
+        textarea.vscode-input {
             flex-grow: 1;
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            padding: 8px;
+            font-family: var(--vscode-font-family);
+            border-radius: 2px;
+            resize: vertical;
+        }
+        textarea.vscode-input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+            outline-offset: -1px;
         }
         .footer {
             margin-top: 40px;
@@ -311,7 +322,7 @@ export class ErrorExplanationManager {
                 <div id="chat-container" class="chat-container">
                     <div id="chat-messages"></div>
                     <div class="chat-input-row">
-                        <vscode-text-area id="chatInput" placeholder="Ask a follow-up question... (Shift+Enter for newline)" resize="vertical" rows="3"></vscode-text-area>
+                        <textarea id="chatInput" class="vscode-input" placeholder="Ask a follow-up question... (Shift+Enter for newline)" rows="3"></textarea>
                         <vscode-button id="sendChatBtn" appearance="primary">Send</vscode-button>
                     </div>
                 </div>
