@@ -30,7 +30,7 @@
     "build",
     "terminal"
   ],
-  "icon": "resources/faultline-logo.jpeg",
+  "icon": "resources/faultline-logo.png",
   "galleryBanner": {
     "color": "#1e1e1e",
     "theme": "dark"
