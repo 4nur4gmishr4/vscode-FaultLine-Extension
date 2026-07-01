@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { FaultLineRuntime } from './application/runtime/faultline';
 import { registerCommands } from './presentation/commands/index';
@@ -18,7 +12,7 @@ let runtime: FaultLineRuntime | null = null;
 export function activate(ctx: vscode.ExtensionContext): void {
     runtime = new FaultLineRuntime(ctx);
     
-    const version = (ctx.extension.packageJSON?.version as string | undefined) ?? 'unknown';
+    const version = ((ctx.extension.packageJSON as { version?: string })?.version) ?? 'unknown';
     runtime.logger.info(`FaultLine v${version} activating on ${process.platform} (VS Code ${vscode.version}).`);
 
     runtime.activate();
@@ -57,7 +51,7 @@ export function deactivate(): void {
 }
 
 async function maybeShowWelcomeOnInstall(ctx: vscode.ExtensionContext, rt: FaultLineRuntime): Promise<void> {
-    const version = ctx.extension.packageJSON.version as string;
+    const version = (ctx.extension.packageJSON as { version: string }).version;
     const lastVersion = rt.stateStore.getLastVersion();
     
     if (shouldShowWelcome(lastVersion, version)) {

@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -11,14 +5,15 @@ import { FaultLineRuntime } from '../../application/runtime/faultline';
 
 export function registerSoundCommands(ext: FaultLineRuntime, disposables: vscode.Disposable[]): void {
     disposables.push(
-        vscode.commands.registerCommand('faultline.testSound', async (soundFile, volume) => {
+        vscode.commands.registerCommand('faultline.testSound', async (soundFile: string, volume?: number | string) => {
             try {
 
                 let absolutePath = soundFile;
                 if (!path.isAbsolute(soundFile)) {
-                    absolutePath = path.join((ext as any).ctx.extensionPath, 'resources', 'packs', 'default', soundFile);
+                    const ctx = (ext as unknown as { ctx: vscode.ExtensionContext }).ctx;
+                    absolutePath = path.join(ctx.extensionPath, 'resources', 'packs', 'default', soundFile);
                     if (!fs.existsSync(absolutePath)) {
-                        absolutePath = path.join((ext as any).ctx.extensionPath, 'resources', 'packs', 'success', soundFile);
+                        absolutePath = path.join(ctx.extensionPath, 'resources', 'packs', 'success', soundFile);
                     }
                 }
                 const vol = volume ? Number(volume) : ext.configManager.readConfig().audio.volume;

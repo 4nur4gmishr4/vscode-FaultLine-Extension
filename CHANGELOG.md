@@ -7,6 +7,18 @@
 
 All notable changes to the FaultLine extension will be documented in this file.
 
+## [3.1.0]
+
+### Added
+- **Full Interactive AI Chat**: The Error Explanation window now includes a fully functional, interactive chat interface seamlessly integrated with your terminal context.
+- **Context-Aware Debugging**: The AI model now receives the complete terminal command and the full terminal output log when explaining an error, ensuring highly accurate solutions.
+- **Enhanced UI Components**: The Webview now features an advanced layout with chat bubbles, typing indicators, and a unified design matching the VS Code theme.
+
+### Changed
+- **Repositioned Core Identity**: FaultLine is now primarily an AI-driven debugger, explainer, and solver assistant, with background audio alerts serving as a secondary enhancement.
+- **Immediate Feedback Loop**: Completely removed the internal audio cooldown and debounce systems to ensure instant auditory feedback on success and failure without delay.
+- **Improved Error Copying**: The "Copy Error" button in the analysis window now correctly captures both the executed command and the entire output stack trace for easy sharing.
+
 ## [3.0.0]
 
 ### Added

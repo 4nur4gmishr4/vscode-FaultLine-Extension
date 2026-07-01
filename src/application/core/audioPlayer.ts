@@ -27,8 +27,6 @@ export class AudioPlayer {
     private playing = false;
     private currentChild: ChildProcess | null = null;
     private warnedMissingPlayer = false;
-    private lastPlayTime = 0;
-    private readonly COOLDOWN_MS = 2000;
     private queue: Array<{
         filePath: string;
         options: AudioOptions;
@@ -75,14 +73,12 @@ export class AudioPlayer {
         }
 
         return new Promise<void>((resolve, reject) => {
-            const now = Date.now();
-            if (this.playing || (now - this.lastPlayTime < this.COOLDOWN_MS)) {
-                const msg = 'Audio dropped due to 5-second cooldown or currently playing.';
+            if (this.playing) {
+                const msg = 'Audio dropped due to currently playing.';
                 this.logger.debug(msg);
                 reject(new Error(msg));
                 return;
             }
-            this.lastPlayTime = now;
             this.playInternal(absolutePath, options, resolve, reject);
         });
     }
@@ -202,11 +198,22 @@ export class AudioPlayer {
         })();
     }
 
+    /**
+     * Escapes a path for safe embedding inside a double-quoted VBScript string literal.
+     * VBScript escapes a literal quote by doubling it (`""`); CR/LF would terminate the
+     * statement, so they are stripped. Without this, a path containing `"` could break out
+     * of the string and inject arbitrary VBScript executed by cscript.
+     */
+    private escapeForVbsString(value: string): string {
+        return value.replace(/[\r\n]/g, '').replace(/"/g, '""');
+    }
+
     private playWindows(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
         const vol = Math.round(Math.min(Math.max(volume01, 0), 1) * 100);
+        const safePath = this.escapeForVbsString(filePath);
         const scriptContent = `
 Set Sound = CreateObject("WMPlayer.OCX.7")
-Sound.URL = "${filePath}"
+Sound.URL = "${safePath}"
 Sound.settings.volume = ${vol}
 Sound.controls.play
 WScript.Sleep 500
@@ -242,7 +249,7 @@ WScript.Echo "FAULTLINE_OK"
                 } else if (!/FAULTLINE_OK/.test(stdout || '')) {
                     this.logger.warn(`VBScript audio finished without FAULTLINE_OK marker. stdout=${(stdout || '').trim().slice(0, 200)}`);
                 } else {
-                    this.logger.debug('PowerShell audio finished cleanly.');
+                    this.logger.debug('VBScript audio finished cleanly.');
                 }
                 done(err);
             }

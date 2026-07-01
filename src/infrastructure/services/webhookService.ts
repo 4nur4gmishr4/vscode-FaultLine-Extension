@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as http from 'http';
 import * as https from 'https';
 import { Logger } from '../../shared/utils/logger';
@@ -12,6 +6,70 @@ import { SecretManager } from '../../shared/config/secretManager';
 
 const WEBHOOK_MAX_RETRIES = 3;
 const WEBHOOK_RETRY_DELAY_MS = 1000;
+
+/** IPv4 ranges that must never be reached from an unconstrained webhook (SSRF guard). */
+const PRIVATE_IPV4_PATTERNS: readonly RegExp[] = [
+    /^0\./,                          // "this host" / 0.0.0.0
+    /^127\./,                        // loopback
+    /^10\./,                         // RFC1918
+    /^192\.168\./,                   // RFC1918
+    /^169\.254\./,                   // link-local
+    /^172\.(1[6-9]|2\d|3[0-1])\./    // RFC1918 172.16.0.0–172.31.255.255
+];
+
+/**
+ * Returns true if the host is loopback / private / link-local and therefore a plausible
+ * SSRF target. Handles IPv6 (bracketed or bare), IPv4-mapped IPv6, and `.local`/localhost.
+ * This intentionally errs toward blocking; users opt into internal hosts via an allowlist.
+ */
+export function isPrivateHost(host: string): boolean {
+    const h = host.toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+    if (h === 'localhost' || h.endsWith('.local')) {
+        return true;
+    }
+    if (h === '::1' || h === '::' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe80')) {
+        return true; // IPv6 loopback, unique-local (fc00::/7), link-local (fe80::/10)
+    }
+    const mapped = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(h);
+    const target = mapped ? mapped[1] : h;
+    return PRIVATE_IPV4_PATTERNS.some((re) => re.test(target));
+}
+
+export interface WebhookUrlDecision {
+    readonly allowed: boolean;
+    /** Human-readable reason when `allowed` is false (safe to log). */
+    readonly reason?: string;
+}
+
+/**
+ * Pure SSRF/format gate for outbound webhook URLs. Extracted so it can be unit-tested
+ * without a live network. An explicit allowlist is treated as the user's opt-in (exact,
+ * case-insensitive host match) and overrides the private-host block; with no allowlist,
+ * only public http(s) hosts are permitted.
+ */
+export function evaluateWebhookUrl(rawUrl: string, allowedDomains: ReadonlyArray<string>): WebhookUrlDecision {
+    let url: URL;
+    try {
+        url = new URL(rawUrl);
+    } catch {
+        return { allowed: false, reason: 'Invalid webhook URL format.' };
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        return { allowed: false, reason: `Invalid webhook URL protocol: ${url.protocol}. Must be http: or https:` };
+    }
+
+    const host = url.hostname.toLowerCase();
+    if (allowedDomains.length > 0) {
+        const allowed = allowedDomains.some((d) => d.trim().toLowerCase() === host);
+        return allowed
+            ? { allowed: true }
+            : { allowed: false, reason: `Webhook host "${host}" is not in faultline.webhookAllowedDomains. Skipping POST.` };
+    }
+    if (isPrivateHost(host)) {
+        return { allowed: false, reason: `Webhook to private host "${host}" blocked for security. Add to webhookAllowedDomains to allow.` };
+    }
+    return { allowed: true };
+}
 
 /**
  * Service for sending failure notifications via webhooks and Jira.
@@ -29,29 +87,9 @@ export class WebhookService {
             return;
         }
 
-        let url: URL;
-        try {
-            url = new URL(cfg.url);
-        } catch {
-            this.logger.warn(`Invalid webhook URL format: ${cfg.url}`);
-            return;
-        }
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-            this.logger.warn(`Invalid webhook URL protocol: ${url.protocol}. Must be http: or https:`);
-            return;
-        }
-
-        const host = url.hostname.toLowerCase();
-        const isPrivateIp = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)|localhost|::1/.test(host);
-        
-        if (cfg.allowedDomains.length > 0) {
-            const allowed = cfg.allowedDomains.includes(host);
-            if (!allowed) {
-                this.logger.warn(`Webhook host "${host}" is not in faultline.webhookAllowedDomains. Skipping POST.`);
-                return;
-            }
-        } else if (isPrivateIp) {
-            this.logger.warn(`Webhook to private IP "${host}" blocked for security. Add to webhookAllowedDomains to allow.`);
+        const decision = evaluateWebhookUrl(cfg.url, cfg.allowedDomains);
+        if (!decision.allowed) {
+            this.logger.warn(decision.reason ?? 'Webhook URL rejected.');
             return;
         }
 

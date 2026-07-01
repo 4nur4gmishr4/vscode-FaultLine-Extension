@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { ConfigManager } from '../../shared/config/configManager';
 import { SecretManager } from '../../shared/config/secretManager';
@@ -48,7 +42,7 @@ export class SettingsPanel {
         
         // Unsaved changes protection
         this.panel.webview.onDidReceiveMessage(
-            async (message: { command: string; config?: Record<string, unknown>; secrets?: Record<string, string>; provider?: string; key?: string }) => {
+            async (message: { command: string; config?: Record<string, unknown>; secrets?: Record<string, string>; provider?: string; key?: string; sound?: string; volume?: string | number }) => {
                 switch (message.command) {
                     case 'changed':
                         this.isDirty = true;
@@ -123,7 +117,7 @@ export class SettingsPanel {
                         }
                         return;
                     case 'testSound':
-                        void vscode.commands.executeCommand('faultline.testSound', (message as any).sound, (message as any).volume);
+                        void vscode.commands.executeCommand('faultline.testSound', message.sound, message.volume);
                         return;
                     case 'reset':
                         this.isDirty = false;
@@ -222,10 +216,10 @@ export class SettingsPanel {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
     <link href="${codiconsUri.toString()}" rel="stylesheet" />
     <title>FaultLine Settings</title>
-    <style>
+    <style nonce="${nonce}">
         body {
             padding: 0;
             color: var(--vscode-foreground);
@@ -343,7 +337,7 @@ export class SettingsPanel {
                 <label class="setting-label">AI Provider</label>
                 <div class="setting-description">Select which Large Language Model provider to use for error analysis.</div>
                 <vscode-dropdown id="aiProvider">
-                    ${providers.map(p => `<vscode-option value="${p.id}" ${config.ai.provider === p.id ? 'selected' : ''}>${p.displayName}</vscode-option>`).join('')}
+                    ${providers.map(p => `<vscode-option value="${p.id}" ${config.ai.provider === p.id ? 'selected' : ''}>${this.escapeHtml(p.displayName)}</vscode-option>`).join('')}
                 </vscode-dropdown>
             </div>
             <div class="setting-item" id="api-key-container" style="display: ${config.ai.provider === 'copilot' ? 'none' : 'flex'}">
@@ -379,7 +373,16 @@ export class SettingsPanel {
 
     <script type="module" nonce="${nonce}" src="${toolkitUri.toString()}"></script>
     <script nonce="${nonce}">
-        const vscode = acquireVsCodeApi();
+            const escapeHtml = (unsafe) => {
+                return String(unsafe)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            };
+
+            const vscode = acquireVsCodeApi();
         
         function notifyChange() {
             const config = {
@@ -497,7 +500,7 @@ export class SettingsPanel {
                 const dd = document.getElementById('aiModel');
                 if (message.models && message.models.length > 0) {
                     dd.innerHTML = message.models.map(m => 
-                        \`<vscode-option value="\${m.id}">\${m.name}</vscode-option>\`
+                        \`<vscode-option value="\${escapeHtml(m.id)}">\${escapeHtml(m.name)}</vscode-option>\`
                     ).join('');
                     document.getElementById('apiKeyStatus').textContent = 'Models fetched successfully.';
                     document.getElementById('apiKeyStatus').style.color = 'var(--vscode-charts-green)';
@@ -520,6 +523,15 @@ export class SettingsPanel {
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         }
         return text;
+    }
+
+    private escapeHtml(unsafe: string): string {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     public async dispose(): Promise<void> {

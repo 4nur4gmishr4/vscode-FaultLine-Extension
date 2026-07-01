@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { Logger } from '../../shared/utils/logger';
 import { ConfigManager } from '../../shared/config/configManager';
@@ -56,6 +50,18 @@ export class AIService {
         }
     }
 
+    public async getAiChat(history: string): Promise<string | null> {
+        try {
+            const cfg = this.configManager.readConfig().ai;
+            return await this.callProvider(cfg.provider, history, 1000);
+        } catch (err) {
+            this.logger.error('Failed to get AI chat', err);
+            const msg = err instanceof Error ? err.message : String(err);
+            void vscode.window.showErrorMessage(`FaultLine AI Chat: ${msg}`);
+            return null;
+        }
+    }
+
     private async callProvider(providerId: string, prompt: string, maxTokens: number): Promise<string | null> {
         const normalized = (providerId || '').toLowerCase();
 
@@ -81,14 +87,25 @@ export class AIService {
 
     private async callCopilot(prompt: string): Promise<string | null> {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const models = await (vscode as any).lm?.selectChatModels?.({});
+            interface CopilotModel {
+                sendRequest(messages: unknown[], options: object, token: vscode.CancellationToken): Promise<{ text: AsyncIterable<string> }>;
+            }
+            interface VscodeCopilotApi {
+                lm?: { selectChatModels?: (opts: object) => Promise<CopilotModel[]> };
+                LanguageModelChatMessage?: { User: (p: string) => unknown };
+            }
+
+            const vscodeApi = vscode as unknown as VscodeCopilotApi;
+            const models = await vscodeApi.lm?.selectChatModels?.({});
             if (!models || models.length === 0) {
                 return null;
             }
             const model = models[0];
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const messages = [(vscode as any).LanguageModelChatMessage.User(prompt)];
+            const UserMessage = vscodeApi.LanguageModelChatMessage?.User;
+            if (!UserMessage) {
+                return null;
+            }
+            const messages = [UserMessage(prompt)];
             const tokenSource = new vscode.CancellationTokenSource();
             try {
                 const response = await model.sendRequest(messages, {}, tokenSource.token);

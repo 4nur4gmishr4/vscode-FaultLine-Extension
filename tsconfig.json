@@ -34,8 +34,6 @@
     ".vscode-test",
     "out",
     "coverage",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "__mocks__"
+    "src/test"
   ]
 }

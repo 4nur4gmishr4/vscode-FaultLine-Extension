@@ -1,12 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { FaultLineConfig, FailureHandler } from '../../domain/types/index';
 import { Logger } from '../../shared/utils/logger';
+import { sanitizePII } from '../security/pii';
+
+interface TerminalShellExecutionStartEvent {
+    read(): AsyncIterable<string>;
+    __faultline_output?: string;
+}
+
+interface TerminalShellExecutionEndEvent {
+    exitCode: number | undefined;
+    commandLine?: { value: string };
+    __faultline_output?: string;
+}
+
+interface CustomWindow {
+    onDidStartTerminalShellExecution?: (listener: (e: TerminalShellExecutionStartEvent) => void) => vscode.Disposable;
+    onDidEndTerminalShellExecution?: (listener: (e: TerminalShellExecutionEndEvent) => void) => vscode.Disposable;
+}
 
 /**
  * Detects failures in VS Code terminals.
@@ -19,13 +30,11 @@ export class TerminalDetector {
     ) {}
 
     public register(disposables: vscode.Disposable[]): void {
-        // Detect failure via shell integration (reliable, modern)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        
-        const onDidStartTerminalShellExecution = (vscode.window as any).onDidStartTerminalShellExecution;
+        const customWindow = vscode.window as unknown as CustomWindow;
+        const onDidStartTerminalShellExecution = customWindow.onDidStartTerminalShellExecution;
         if (onDidStartTerminalShellExecution) {
             disposables.push(
-                onDidStartTerminalShellExecution((e: any) => {
+                onDidStartTerminalShellExecution((e: TerminalShellExecutionStartEvent) => {
                     try {
                         let output = '';
                         const stream = e.read();
@@ -43,11 +52,10 @@ export class TerminalDetector {
             );
         }
     
-        const onDidEndTerminalShellExecution = (vscode.window as any).onDidEndTerminalShellExecution;
+        const onDidEndTerminalShellExecution = customWindow.onDidEndTerminalShellExecution;
         if (onDidEndTerminalShellExecution) {
             disposables.push(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onDidEndTerminalShellExecution((e: any) => {
+                onDidEndTerminalShellExecution((e: TerminalShellExecutionEndEvent) => {
                     try {
                         const configObj = this.config();
                         const cfg = configObj.detection;
@@ -58,8 +66,10 @@ export class TerminalDetector {
                         }
 
                         if (code !== undefined && code !== 0) {
-                            const label = e.commandLine?.value || 'Terminal Command';
-                            const output = e.__faultline_output || '';
+                            // Command lines routinely contain inline secrets (e.g. `--token=…`);
+                            // redact before the label is stored in history or written to logs.
+                            const label = sanitizePII(e.commandLine?.value || 'Terminal Command');
+                            const output = sanitizePII(e.__faultline_output || '');
                             this.onFailure({ source: 'shell', label, output, timestamp: Date.now() });
                         }
                     } catch (err) {
@@ -71,8 +81,7 @@ export class TerminalDetector {
 
         // Detect failure via terminal closure (fallback, legacy)
         disposables.push(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            vscode.window.onDidCloseTerminal((t: any) => {
+            vscode.window.onDidCloseTerminal((t: vscode.Terminal) => {
                 try {
                     const cfg = this.config().detection;
                     if (!cfg.sources.has('terminal')) {

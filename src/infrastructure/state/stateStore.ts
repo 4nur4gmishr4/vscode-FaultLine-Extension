@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { HistoryEntry } from '../../domain/types/index';
 
@@ -13,9 +7,18 @@ import { HistoryEntry } from '../../domain/types/index';
 export const STATE_KEYS = {
     HISTORY: 'faultline.history',
     DAILY_FAIL_COUNT: 'faultline.dailyFailCount',
+    DAILY_FAIL_DATE: 'faultline.dailyFailDate',
     LAST_VERSION: 'lastVersion',
     API_KEY_MIGRATION_COMPLETED: 'apiKeyMigrationCompleted'
 } as const;
+
+/** Local calendar day (YYYY-MM-DD) used to roll the daily failure counter over at midnight. */
+function today(): string {
+    const d = new Date();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+}
 
 /**
  * Manages persistent state for the extension.
@@ -38,12 +41,26 @@ export class StateStore {
         await this.globalState.update(STATE_KEYS.HISTORY, trimmedHistory);
     }
 
+    /** Current failure count for today; returns 0 if the stored count is from a previous day. */
     public getDailyFailCount(): number {
+        const storedDate = this.globalState.get<string>(STATE_KEYS.DAILY_FAIL_DATE);
+        if (storedDate !== today()) {
+            return 0;
+        }
         return this.globalState.get<number>(STATE_KEYS.DAILY_FAIL_COUNT, 0);
     }
 
-    public async updateDailyFailCount(count: number): Promise<void> {
-        await this.globalState.update(STATE_KEYS.DAILY_FAIL_COUNT, count);
+    /** Increment today's failure count (rolling over from any prior day) and return the new value. */
+    public async incrementDailyFailCount(): Promise<number> {
+        const next = this.getDailyFailCount() + 1;
+        await this.globalState.update(STATE_KEYS.DAILY_FAIL_DATE, today());
+        await this.globalState.update(STATE_KEYS.DAILY_FAIL_COUNT, next);
+        return next;
+    }
+
+    public async resetDailyFailCount(): Promise<void> {
+        await this.globalState.update(STATE_KEYS.DAILY_FAIL_DATE, today());
+        await this.globalState.update(STATE_KEYS.DAILY_FAIL_COUNT, 0);
     }
 
     public getLastVersion(): string | undefined {

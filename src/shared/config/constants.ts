@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /**
  * Centralized constants for the FaultLine extension.
  * Eliminates magic strings and numbers throughout the codebase.
@@ -43,8 +37,6 @@ export const CONFIG = {
         SHOW_NOTIFICATION: 'showNotification',
         NOTIFICATION_LEVEL: 'notificationLevel',
         SOURCES: 'sources',
-        COOLDOWN_MS: 'cooldownMs',
-        COOLDOWN_PER_SOURCE: 'cooldownPerSource',
         MAX_PER_MINUTE: 'maxPerMinute',
         IGNORE_PATTERNS: 'ignorePatterns',
         SHOW_STATUS_BAR: 'showStatusBar',
@@ -118,8 +110,6 @@ export const DEFAULTS = {
     /** Default sources to monitor */
     SOURCES: ['task', 'shell', 'terminal'] as const,
     
-    /** Default cooldown in milliseconds */
-    COOLDOWN_MS: 2000,
     
     /** Default max sounds per minute (0 = unlimited) */
     MAX_PER_MINUTE: 0,
@@ -186,11 +176,6 @@ export const VALIDATION = {
         MAX: 100,
     },
     
-    /** Cooldown range (milliseconds) */
-    COOLDOWN: {
-        MIN: 0,
-        MAX: 60000
-    },
     
     /** Max per minute range */
     MAX_PER_MINUTE: {

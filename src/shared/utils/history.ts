@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import type { FaultLineConfig, HistoryEntry } from '../../domain/types/index';
 import { Logger } from './logger';
@@ -49,7 +43,7 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      * @param state - VS Code Memento for persisting history across sessions
      */
     public constructor(
-        _config: () => FaultLineConfig,
+        private readonly config: () => FaultLineConfig,
         private readonly logger: Logger,
         private readonly state: vscode.Memento
     ) {
@@ -89,8 +83,9 @@ export class HistoryManager implements vscode.TreeDataProvider<HistoryItem> {
      * @param entry - The history entry to add
      */
     public add(entry: HistoryEntry): void {
-        const max = 100;
-        
+        // Honor the user-configured cap (clamped in ConfigManager); never below 1.
+        const max = Math.max(1, this.config().core.historyMax);
+
         // Ensure we have the latest state before modifying
         this.entries = this.state.get<HistoryEntry[]>('faultline.history', []);
         

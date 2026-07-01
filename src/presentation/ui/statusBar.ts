@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import type { FaultLineConfig } from '../../domain/types/index';
 import { Logger } from '../../shared/utils/logger';
@@ -41,15 +35,15 @@ export class StatusBarManager {
 
     /**
      * Creates a new StatusBarManager instance.
-     * 
+     *
      * @param config - Function that returns the current extension configuration
      * @param _logger - Logger instance for diagnostic output (currently unused)
-     * @param state - Optional workspace state for persisting failure count
+     * @param getFailCount - Returns today's failure count for the optional counter badge
      */
     public constructor(
         private readonly config: () => FaultLineConfig,
         _logger: Logger,
-        /* private readonly state?: vscode.Memento */
+        private readonly getFailCount: () => number = () => 0
     ) {}
 
     /**
@@ -107,9 +101,11 @@ export class StatusBarManager {
         }
 
         const enabled = config.core.enabled;
-        this.item.text = enabled ? `$(pulse) FaultLine: ON` : `$(circle-slash) FaultLine: OFF`;
+        const count = this.getFailCount();
+        const counterBadge = cfg.statusBarCounter && count > 0 ? ` ($(error) ${count})` : '';
+        this.item.text = enabled ? `$(pulse) FaultLine: ON${counterBadge}` : `$(circle-slash) FaultLine: OFF`;
         this.item.tooltip = enabled
-            ? 'FaultLine AI tracking is ON — click to disable'
+            ? `FaultLine AI tracking is ON — click to disable${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`
             : 'FaultLine AI tracking is OFF — click to enable';
         this.item.show();
 
@@ -199,19 +195,5 @@ export class StatusBarManager {
         }, 1000);
     }
 
-    /**
-     * Get the current daily failure count.
-     * 
-     * This method retrieves the failure count from workspace state. The count
-     * represents the number of failures detected since the last reset (typically
-     * at the start of each day).
-     * 
-     * @returns The current failure count, or 0 if no state is available
-     * 
-     * @example
-     * ```typescript
-     * const count = statusBarManager.getFailCount();
-     * console.log(`Failures today: ${count}`);
-     * ```
-     */
+
 }

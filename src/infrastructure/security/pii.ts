@@ -1,48 +1,64 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /**
  * PII (Personally Identifiable Information) detection and sanitization utilities.
  * Detects and redacts sensitive data from error messages and logs.
  */
 
+/** Upper bound on input length we will scan, to bound regex work on pathological input. */
+const MAX_SCAN_LENGTH = 100_000;
+
+interface PiiPattern {
+    /** Human-readable type name reported by {@link getDetectedPIITypes}. */
+    readonly name: string;
+    readonly pattern: RegExp;
+    readonly replacement: string | ((match: string) => string);
+}
+
 /**
- * PII patterns for detection and redaction.
+ * Heuristic: a long token is "base64-ish" only if it mixes character classes the way
+ * real base64 does. A 40-char commit SHA (all-hex, single case) or a UUID therefore does
+ * NOT match, which avoids redacting benign identifiers out of error logs.
  */
-const PII_PATTERNS = [
-    // API Keys
-    { pattern: /sk-[a-zA-Z0-9]{20,}/g, replacement: '[API_KEY]' },
-    { pattern: /sk-or-v1-[a-zA-Z0-9_-]{20,}/g, replacement: '[OPENROUTER_KEY]' },
-    { pattern: /gsk_[a-zA-Z0-9]{40,}/g, replacement: '[GROQ_KEY]' },
-    { pattern: /AIza[a-zA-Z0-9_-]{35}/g, replacement: '[GOOGLE_KEY]' },
-    { pattern: /hf_[a-zA-Z0-9]{30,}/g, replacement: '[HUGGINGFACE_KEY]' },
-    { pattern: /sk-ant-[a-zA-Z0-9_-]{20,}/g, replacement: '[ANTHROPIC_KEY]' },
-    
-    // Email addresses
-    { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[EMAIL]' },
-    
-    // IP addresses
-    { pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, replacement: '[IP_ADDRESS]' },
-    
-    // URLs with potential sensitive data
-    { pattern: /https?:\/\/[^\s]+/g, replacement: '[URL]' },
-    
-    // Passwords in common patterns
-    { pattern: /password["']?\s*[:=]\s*["']?[^"'\s]+["']?/gi, replacement: 'password="[PASSWORD]"' },
-    { pattern: /passwd["']?\s*[:=]\s*["']?[^"'\s]+["']?/gi, replacement: 'passwd="[PASSWORD]"' },
-    
-    // Tokens and secrets
-    { pattern: /token["']?\s*[:=]\s*["']?[^"'\s]{20,}["']?/gi, replacement: 'token="[TOKEN]"' },
-    { pattern: /secret["']?\s*[:=]\s*["']?[^"'\s]{20,}["']?/gi, replacement: 'secret="[SECRET]"' },
-    
-    // AWS keys
-    { pattern: /AKIA[0-9A-Z]{16}/g, replacement: '[AWS_KEY]' },
-    
-    // Base64 encoded strings (likely sensitive)
-    { pattern: /[A-Za-z0-9+/]{40,}={0,2}/g, replacement: '[BASE64]' }
+function looksLikeBase64Secret(value: string): boolean {
+    if (/[+/=]/.test(value)) {
+        return true;
+    }
+    const hasLower = /[a-z]/.test(value);
+    const hasUpper = /[A-Z]/.test(value);
+    const hasDigit = /[0-9]/.test(value);
+    return hasLower && hasUpper && hasDigit;
+}
+
+/**
+ * PII patterns for detection and redaction. Ordered most-specific first so that, e.g.,
+ * a vendor-prefixed key is tagged as that key rather than caught by the generic base64 rule.
+ */
+const PII_PATTERNS: readonly PiiPattern[] = [
+    // API keys (vendor-prefixed).
+    { name: 'OPENROUTER_KEY', pattern: /sk-or-v1-[a-zA-Z0-9_-]{20,}/g, replacement: '[OPENROUTER_KEY]' },
+    { name: 'ANTHROPIC_KEY', pattern: /sk-ant-[a-zA-Z0-9_-]{20,}/g, replacement: '[ANTHROPIC_KEY]' },
+    { name: 'OPENAI_KEY', pattern: /sk-[a-zA-Z0-9]{20,}/g, replacement: '[API_KEY]' },
+    { name: 'GROQ_KEY', pattern: /gsk_[a-zA-Z0-9]{40,}/g, replacement: '[GROQ_KEY]' },
+    { name: 'GOOGLE_KEY', pattern: /AIza[a-zA-Z0-9_-]{35}/g, replacement: '[GOOGLE_KEY]' },
+    { name: 'HUGGINGFACE_KEY', pattern: /hf_[a-zA-Z0-9]{30,}/g, replacement: '[HUGGINGFACE_KEY]' },
+    { name: 'AWS_KEY', pattern: /AKIA[0-9A-Z]{16}/g, replacement: '[AWS_KEY]' },
+
+    // Credentials embedded in a URL (user:pass@host) — redact only the credentials,
+    // preserving the rest of the URL so documentation links stay useful.
+    { name: 'URL_CREDENTIALS', pattern: /(https?:\/\/)[^/\s:@]+:[^/\s:@]+@/gi, replacement: '$1[REDACTED]@' },
+
+    // Passwords / tokens / secrets in `key: value` or `key=value` form.
+    { name: 'PASSWORD', pattern: /(password|passwd|pwd)(["']?\s*[:=]\s*["']?)[^"'\s]+/gi, replacement: '$1$2[REDACTED]' },
+    { name: 'TOKEN', pattern: /(token|secret|api[_-]?key|authorization|bearer)(["']?\s*[:=]\s*["']?)[^"'\s]{8,}/gi, replacement: '$1$2[REDACTED]' },
+
+    // Email addresses.
+    { name: 'EMAIL', pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, replacement: '[EMAIL]' },
+
+    // Generic base64-encoded secrets (validated to avoid eating SHAs/UUIDs/hex hashes).
+    {
+        name: 'BASE64',
+        pattern: /[A-Za-z0-9+/]{40,}={0,2}/g,
+        replacement: (match: string): string => (looksLikeBase64Secret(match) ? '[BASE64]' : match)
+    }
 ];
 
 /**
@@ -51,15 +67,7 @@ const PII_PATTERNS = [
  * @returns True if PII is detected, false otherwise
  */
 export function containsPII(text: string): boolean {
-    for (const { pattern } of PII_PATTERNS) {
-        pattern.lastIndex = 0;
-        if (pattern.test(text)) {
-            pattern.lastIndex = 0;
-            return true;
-        }
-        pattern.lastIndex = 0;
-    }
-    return false;
+    return getDetectedPIITypes(text).length > 0;
 }
 
 /**
@@ -68,11 +76,12 @@ export function containsPII(text: string): boolean {
  * @returns The sanitized text with PII redacted
  */
 export function sanitizePII(text: string): string {
-    let sanitized = text;
+    let sanitized = text.length > MAX_SCAN_LENGTH ? text.slice(0, MAX_SCAN_LENGTH) : text;
     for (const { pattern, replacement } of PII_PATTERNS) {
         pattern.lastIndex = 0;
-        sanitized = sanitized.replace(pattern, replacement);
-        pattern.lastIndex = 0;
+        sanitized = typeof replacement === 'function'
+            ? sanitized.replace(pattern, (m) => replacement(m))
+            : sanitized.replace(pattern, replacement);
     }
     return sanitized;
 }
@@ -80,16 +89,32 @@ export function sanitizePII(text: string): string {
 /**
  * Get a summary of detected PII types in text.
  * @param text - The text to analyze
- * @returns Array of detected PII type names
+ * @returns Array of detected PII type names (e.g. `["OPENAI_KEY", "EMAIL"]`)
  */
 export function getDetectedPIITypes(text: string): string[] {
+    const scan = text.length > MAX_SCAN_LENGTH ? text.slice(0, MAX_SCAN_LENGTH) : text;
     const detected: string[] = [];
-    for (const { pattern } of PII_PATTERNS) {
+    for (const { name, pattern, replacement } of PII_PATTERNS) {
         pattern.lastIndex = 0;
-        if (pattern.test(text)) {
-            detected.push(pattern.toString());
+        // For the validated base64 rule, a raw regex hit isn't enough — confirm the
+        // replacement actually redacts, so we don't report benign hex identifiers.
+        if (typeof replacement === 'function') {
+            let m: RegExpExecArray | null;
+            let hit = false;
+            while ((m = pattern.exec(scan)) !== null) {
+                if (replacement(m[0]) !== m[0]) {
+                    hit = true;
+                    break;
+                }
+            }
+            pattern.lastIndex = 0;
+            if (hit) {
+                detected.push(name);
+            }
+        } else if (pattern.test(scan)) {
+            pattern.lastIndex = 0;
+            detected.push(name);
         }
-        pattern.lastIndex = 0;
     }
     return detected;
 }

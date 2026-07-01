@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import { Logger } from '../../shared/utils/logger';
 import { AIService } from '../../infrastructure/services/aiService';
@@ -54,7 +48,7 @@ export class ErrorExplanationManager {
 
         this.panel.onDidDispose(() => {
             this.panel = undefined;
-            this.disposables.forEach(d => d.dispose());
+            this.disposables.forEach(d => { d.dispose(); });
             this.disposables = [];
         });
     }
@@ -63,10 +57,13 @@ export class ErrorExplanationManager {
         if (!this.panel) return;
 
         this.panel.webview.onDidReceiveMessage(
-            async message => {
+            async (message: { command: string; failure: FailureEvent; errorText: string; history?: string; text?: string }) => {
                 switch (message.command) {
                     case 'explainError':
                         await this.explainError(message.failure);
+                        return;
+                    case 'chatMessage':
+                        await this.handleChatMessage(message.history || '', message.text || '');
                         return;
                     case 'ready':
                         this.pendingFailures.forEach(f => this.sendFailureToWebview(f));
@@ -75,6 +72,9 @@ export class ErrorExplanationManager {
                     case 'copyError':
                         await vscode.env.clipboard.writeText(message.errorText);
                         void vscode.window.showInformationMessage('Error copied to clipboard');
+                        return;
+                    case 'showWelcome':
+                        void vscode.commands.executeCommand('faultline.showWelcome');
                         return;
                 }
             },
@@ -118,6 +118,34 @@ export class ErrorExplanationManager {
             if (this.panel) {
                 void this.panel.webview.postMessage({
                     command: 'explanationError',
+                    error: 'Failed to connect to AI provider.'
+                });
+            }
+        }
+    }
+
+    private async handleChatMessage(historyText: string, newText: string): Promise<void> {
+        if (!this.panel) return;
+        try {
+            const prompt = historyText + `\n\nUser: ${newText}\n\nAI:`;
+            const reply = await this.aiService.getAiChat(prompt);
+            if (this.panel) {
+                if (reply) {
+                    void this.panel.webview.postMessage({
+                        command: 'chatReply',
+                        reply: reply
+                    });
+                } else {
+                    void this.panel.webview.postMessage({
+                        command: 'chatError',
+                        error: 'AI did not respond. Check your provider settings.'
+                    });
+                }
+            }
+        } catch (error) {
+            if (this.panel) {
+                void this.panel.webview.postMessage({
+                    command: 'chatError',
                     error: 'Failed to connect to AI provider.'
                 });
             }
@@ -202,6 +230,32 @@ export class ErrorExplanationManager {
             cursor: pointer;
             margin-right: 8px;
         }
+        .chat-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .chat-message {
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .chat-message.user {
+            background: var(--vscode-editor-inactiveSelectionBackground);
+            margin-left: 20px;
+        }
+        .chat-message.ai {
+            background: var(--vscode-editor-selectionBackground);
+            margin-right: 20px;
+        }
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: stretch;
+        }
+        vscode-text-area {
+            flex-grow: 1;
+        }
         .footer {
             margin-top: 40px;
             font-size: 11px;
@@ -222,27 +276,12 @@ export class ErrorExplanationManager {
         const vscode = acquireVsCodeApi();
         let currentFailure = null;
 
-        window.addEventListener('message', event => {
-            const message = event.data;
-            switch (message.command) {
-                case 'showFailure':
-                    renderFailure(message.failure);
-                    break;
-                case 'explanationLoading':
-                    renderLoading();
-                    break;
-                case 'explanationReady':
-                    renderExplanation(message.explanation);
-                    break;
-                case 'explanationError':
-                    renderError(message.error);
-                    break;
-            }
-        });
+
 
         function renderFailure(failure) {
             currentFailure = failure;
             const container = document.getElementById('content');
+            const displayError = failure.output ? \`Command: \${failure.label}\\n\\nTerminal Output:\\n\${failure.output}\` : failure.label;
             container.innerHTML = \`
                 <div class="incident-card" role="alert" aria-live="assertive">
                     <div class="error-header">
@@ -250,7 +289,7 @@ export class ErrorExplanationManager {
                         <h2 style="margin:0; font-size: 1.2em;">Failure Detected</h2>
                         <span class="source-badge">\${escapeHtml(failure.source)}</span>
                     </div>
-                    <div class="error-text">\${escapeHtml(failure.label)}</div>
+                    <div class="error-text">\${escapeHtml(displayError)}</div>
                     <div style="font-size: 0.9em; opacity: 0.7; margin-bottom: 16px;">
                         \${new Date(failure.timestamp).toLocaleString()}
                     </div>
@@ -262,16 +301,31 @@ export class ErrorExplanationManager {
                         <vscode-button id="copyBtn" appearance="secondary">
                             Copy Error
                         </vscode-button>
+                        <vscode-button id="welcomeBtn" appearance="secondary">
+                            <span slot="start" class="codicon codicon-home"></span>
+                            Welcome Screen
+                        </vscode-button>
                     </div>
                 </div>
                 <div id="analysis-container"></div>
+                <div id="chat-container" class="chat-container">
+                    <div id="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <vscode-text-area id="chatInput" placeholder="Ask a follow-up question... (Shift+Enter for newline)" resize="vertical" rows="3"></vscode-text-area>
+                        <vscode-button id="sendChatBtn" appearance="primary">Send</vscode-button>
+                    </div>
+                </div>
             \`;
 
             document.getElementById('explainBtn').addEventListener('click', () => {
                 vscode.postMessage({ command: 'explainError', failure: currentFailure });
             });
             document.getElementById('copyBtn').addEventListener('click', () => {
-                vscode.postMessage({ command: 'copyError', errorText: failure.label });
+                const fullText = failure.output ? \`Command: \${failure.label}\\n\\nTerminal Output:\\n\${failure.output}\` : failure.label;
+                vscode.postMessage({ command: 'copyError', errorText: fullText });
+            });
+            document.getElementById('welcomeBtn').addEventListener('click', () => {
+                vscode.postMessage({ command: 'showWelcome' });
             });
         }
 
@@ -311,6 +365,93 @@ export class ErrorExplanationManager {
             \`;
         }
 
+        let fullConversation = '';
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+                case 'showFailure':
+                    renderFailure(message.failure);
+                    break;
+                case 'explanationLoading':
+                    renderLoading();
+                    break;
+                case 'explanationReady':
+                    fullConversation = \`User: You are an expert developer assistant. A VS Code terminal command or build task just failed.\\n\\nError:\\n\${currentFailure.output ? \`Command: \${currentFailure.label}\\n\\nTerminal Output:\\n\${currentFailure.output}\` : currentFailure.label}\\n\\nPlease explain:\\n1. What caused this error\\n2. How to fix it\\n3. Any relevant tips.\\n\\nBe concise and practical. Use plain text, no markdown headers.\\n\\nAI: \${message.explanation}\`;
+                    renderExplanation(message.explanation);
+                    document.getElementById('chat-container').style.display = 'block';
+                    setupChat();
+                    break;
+                case 'explanationError':
+                    renderError(message.error);
+                    break;
+                case 'chatReply':
+                    fullConversation += \`\\n\\nAI: \${message.reply}\`;
+                    appendChatMessage('ai', message.reply);
+                    enableChat();
+                    break;
+                case 'chatError':
+                    appendChatMessage('error', message.error);
+                    enableChat();
+                    break;
+            }
+        });
+
+        function setupChat() {
+            const btn = document.getElementById('sendChatBtn');
+            const input = document.getElementById('chatInput');
+            
+            const send = () => {
+                const text = input.value.trim();
+                if (!text) return;
+                input.value = '';
+                disableChat();
+                fullConversation += \`\\n\\nUser: \${text}\`;
+                appendChatMessage('user', text);
+                vscode.postMessage({ command: 'chatMessage', history: fullConversation, text: text });
+            };
+
+            btn.addEventListener('click', send);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                }
+            });
+        }
+
+        function appendChatMessage(role, text) {
+            const container = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = \`chat-message \${role}\`;
+            if (role === 'error') {
+                msgDiv.style.color = 'var(--vscode-errorForeground)';
+            }
+            
+            const icon = role === 'ai' ? '<span class="codicon codicon-hubot"></span> ' : 
+                         role === 'user' ? '<span class="codicon codicon-account"></span> ' : 
+                         '<span class="codicon codicon-warning"></span> ';
+                         
+            msgDiv.innerHTML = \`<div style="font-weight:bold;margin-bottom:4px;">\${icon} \${role === 'ai' ? 'AI' : role === 'user' ? 'You' : 'Error'}</div><div style="white-space: pre-wrap; word-break: break-all;">\${escapeHtml(text)}</div>\`;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function disableChat() {
+            document.getElementById('sendChatBtn').disabled = true;
+            document.getElementById('chatInput').disabled = true;
+            appendChatMessage('ai', '...');
+            document.getElementById('chat-messages').lastChild.id = 'typing-indicator';
+        }
+
+        function enableChat() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+            document.getElementById('sendChatBtn').disabled = false;
+            document.getElementById('chatInput').disabled = false;
+            document.getElementById('chatInput').focus();
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -334,7 +475,7 @@ export class ErrorExplanationManager {
 
     public dispose(): void {
         this.panel?.dispose();
-        this.disposables.forEach(d => d.dispose());
+        this.disposables.forEach(d => { d.dispose(); });
         this.disposables = [];
     }
 }

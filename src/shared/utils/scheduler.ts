@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import type { FaultLineConfig, FailureSource } from '../../domain/types/index';
 import { Logger } from './logger';
@@ -14,13 +8,13 @@ const PER_MINUTE_WINDOW_MS = 60000; // 1 minute
 
 /**
  * Manages rate limiting, cooldowns, quiet hours, and snooze functionality for the extension.
+ * Manages rate limiting, quiet hours, and snooze functionality for the extension.
  * 
  * The Scheduler determines whether audio playback should be muted based on various conditions:
  * - Snooze: Temporary muting for a specified duration
  * - Quiet hours: Time-based muting (e.g., 22:00-08:00)
  * - Window focus: Mute when VS Code window is focused
  * - Rate limiting: Max failures per minute
- * - Cooldown: Minimum time between sounds (global or per-source)
  * 
  * @example
  * ```typescript
@@ -41,7 +35,6 @@ const PER_MINUTE_WINDOW_MS = 60000; // 1 minute
  */
 export class Scheduler {
     private snoozeEndAt: number = 0;
-    private perSourceLast: Map<FailureSource, number> = new Map();
     private perMinuteWindow: number[] = [];
     private cleanupTimer: NodeJS.Timeout | null = null;
 
@@ -79,7 +72,6 @@ export class Scheduler {
      * 3. Quiet hours active
      * 4. Window focused (if muteWhenFocused enabled)
      * 5. Max per minute limit reached
-     * 6. Cooldown period active
      * 
      * @param source - The failure source to check (task, terminal, diagnostics, etc.)
      * @returns True if audio should be muted, false if it should play
@@ -129,26 +121,14 @@ export class Scheduler {
             return true;
         }
 
-        // Cooldown
-        const cooldown = cfg.cooldownMs;
-        if (cooldown > 0) {
-            const last = cfg.cooldownPerSource
-                ? this.perSourceLast.get(source) ?? 0
-                : Math.max(...Array.from(this.perSourceLast.values()), 0);
-            if (now - last < cooldown) {
-                this.logger.debug(`Muted by cooldown: ${source}`);
-                return true;
-            }
-        }
-
         return false;
     }
 
     /**
-     * Record a failure event for rate limiting and cooldown tracking.
+     * Record a failure event for rate limiting tracking.
      * 
      * This method should be called after playing a sound to update the scheduler's
-     * internal state for rate limiting (max per minute) and cooldown calculations.
+     * internal state for rate limiting (max per minute).
      * 
      * @param source - The failure source that triggered the sound
      * 
@@ -160,9 +140,8 @@ export class Scheduler {
      * }
      * ```
      */
-    public record(source: FailureSource): void {
+    public record(_source: FailureSource): void {
         const now = Date.now();
-        this.perSourceLast.set(source, now);
         this.perMinuteWindow.push(now);
     }
 

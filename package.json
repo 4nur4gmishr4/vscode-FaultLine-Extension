@@ -1,8 +1,8 @@
 {
   "name": "faultline",
   "displayName": "FaultLine",
-  "description": "FaultLine (Previously Fahh) - Intelligent auditory feedback for development failures.",
-  "version": "3.0.0",
+  "description": "An AI-powered debugger, explainer, and solver assistant for developers, with secondary background audio notifications for success and errors.",
+  "version": "3.1.0",
   "publisher": "FaultLine-Engineering",
   "author": "Anurag Mishra",
   "license": "MIT",
@@ -528,6 +528,7 @@
     }
   },
   "scripts": {
+    "test": "jest",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -noEmit && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
@@ -540,13 +541,16 @@
     "package:prod": "npm run clean && npm run compile && npx @vscode/vsce package"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "18.x",
     "@types/vscode": "^1.93.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "esbuild": "^0.28.1",
     "eslint": "^8.57.1",
+    "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.3.0",
+    "ts-jest": "^29.4.11",
     "ts-morph": "^28.0.0",
     "typescript": "^5.9.3"
   },

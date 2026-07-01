@@ -130,6 +130,11 @@ export class ConfigManager {
                     VALIDATION.SNOOZE.MAX
                 ),
                 language: cfg.get<string>(CONFIG.KEYS.LANGUAGE, DEFAULTS.LANGUAGE),
+                historyMax: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.HISTORY_MAX, DEFAULTS.HISTORY_MAX),
+                    VALIDATION.HISTORY.MIN,
+                    VALIDATION.HISTORY.MAX
+                ),
             },
             audio: {
                 soundsEnabled: cfg.get<boolean>(CONFIG.KEYS.SOUNDS_ENABLED, true),
@@ -146,12 +151,6 @@ export class ConfigManager {
             },
             detection: {
                 sources,
-                cooldownMs: this.clamp(
-                    cfg.get<number>(CONFIG.KEYS.COOLDOWN_MS, DEFAULTS.COOLDOWN_MS),
-                    VALIDATION.COOLDOWN.MIN,
-                    VALIDATION.COOLDOWN.MAX
-                ),
-                cooldownPerSource: cfg.get<boolean>(CONFIG.KEYS.COOLDOWN_PER_SOURCE, false),
                 maxPerMinute: this.clamp(
                     cfg.get<number>(CONFIG.KEYS.MAX_PER_MINUTE, DEFAULTS.MAX_PER_MINUTE),
                     VALIDATION.MAX_PER_MINUTE.MIN,
@@ -197,7 +196,8 @@ export class ConfigManager {
                 showNotification: cfg.get<boolean>(CONFIG.KEYS.SHOW_NOTIFICATION, true),
                 notificationLevel: cfg.get<NotificationLevel>(CONFIG.KEYS.NOTIFICATION_LEVEL, DEFAULTS.NOTIFICATION_LEVEL),
                 showStatusBar: cfg.get<boolean>(CONFIG.KEYS.SHOW_STATUS_BAR, true),
-                flashStatusBar: cfg.get<boolean>(CONFIG.KEYS.FLASH_STATUS_BAR, true)
+                flashStatusBar: cfg.get<boolean>(CONFIG.KEYS.FLASH_STATUS_BAR, true),
+                statusBarCounter: cfg.get<boolean>(CONFIG.KEYS.STATUS_BAR_COUNTER, false)
             }
         };
     }
@@ -374,13 +374,23 @@ export class ConfigManager {
      * @private
      */
     private compilePatterns(patterns: string[]): RegExp[] {
+        const MAX_PATTERNS = 100;
+        const capped = patterns.slice(0, MAX_PATTERNS);
+        if (patterns.length > MAX_PATTERNS) {
+            this.warn(`Too many ignore patterns (${patterns.length}); only the first ${MAX_PATTERNS} are used.`);
+        }
+
         const compiled: RegExp[] = [];
-        for (const pattern of patterns) {
+        let invalid = 0;
+        for (const pattern of capped) {
             try {
                 compiled.push(new RegExp(pattern));
             } catch {
-                this.warn(`Invalid regex pattern ignored: ${pattern}`);
+                invalid++;
             }
+        }
+        if (invalid > 0) {
+            this.warn(`Ignored ${invalid} invalid regex pattern(s) in faultline.ignorePatterns.`);
         }
         return compiled;
     }

@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -19,7 +13,7 @@ import { StatusBarManager } from '../../presentation/ui/statusBar';
 import { HistoryManager } from '../../shared/utils/history';
 import { AIService, WebhookService } from '../../infrastructure/services/index';
 import { TaskDetector, TerminalDetector, DiagnosticDetector } from '../../infrastructure/detectors/index';
-import { FailureEvent } from '../../domain/types/index';
+import { FailureEvent, FailureSource } from '../../domain/types/index';
 import { sanitizePII } from '../../infrastructure/security/pii';
 import { ErrorExplanationManager } from '../../presentation/ui/errorExplanation';
 
@@ -67,24 +61,24 @@ export class FaultLineRuntime {
     }
 
     public activate(): void {
-        this.cleanOrphanedTempFiles();
+        // Fire-and-forget: temp cleanup must never block extension activation on slow I/O.
+        void this.cleanOrphanedTempFiles();
         this.registerDetectors();
         this.statusBar.refresh();
     }
 
-    private cleanOrphanedTempFiles(): void {
+    private async cleanOrphanedTempFiles(): Promise<void> {
         try {
-
             const tmpDir = os.tmpdir();
-            const files = fs.readdirSync(tmpDir);
+            const files = await fs.promises.readdir(tmpDir);
             let cleaned = 0;
             for (const file of files) {
                 if (file.startsWith('faultline_play_') && file.endsWith('.vbs')) {
                     try {
-                        fs.unlinkSync(path.join(tmpDir, file));
+                        await fs.promises.unlink(path.join(tmpDir, file));
                         cleaned++;
-                    } catch (e) {
-                        // ignore
+                    } catch {
+                        // File may have been removed by another instance; ignore.
                     }
                 }
             }
@@ -105,8 +99,7 @@ export class FaultLineRuntime {
         const configFn = () => this.configManager.readConfig();
         
         const onFailure = (e: FailureEvent) => { void this.handleFailure(e); };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const onSuccess = (e: { source: any; label: string; executionTime?: number }) => {
+        const onSuccess = (e: { source: FailureSource; label: string; executionTime?: number }) => {
             void this.handleSuccess(e.source, e.label, e.executionTime);
         };
 
@@ -182,8 +175,7 @@ export class FaultLineRuntime {
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private async handleSuccess(source: any, _label: string, _executionTime?: number): Promise<void> {
+    private async handleSuccess(source: FailureSource, _label: string, _executionTime?: number): Promise<void> {
         const config = this.configManager.readConfig();
         if (!config.audio.successEnabled) return;
 

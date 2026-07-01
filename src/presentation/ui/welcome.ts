@@ -13,7 +13,8 @@ type WelcomeMessage =
     | { command: 'reset' }
     | { command: 'error'; text?: string }
     | { command: 'setSound'; sound?: string }
-    | { command: 'setSuccessSound'; sound?: string };
+    | { command: 'setSuccessSound'; sound?: string }
+    | { command: 'openSettings' };
 
 /**
  * Manages the welcome webview panel for first-run experience.
@@ -103,6 +104,9 @@ export class WelcomePanel {
                     await vscode.workspace.getConfiguration('faultline')
                         .update('successSound', message.sound, vscode.ConfigurationTarget.Global);
                 }
+                return;
+            case 'openSettings':
+                await vscode.commands.executeCommand('faultline.openSettings');
                 return;
         }
     }
@@ -359,6 +363,9 @@ export class WelcomePanel {
 </head>
 <body>
     <div class="header-actions">
+        <button id="settings-btn" class="btn" style="padding: 8px 16px; font-size: 0.8rem; margin-right: 10px;" type="button">
+            <span class="codicon codicon-settings-gear" style="vertical-align: middle;"></span> AI & Settings
+        </button>
         <button id="reset-btn" class="btn-danger" type="button">Reset All Settings</button>
     </div>
 
@@ -426,6 +433,9 @@ export class WelcomePanel {
             });
             document.getElementById('test-success-btn')?.addEventListener('click', () => {
                 vscode.postMessage({ command: 'testSuccess' });
+            });
+            document.getElementById('settings-btn')?.addEventListener('click', () => {
+                vscode.postMessage({ command: 'openSettings' });
             });
             document.getElementById('reset-btn')?.addEventListener('click', () => {
                 vscode.postMessage({ command: 'reset' });

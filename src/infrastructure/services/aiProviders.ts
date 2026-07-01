@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as vscode from 'vscode';
 
 /**
@@ -258,8 +252,9 @@ class GeminiProvider implements AiProvider {
 
     async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
-                headers: COMMON_HEADERS,
+            // Pass the key via header, not the query string, so it never lands in URLs/logs.
+            const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+                headers: { ...COMMON_HEADERS, 'x-goog-api-key': apiKey },
                 signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
             });
             if (!res.ok) return [];
@@ -419,6 +414,21 @@ class MistralProvider implements AiProvider {
         category: 'free'
     };
 
+    async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
+        try {
+            const res = await fetch('https://api.mistral.ai/v1/models', {
+                headers: { ...COMMON_HEADERS, Authorization: `Bearer ${apiKey}` },
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+            });
+            if (!res.ok) return [];
+            const data = await res.json() as { data?: { id: string }[] };
+            if (!data?.data) return [];
+            return data.data.map(m => ({ id: m.id, name: m.id }));
+        } catch {
+            return [];
+        }
+    }
+
     async chat(request: AiChatRequest): Promise<string | null> {
         const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
             method: 'POST',
@@ -463,6 +473,21 @@ class TogetherProvider implements AiProvider {
         category: 'free'
     };
 
+    async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
+        try {
+            const res = await fetch('https://api.together.xyz/v1/models', {
+                headers: { ...COMMON_HEADERS, Authorization: `Bearer ${apiKey}` },
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+            });
+            if (!res.ok) return [];
+            const data = await res.json() as { id: string; display_name?: string }[];
+            if (!Array.isArray(data)) return [];
+            return data.map(m => ({ id: m.id, name: m.display_name ?? m.id }));
+        } catch {
+            return [];
+        }
+    }
+
     async chat(request: AiChatRequest): Promise<string | null> {
         const response = await fetch('https://api.together.xyz/v1/chat/completions', {
             method: 'POST',
@@ -506,6 +531,21 @@ class CohereProvider implements AiProvider {
         defaultModel: 'command-r-08-2024',
         category: 'free'
     };
+
+    async fetchModels(apiKey: string): Promise<{id: string, name: string}[]> {
+        try {
+            const res = await fetch('https://api.cohere.com/v1/models', {
+                headers: { ...COMMON_HEADERS, Authorization: `Bearer ${apiKey}` },
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+            });
+            if (!res.ok) return [];
+            const data = await res.json() as { models?: { name: string }[] };
+            if (!data?.models) return [];
+            return data.models.map(m => ({ id: m.name, name: m.name }));
+        } catch {
+            return [];
+        }
+    }
 
     async chat(request: AiChatRequest): Promise<string | null> {
         // Cohere v2 uses an OpenAI-compatible /v2/chat endpoint
@@ -705,8 +745,8 @@ export async function chatWithTimeout(
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
         return await provider.chat({ ...request, signal: controller.signal });
-    } catch (err: any) {
-        if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
             throw new Error(`Request timed out after ${timeoutMs}ms`);
         }
         throw err;
