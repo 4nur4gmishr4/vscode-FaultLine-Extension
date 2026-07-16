@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { runCommand, catchAsync } from '../../../shared/utils/commandGuard';
+import { runCommand, catchAsync, registerSafeCommand } from '../../../shared/utils/commandGuard';
 
 describe('commandGuard', () => {
     beforeEach(() => {
@@ -45,5 +45,26 @@ describe('commandGuard', () => {
         catchAsync('ok', action);
         await new Promise((r) => setTimeout(r, 10));
         expect(action).toHaveBeenCalled();
+    });
+
+    it('registerSafeCommand wires registerCommand and swallows handler throws', async () => {
+        let handler: ((...a: unknown[]) => unknown) | undefined;
+        (vscode.commands.registerCommand as jest.Mock).mockImplementation(
+            (_id: string, fn: (...a: unknown[]) => unknown) => {
+                handler = fn;
+                return { dispose: jest.fn() };
+            }
+        );
+        const subs: { dispose: () => void }[] = [];
+        registerSafeCommand(subs, 'faultline.toggle', () => {
+            throw new Error('handler-boom');
+        });
+        expect(handler).toBeDefined();
+        await Promise.resolve(handler!());
+        await new Promise((r) => setTimeout(r, 10));
+        expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+            expect.stringContaining('handler-boom')
+        );
+        expect(subs.length).toBe(1);
     });
 });

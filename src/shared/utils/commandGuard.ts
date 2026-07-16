@@ -18,6 +18,27 @@ export async function runCommand(
 }
 
 /**
+ * Register a command that never rejects the VS Code host.
+ * Returns a thenable so callers/tests can await; errors become toast messages.
+ */
+export function registerSafeCommand(
+    disposables: vscode.Disposable[],
+    id: string,
+    handler: (...args: unknown[]) => void | Promise<void>
+): void {
+    const disposable = vscode.commands.registerCommand(id, (...args: unknown[]) =>
+        Promise.resolve()
+            .then(() => handler(...args))
+            .catch((err: unknown) => {
+                const msg = err instanceof Error ? err.message : String(err);
+                console.error(`[FaultLine] ${id} rejected:`, err);
+                void vscode.window.showErrorMessage(`FaultLine: ${msg}`);
+            })
+    );
+    disposables.push(disposable);
+}
+
+/**
  * Wrap a fire-and-forget async path so rejections never become unhandled.
  */
 export function catchAsync(

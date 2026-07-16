@@ -2,81 +2,79 @@ import * as vscode from 'vscode';
 import { FaultLineRuntime } from '../../application/runtime/faultline';
 import { listProviders } from '../../infrastructure/services/aiProviders';
 import { t } from '../../shared/utils/i18n';
-import { runCommand } from '../../shared/utils/commandGuard';
+import { registerSafeCommand, runCommand } from '../../shared/utils/commandGuard';
 
 export function registerStateCommands(ext: FaultLineRuntime, disposables: vscode.Disposable[]): void {
-    disposables.push(
-        vscode.commands.registerCommand('faultline.toggle', async () =>
-            runCommand('toggle', async () => {
-                const next = !ext.configManager.readConfig().core.enabled;
-                await ext.configManager.updateEnabled(next);
-                void vscode.window.showInformationMessage(next ? t('toggledOn') : t('toggledOff'));
+    registerSafeCommand(disposables, 'faultline.toggle', () =>
+        runCommand('toggle', async () => {
+            const next = !ext.configManager.readConfig().core.enabled;
+            await ext.configManager.updateEnabled(next);
+            void vscode.window.showInformationMessage(next ? t('toggledOn') : t('toggledOff'));
+            ext.statusBar.refresh();
+        })
+    );
+
+    registerSafeCommand(disposables, 'faultline.toggleSounds', () =>
+        runCommand('toggleSounds', async () => {
+            const next = !ext.configManager.readConfig().audio.soundsEnabled;
+            await ext.configManager.updateSoundsEnabled(next);
+            void vscode.window.showInformationMessage(next ? t('soundsOn') : t('soundsOff'));
+            ext.statusBar.refresh();
+        })
+    );
+
+    registerSafeCommand(disposables, 'faultline.toggleWorkspace', () =>
+        runCommand('toggleWorkspace', async () => {
+            const next = !ext.configManager.readConfig().core.enabled;
+            await ext.configManager.updateEnabled(next, vscode.ConfigurationTarget.Workspace);
+            void vscode.window.showInformationMessage(
+                next ? t('toggledOnWorkspace') : t('toggledOffWorkspace')
+            );
+            ext.statusBar.refresh();
+        })
+    );
+
+    registerSafeCommand(disposables, 'faultline.snooze', () =>
+        runCommand('snooze', () => {
+            const minutes = ext.configManager.readConfig().core.snoozeMinutes;
+            ext.scheduler.snooze(minutes);
+            void vscode.window.showInformationMessage(t('snoozed', { minutes }));
+        })
+    );
+
+    registerSafeCommand(disposables, 'faultline.resetSettings', () =>
+        runCommand('resetSettings', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                t('resetSettingsConfirm'),
+                { modal: true },
+                'Reset'
+            );
+            if (confirm === 'Reset') {
+                await ext.configManager.resetAllSettings();
                 ext.statusBar.refresh();
-            })
-        ),
+                void vscode.window.showInformationMessage(t('settingsReset'));
+            }
+        })
+    );
 
-        vscode.commands.registerCommand('faultline.toggleSounds', async () =>
-            runCommand('toggleSounds', async () => {
-                const next = !ext.configManager.readConfig().audio.soundsEnabled;
-                await ext.configManager.updateSoundsEnabled(next);
-                void vscode.window.showInformationMessage(next ? t('soundsOn') : t('soundsOff'));
+    registerSafeCommand(disposables, 'faultline.factoryReset', () =>
+        runCommand('factoryReset', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                t('factoryResetConfirm'),
+                { modal: true },
+                'Factory Reset'
+            );
+            if (confirm === 'Factory Reset') {
+                await ext.configManager.resetAllSettings();
+                await clearStoredSecrets(ext);
+                ext.history.clear();
+                await ext.stateStore.clear();
+                ext.scheduler.clearSnooze();
+                ext.statusBar.resetCounter();
                 ext.statusBar.refresh();
-            })
-        ),
-
-        vscode.commands.registerCommand('faultline.toggleWorkspace', async () =>
-            runCommand('toggleWorkspace', async () => {
-                const next = !ext.configManager.readConfig().core.enabled;
-                await ext.configManager.updateEnabled(next, vscode.ConfigurationTarget.Workspace);
-                void vscode.window.showInformationMessage(
-                    next ? t('toggledOnWorkspace') : t('toggledOffWorkspace')
-                );
-                ext.statusBar.refresh();
-            })
-        ),
-
-        vscode.commands.registerCommand('faultline.snooze', () =>
-            runCommand('snooze', () => {
-                const minutes = ext.configManager.readConfig().core.snoozeMinutes;
-                ext.scheduler.snooze(minutes);
-                void vscode.window.showInformationMessage(t('snoozed', { minutes }));
-            })
-        ),
-
-        vscode.commands.registerCommand('faultline.resetSettings', async () =>
-            runCommand('resetSettings', async () => {
-                const confirm = await vscode.window.showWarningMessage(
-                    t('resetSettingsConfirm'),
-                    { modal: true },
-                    'Reset'
-                );
-                if (confirm === 'Reset') {
-                    await ext.configManager.resetAllSettings();
-                    ext.statusBar.refresh();
-                    void vscode.window.showInformationMessage(t('settingsReset'));
-                }
-            })
-        ),
-
-        vscode.commands.registerCommand('faultline.factoryReset', async () =>
-            runCommand('factoryReset', async () => {
-                const confirm = await vscode.window.showWarningMessage(
-                    t('factoryResetConfirm'),
-                    { modal: true },
-                    'Factory Reset'
-                );
-                if (confirm === 'Factory Reset') {
-                    await ext.configManager.resetAllSettings();
-                    await clearStoredSecrets(ext);
-                    ext.history.clear();
-                    await ext.stateStore.clear();
-                    ext.scheduler.clearSnooze();
-                    ext.statusBar.resetCounter();
-                    ext.statusBar.refresh();
-                    void vscode.window.showInformationMessage(t('factoryResetDone'));
-                }
-            })
-        )
+                void vscode.window.showInformationMessage(t('factoryResetDone'));
+            }
+        })
     );
 }
 
