@@ -32,6 +32,8 @@ Release: [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/rel
 - Settings UI: sounds, notifications, status bar, and explanation privacy toggles  
 - Activation no longer rethrows after commands register (avoids dead palette commands)  
 - Explicit `onCommand` activation for reliable palette use; emergency handlers if startup fails hard  
+- Commands use safe fire-and-forget registration; workspace extension host only  
+- README badges no longer hit Marketplace “retired” false positives when listing is empty  
 
 ### For power users
 
