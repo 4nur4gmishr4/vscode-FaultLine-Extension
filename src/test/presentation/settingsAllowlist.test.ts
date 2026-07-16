@@ -5,6 +5,14 @@ describe('Settings webview config allowlist', () => {
         const filtered = filterAllowedConfig({
             enabled: true,
             volume: 50,
+            soundsEnabled: false,
+            showNotification: true,
+            notificationLevel: 'warning',
+            showStatusBar: true,
+            flashStatusBar: false,
+            statusBarCounter: true,
+            'errorExplanation.enabled': true,
+            'errorExplanation.autoShow': false,
             webhookUrl: 'https://evil.example.com',
             jiraApiKey: 'secret',
             'ai.model': 'gpt-4o',
@@ -14,6 +22,14 @@ describe('Settings webview config allowlist', () => {
         expect(filtered).toEqual({
             enabled: true,
             volume: 50,
+            soundsEnabled: false,
+            showNotification: true,
+            notificationLevel: 'warning',
+            showStatusBar: true,
+            flashStatusBar: false,
+            statusBarCounter: true,
+            'errorExplanation.enabled': true,
+            'errorExplanation.autoShow': false,
             'ai.model': 'gpt-4o'
         });
         expect(filtered).not.toHaveProperty('webhookUrl');
@@ -37,6 +53,19 @@ describe('Settings webview config allowlist', () => {
         ];
         for (const key of forbidden) {
             expect(ALLOWED_SETTINGS_KEYS.has(key)).toBe(false);
+        }
+    });
+
+    it('includes UI and privacy-critical keys', () => {
+        for (const key of [
+            'soundsEnabled',
+            'showNotification',
+            'errorExplanation.autoShow',
+            'errorExplanation.enabled',
+            'statusBarCounter',
+            'language'
+        ]) {
+            expect(ALLOWED_SETTINGS_KEYS.has(key)).toBe(true);
         }
     });
 });

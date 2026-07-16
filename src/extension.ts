@@ -83,17 +83,24 @@ export function deactivate(): void {
 async function maybeShowWelcomeOnInstall(ctx: vscode.ExtensionContext, rt: FaultLineRuntime): Promise<void> {
     const version = (ctx.extension.packageJSON as { version: string }).version;
     const lastVersion = rt.stateStore.getLastVersion();
-    
+
     if (shouldShowWelcome(lastVersion, version)) {
-        // First install (or major jump): typing greeting, then welcome UI
-        WelcomePanel.createOrShow(ctx.extensionUri, true);
+        try {
+            // First install (or major jump): typing greeting, then welcome UI
+            WelcomePanel.createOrShow(ctx.extensionUri, true);
+        } catch (err) {
+            rt.logger.error('Welcome panel failed on install', err);
+        }
     }
-    
-    // Migration logic moved to Runtime or kept here for lifecycle
+
     await migrateApiKeys(ctx, rt, lastVersion);
-    
+
     if (lastVersion !== version) {
-        await rt.stateStore.updateLastVersion(version);
+        try {
+            await rt.stateStore.updateLastVersion(version);
+        } catch (err) {
+            rt.logger.error('Failed to persist lastVersion', err);
+        }
     }
 }
 

@@ -136,7 +136,9 @@ export class FaultLineRuntime {
             this.logger.error('TerminalDetector failed to register', err);
         }
         try {
-            new DiagnosticDetector(configFn, onFailure).register(disposables);
+            new DiagnosticDetector(configFn, onFailure, (err) => {
+                this.logger.error('DiagnosticDetector handler failed', err);
+            }).register(disposables);
         } catch (err) {
             this.logger.error('DiagnosticDetector failed to register', err);
         }
@@ -208,7 +210,11 @@ export class FaultLineRuntime {
             }
 
             void this.webhook.postWebhook(sanitizedLabel, source);
-            void this.webhook.postToJira(sanitizedLabel, source);
+            void this.webhook.postToJira(sanitizedLabel, source).catch((err: unknown) => {
+                this.logger.debug(
+                    `Jira post failed: ${err instanceof Error ? err.message : String(err)}`
+                );
+            });
 
             const historyOutput =
                 sanitizedOutput !== undefined && sanitizedOutput.length > 0
@@ -232,19 +238,35 @@ export class FaultLineRuntime {
             }
 
             if (config.ai.errorExplanationEnabled && config.ai.errorExplanationAutoShow) {
-                void this.errorExplanation.showFailureExplanation(sanitizedEvent);
+                try {
+                    this.errorExplanation.showFailureExplanation(sanitizedEvent);
+                } catch (err) {
+                    this.logger.error('Failed to auto-show error explanation', err);
+                }
             }
 
             if (config.ui.showNotification) {
                 const message = `FaultLine: [${source}] ${sanitizedLabel}`;
                 const buttons = ['Configure', 'Explain Error'];
-                void this.notifyByLevel(config.ui.notificationLevel, message, buttons).then(selection => {
-                    if (selection === 'Explain Error') {
-                        void this.errorExplanation.showFailureExplanation(sanitizedEvent);
-                    } else if (selection === 'Configure') {
-                        void vscode.commands.executeCommand('faultline.openSettings');
-                    }
-                });
+                void Promise.resolve(
+                    this.notifyByLevel(config.ui.notificationLevel, message, buttons)
+                )
+                    .then(selection => {
+                        if (selection === 'Explain Error') {
+                            try {
+                                this.errorExplanation.showFailureExplanation(sanitizedEvent);
+                            } catch (err) {
+                                this.logger.error('Failed to open error explanation', err);
+                            }
+                        } else if (selection === 'Configure') {
+                            void vscode.commands.executeCommand('faultline.openSettings');
+                        }
+                    })
+                    .catch((err: unknown) => {
+                        this.logger.debug(
+                            `Notification failed: ${err instanceof Error ? err.message : String(err)}`
+                        );
+                    });
             }
         } catch (err) {
             this.logger.error('Failed to handle failure', err);
@@ -294,7 +316,11 @@ export class FaultLineRuntime {
             const volume = this.resolver.getVolume(source);
 
             if (soundPath && config.audio.soundsEnabled && !this.scheduler.isSoundRateLimited(source)) {
-                void this.player.play(soundPath, { volume });
+                void this.player.play(soundPath, { volume }).catch(err => {
+                    this.logger.debug(
+                        `Success playback failed: ${err instanceof Error ? err.message : String(err)}`
+                    );
+                });
                 this.scheduler.record(source);
             }
 

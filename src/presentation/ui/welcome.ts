@@ -38,26 +38,32 @@ export class WelcomePanel {
      *                    When false (command palette), open the welcome body immediately.
      */
     public static createOrShow(extensionUri: vscode.Uri, withIntro = false): void {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        try {
+            const column = vscode.window.activeTextEditor
+                ? vscode.window.activeTextEditor.viewColumn
+                : undefined;
 
-        if (WelcomePanel.currentPanel) {
-            WelcomePanel.currentPanel._panel.reveal(column);
-            return;
-        }
-
-        const panel = vscode.window.createWebviewPanel(
-            'faultlineWelcome',
-            'Welcome to FaultLine!',
-            column ?? vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
+            if (WelcomePanel.currentPanel) {
+                WelcomePanel.currentPanel._panel.reveal(column);
+                return;
             }
-        );
 
-        WelcomePanel.currentPanel = new WelcomePanel(panel, extensionUri, withIntro);
+            const panel = vscode.window.createWebviewPanel(
+                'faultlineWelcome',
+                'Welcome to FaultLine!',
+                column ?? vscode.ViewColumn.One,
+                {
+                    enableScripts: true,
+                    localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
+                }
+            );
+
+            WelcomePanel.currentPanel = new WelcomePanel(panel, extensionUri, withIntro);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('[FaultLine] Welcome panel failed:', err);
+            void vscode.window.showErrorMessage(`FaultLine: could not open Welcome (${msg}).`);
+        }
     }
 
     private constructor(
@@ -88,39 +94,57 @@ export class WelcomePanel {
     private async handleWebviewMessage(
         message: WelcomeMessage
     ): Promise<void> {
-        if (!message || typeof message.command !== 'string') {
-            return;
-        }
-        switch (message.command) {
-            case 'test':
-                await vscode.commands.executeCommand('faultline.test');
+        try {
+            if (!message || typeof message.command !== 'string') {
                 return;
-            case 'testSuccess':
-                await vscode.commands.executeCommand('faultline.testSuccess');
-                return;
-            case 'reset':
-                await vscode.commands.executeCommand('faultline.resetSettings');
-                return;
-            case 'error':
-                if (typeof message.text === 'string') {
-                    void vscode.window.showErrorMessage(message.text);
-                }
-                return;
-            case 'setSound':
-                if (typeof message.sound === 'string' && /^[\w.-]+\.(mp3|wav|ogg|flac|m4a)$/i.test(message.sound)) {
-                    await vscode.workspace.getConfiguration('faultline')
-                        .update('soundPack', message.sound, vscode.ConfigurationTarget.Global);
-                }
-                return;
-            case 'setSuccessSound':
-                if (typeof message.sound === 'string' && /^[\w.-]+\.(mp3|wav|ogg|flac|m4a)$/i.test(message.sound)) {
-                    await vscode.workspace.getConfiguration('faultline')
-                        .update('successSound', message.sound, vscode.ConfigurationTarget.Global);
-                }
-                return;
-            case 'openSettings':
-                await vscode.commands.executeCommand('faultline.openSettings');
-                return;
+            }
+            switch (message.command) {
+                case 'test':
+                    await vscode.commands.executeCommand('faultline.test');
+                    return;
+                case 'testSuccess':
+                    await vscode.commands.executeCommand('faultline.testSuccess');
+                    return;
+                case 'reset':
+                    await vscode.commands.executeCommand('faultline.resetSettings');
+                    return;
+                case 'error':
+                    if (typeof message.text === 'string') {
+                        void vscode.window.showErrorMessage(message.text);
+                    }
+                    return;
+                case 'setSound':
+                    if (
+                        typeof message.sound === 'string' &&
+                        /^[\w.-]+\.(mp3|wav|ogg|flac|m4a)$/i.test(message.sound)
+                    ) {
+                        await vscode.workspace
+                            .getConfiguration('faultline')
+                            .update('soundPack', message.sound, vscode.ConfigurationTarget.Global);
+                    }
+                    return;
+                case 'setSuccessSound':
+                    if (
+                        typeof message.sound === 'string' &&
+                        /^[\w.-]+\.(mp3|wav|ogg|flac|m4a)$/i.test(message.sound)
+                    ) {
+                        await vscode.workspace
+                            .getConfiguration('faultline')
+                            .update(
+                                'successSound',
+                                message.sound,
+                                vscode.ConfigurationTarget.Global
+                            );
+                    }
+                    return;
+                case 'openSettings':
+                    await vscode.commands.executeCommand('faultline.openSettings');
+                    return;
+            }
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('[FaultLine] Welcome webview message failed:', err);
+            void vscode.window.showErrorMessage(`FaultLine (welcome): ${msg}`);
         }
     }
 
@@ -153,6 +177,7 @@ export class WelcomePanel {
      * @param extensionUri - The URI of the extension root directory
      * @returns The complete HTML string for the webview
      */
+    /* istanbul ignore next -- large static webview HTML shell */
     private _getHtmlForWebview(
         webview: vscode.Webview,
         extensionUri: vscode.Uri,

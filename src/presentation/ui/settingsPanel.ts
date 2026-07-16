@@ -6,14 +6,27 @@ import { listProviders, getProvider, validateProviderKey } from '../../infrastru
 
 /** Config keys the Settings webview is allowed to write. Exported for unit tests. */
 export const ALLOWED_SETTINGS_KEYS = new Set([
+    // Core / audio
     'enabled',
+    'soundsEnabled',
     'volume',
     'soundPack',
     'successSound',
     'successEnabled',
+    // AI (non-secret)
     'aiProvider',
     'ai.model',
-    'aiSummary.enabled'
+    'aiSummary.enabled',
+    'errorExplanation.enabled',
+    'errorExplanation.autoShow',
+    // UI
+    'showNotification',
+    'notificationLevel',
+    'showStatusBar',
+    'flashStatusBar',
+    'statusBarCounter',
+    // Locale
+    'language'
 ]);
 
 /** Strip non-allowlisted keys from a settings webview config payload. */
@@ -68,134 +81,175 @@ export class SettingsPanel {
 
         this.panel.onDidDispose(() => { void this.dispose(); }, null, this.disposables);
         
-        // Unsaved changes protection
+        // Unsaved changes protection — outer catch so one bad message never kills the panel.
         this.panel.webview.onDidReceiveMessage(
-            async (message: { command: string; config?: Record<string, unknown>; secrets?: Record<string, string>; provider?: string; key?: string; sound?: string; volume?: string | number }) => {
-                switch (message.command) {
-                    case 'changed':
-                        this.isDirty = true;
-                        this.pendingConfig = {
-                            ...this.pendingConfig,
-                            ...filterAllowedConfig(message.config)
-                        };
-                        if (message.secrets) {
-                            this.pendingSecrets = { ...this.pendingSecrets, ...message.secrets };
-                        }
-                        return;
-                    case 'apply':
-                        await this.applyChanges();
-                        return;
-                    case 'saveApiKey':
-                        if (message.provider && message.key) {
-                            try {
-                                if (!getProvider(message.provider)) {
-                                    throw new Error(`Unknown AI provider: ${message.provider}`);
-                                }
-                                validateProviderKey(message.provider, message.key);
-                                await this.secretManager.storeApiKey(message.provider, message.key);
-                                const config = vscode.workspace.getConfiguration('faultline');
-                                await config.update('aiProvider', undefined, vscode.ConfigurationTarget.Workspace);
-                                await config.update('aiProvider', message.provider, vscode.ConfigurationTarget.Global);
-                                void vscode.window.showInformationMessage(`FaultLine: API key and AI Provider saved securely.`);
-                                
-                                this.isDirty = false;
-                                this.pendingConfig = {};
-                                this.pendingSecrets = {};
-                                this.update();
-                            } catch (err) {
-                                const msg = err instanceof Error ? err.message : String(err);
-                                void vscode.window.showErrorMessage(`FaultLine: ${msg}`);
-                            }
-                        }
-                        return;
-                    
-                    case 'fetchModels':
-                        if (message.provider) {
-                            try {
-                                let keyToUse: string | undefined | null = message.key;
-                                if (!keyToUse) {
-                                    keyToUse = await this.secretManager.getApiKey(message.provider);
-                                }
-                                if (!keyToUse) {
-                                    void SettingsPanel.currentPanel?.panel.webview.postMessage({
-                                        command: 'modelsFetched',
-                                        error: 'No API key provided or found in storage.'
-                                    });
-                                    return;
-                                }
-                                const providerObj = getProvider(message.provider);
-                                if (!providerObj) {
-                                    void SettingsPanel.currentPanel?.panel.webview.postMessage({
-                                        command: 'modelsFetched',
-                                        error: 'Unknown AI provider.'
-                                    });
-                                    return;
-                                }
-                                let models: { id: string; name: string }[] = [];
-                                if (providerObj.fetchModels) {
-                                    models = await providerObj.fetchModels(keyToUse);
-                                }
-                                if (!models || models.length === 0) {
-                                    models = providerObj.info.models.map((m) => ({ id: m, name: m }));
-                                }
-
-                                if (models.length > 0) {
-                                    const scoreModel = (name: string) => {
-                                        const n = name.toLowerCase();
-                                        if (n.includes('llama-3.3') || n.includes('llama 3.3')) return 100;
-                                        if (n.includes('gemini-2.0') || n.includes('gemini 2.0')) return 95;
-                                        if (n.includes('llama-3.2') || n.includes('llama 3.2')) return 90;
-                                        if (n.includes('llama-3.1') || n.includes('llama 3.1')) return 85;
-                                        if (n.includes('gemini-1.5') || n.includes('gemini 1.5')) return 80;
-                                        if (n.includes('mixtral')) return 75;
-                                        if (n.includes('qwen-2.5') || n.includes('qwen2.5')) return 70;
-                                        if (n.includes('gemma-2') || n.includes('gemma2')) return 65;
-                                        if (n.includes('mistral')) return 60;
-                                        if (n.includes('llama')) return 50;
-                                        return 0;
-                                    };
-                                    models.sort((a, b) => {
-                                        const scoreA = scoreModel(a.name) || scoreModel(a.id);
-                                        const scoreB = scoreModel(b.name) || scoreModel(b.id);
-                                        if (scoreA !== scoreB) return scoreB - scoreA;
-                                        return a.name.localeCompare(b.name);
-                                    });
-                                }
-
-                                void SettingsPanel.currentPanel?.panel.webview.postMessage({
-                                    command: 'modelsFetched',
-                                    models
-                                });
-                            } catch (err) {
-                                const msg = err instanceof Error ? err.message : String(err);
-                                this.logger.warn(`fetchModels failed: ${msg}`);
-                                void SettingsPanel.currentPanel?.panel.webview.postMessage({
-                                    command: 'modelsFetched',
-                                    error: 'Failed to fetch models. Using defaults if available.'
-                                });
-                            }
-                        }
-                        return;
-                    case 'testSound':
-                        void vscode.commands.executeCommand('faultline.testSound', message.sound, message.volume);
-                        return;
-                    case 'reset':
-                        this.isDirty = false;
-                        this.pendingConfig = {};
-                        this.pendingSecrets = {};
-                        this.update();
-                        return;
-                    case 'openAdvancedSettings':
-                        void vscode.commands.executeCommand(
-                            'workbench.action.openSettings',
-                            '@ext:4nur4gmishr4.fahh'
-                        );
-                        return;
+            async (message: {
+                command: string;
+                config?: Record<string, unknown>;
+                secrets?: Record<string, string>;
+                provider?: string;
+                key?: string;
+                sound?: string;
+                volume?: string | number;
+            }) => {
+                try {
+                    await this.handleWebviewMessage(message);
+                } catch (err) {
+                    this.logger.error('Settings webview message failed', err);
+                    void vscode.window.showErrorMessage(
+                        `FaultLine (settings): ${err instanceof Error ? err.message : String(err)}`
+                    );
                 }
             },
             null,
             this.disposables
         );
+    }
+
+    private async handleWebviewMessage(message: {
+        command: string;
+        config?: Record<string, unknown>;
+        secrets?: Record<string, string>;
+        provider?: string;
+        key?: string;
+        sound?: string;
+        volume?: string | number;
+    }): Promise<void> {
+        switch (message.command) {
+            case 'changed':
+                this.isDirty = true;
+                this.pendingConfig = {
+                    ...this.pendingConfig,
+                    ...filterAllowedConfig(message.config)
+                };
+                if (message.secrets) {
+                    this.pendingSecrets = { ...this.pendingSecrets, ...message.secrets };
+                }
+                return;
+            case 'apply':
+                await this.applyChanges();
+                return;
+            case 'saveApiKey':
+                if (message.provider && message.key) {
+                    try {
+                        if (!getProvider(message.provider)) {
+                            throw new Error(`Unknown AI provider: ${message.provider}`);
+                        }
+                        validateProviderKey(message.provider, message.key);
+                        await this.secretManager.storeApiKey(message.provider, message.key);
+                        const config = vscode.workspace.getConfiguration('faultline');
+                        await config.update(
+                            'aiProvider',
+                            undefined,
+                            vscode.ConfigurationTarget.Workspace
+                        );
+                        await config.update(
+                            'aiProvider',
+                            message.provider,
+                            vscode.ConfigurationTarget.Global
+                        );
+                        void vscode.window.showInformationMessage(
+                            'FaultLine: API key and AI Provider saved securely.'
+                        );
+
+                        this.isDirty = false;
+                        this.pendingConfig = {};
+                        this.pendingSecrets = {};
+                        this.update();
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        void vscode.window.showErrorMessage(`FaultLine: ${msg}`);
+                    }
+                }
+                return;
+
+            case 'fetchModels':
+                if (message.provider) {
+                    try {
+                        let keyToUse: string | undefined | null = message.key;
+                        if (!keyToUse) {
+                            keyToUse = await this.secretManager.getApiKey(message.provider);
+                        }
+                        if (!keyToUse) {
+                            void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                                command: 'modelsFetched',
+                                error: 'No API key provided or found in storage.'
+                            });
+                            return;
+                        }
+                        const providerObj = getProvider(message.provider);
+                        if (!providerObj) {
+                            void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                                command: 'modelsFetched',
+                                error: 'Unknown AI provider.'
+                            });
+                            return;
+                        }
+                        let models: { id: string; name: string }[] = [];
+                        if (providerObj.fetchModels) {
+                            models = await providerObj.fetchModels(keyToUse);
+                        }
+                        if (!models || models.length === 0) {
+                            models = providerObj.info.models.map((m) => ({ id: m, name: m }));
+                        }
+
+                        if (models.length > 0) {
+                            const scoreModel = (name: string) => {
+                                const n = name.toLowerCase();
+                                if (n.includes('llama-3.3') || n.includes('llama 3.3')) return 100;
+                                if (n.includes('gemini-2.0') || n.includes('gemini 2.0')) return 95;
+                                if (n.includes('llama-3.2') || n.includes('llama 3.2')) return 90;
+                                if (n.includes('llama-3.1') || n.includes('llama 3.1')) return 85;
+                                if (n.includes('gemini-1.5') || n.includes('gemini 1.5')) return 80;
+                                if (n.includes('mixtral')) return 75;
+                                if (n.includes('qwen-2.5') || n.includes('qwen2.5')) return 70;
+                                if (n.includes('gemma-2') || n.includes('gemma2')) return 65;
+                                if (n.includes('mistral')) return 60;
+                                if (n.includes('llama')) return 50;
+                                return 0;
+                            };
+                            models.sort((a, b) => {
+                                const scoreA = scoreModel(a.name) || scoreModel(a.id);
+                                const scoreB = scoreModel(b.name) || scoreModel(b.id);
+                                if (scoreA !== scoreB) return scoreB - scoreA;
+                                return a.name.localeCompare(b.name);
+                            });
+                        }
+
+                        void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                            command: 'modelsFetched',
+                            models
+                        });
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        this.logger.warn(`fetchModels failed: ${msg}`);
+                        void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                            command: 'modelsFetched',
+                            error: 'Failed to fetch models. Using defaults if available.'
+                        });
+                    }
+                }
+                return;
+            case 'testSound':
+                void vscode.commands.executeCommand(
+                    'faultline.testSound',
+                    message.sound,
+                    message.volume
+                );
+                return;
+            case 'reset':
+                this.isDirty = false;
+                this.pendingConfig = {};
+                this.pendingSecrets = {};
+                this.update();
+                return;
+            case 'openAdvancedSettings':
+                void vscode.commands.executeCommand(
+                    'workbench.action.openSettings',
+                    '@ext:4nur4gmishr4.fahh'
+                );
+                return;
+        }
     }
 
     public static createOrShow(
@@ -205,41 +259,59 @@ export class SettingsPanel {
         logger: Logger,
         targetSection?: string
     ): void {
-        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
+        try {
+            const column = vscode.window.activeTextEditor
+                ? vscode.window.activeTextEditor.viewColumn
+                : undefined;
 
-        if (SettingsPanel.currentPanel) {
-            SettingsPanel.currentPanel.panel.reveal(column);
-            if (targetSection) {
-                void SettingsPanel.currentPanel.panel.webview.postMessage({ command: 'scrollTo', section: targetSection });
-            }
-            return;
-        }
-
-        const panel = vscode.window.createWebviewPanel(
-            'faultlineSettings',
-            'FaultLine Settings',
-            column ?? vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
-            }
-        );
-
-        SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri, configManager, secretManager, logger);
-        if (targetSection) {
-            // Give the webview a moment to load before sending scroll message
-            SettingsPanel.currentPanel.scrollTimer = setTimeout(() => {
-                if (SettingsPanel.currentPanel && !SettingsPanel.currentPanel.disposed) {
+            if (SettingsPanel.currentPanel) {
+                SettingsPanel.currentPanel.panel.reveal(column);
+                if (targetSection) {
                     void SettingsPanel.currentPanel.panel.webview.postMessage({
                         command: 'scrollTo',
                         section: targetSection
                     });
                 }
-                if (SettingsPanel.currentPanel) {
-                    SettingsPanel.currentPanel.scrollTimer = null;
+                return;
+            }
+
+            const panel = vscode.window.createWebviewPanel(
+                'faultlineSettings',
+                'FaultLine Settings',
+                column ?? vscode.ViewColumn.One,
+                {
+                    enableScripts: true,
+                    retainContextWhenHidden: true,
+                    localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
                 }
-            }, 500);
+            );
+
+            SettingsPanel.currentPanel = new SettingsPanel(
+                panel,
+                extensionUri,
+                configManager,
+                secretManager,
+                logger
+            );
+            if (targetSection) {
+                // Give the webview a moment to load before sending scroll message
+                SettingsPanel.currentPanel.scrollTimer = setTimeout(() => {
+                    if (SettingsPanel.currentPanel && !SettingsPanel.currentPanel.disposed) {
+                        void SettingsPanel.currentPanel.panel.webview.postMessage({
+                            command: 'scrollTo',
+                            section: targetSection
+                        });
+                    }
+                    if (SettingsPanel.currentPanel) {
+                        SettingsPanel.currentPanel.scrollTimer = null;
+                    }
+                }, 500);
+            }
+        } catch (err) {
+            logger.error('Settings panel failed to open', err);
+            void vscode.window.showErrorMessage(
+                `FaultLine: could not open Settings (${err instanceof Error ? err.message : String(err)}).`
+            );
         }
     }
 
@@ -283,6 +355,7 @@ export class SettingsPanel {
         this.panel.webview.html = this.getHtmlForWebview();
     }
 
+    /* istanbul ignore next -- large static webview HTML shell */
     private getHtmlForWebview(): string {
         const webview = this.panel.webview;
         const config = this.configManager.readConfig();
@@ -380,7 +453,35 @@ export class SettingsPanel {
             <h2>Core Engine</h2>
             <div class="setting-item">
                 <vscode-checkbox id="enabled" ${config.core.enabled ? 'checked' : ''}>Enable FaultLine</vscode-checkbox>
-                <div class="setting-description">Master switch for all auditory feedback and analysis. When disabled, the extension will be silent and inactive.</div>
+                <div class="setting-description">Master switch for detection, analysis, and optional notifications. When disabled, FaultLine stays silent and inactive.</div>
+            </div>
+            <div class="setting-item">
+                <vscode-checkbox id="soundsEnabled" ${config.audio.soundsEnabled ? 'checked' : ''}>Sounds</vscode-checkbox>
+                <div class="setting-description">Optional failure and success audio. Off does not disable failure capture or Analyze Last Failure.</div>
+            </div>
+            <div class="setting-item">
+                <vscode-checkbox id="showNotification" ${config.ui.showNotification ? 'checked' : ''}>Show notifications</vscode-checkbox>
+                <div class="setting-description">Toast when a failure is detected. Click Explain Error from the toast when you want analysis.</div>
+            </div>
+            <div class="setting-item">
+                <label class="setting-label">Notification level</label>
+                <div class="setting-description">VS Code severity for failure toasts.</div>
+                <vscode-dropdown id="notificationLevel">
+                    <vscode-option value="error" ${config.ui.notificationLevel === 'error' ? 'selected' : ''}>Error</vscode-option>
+                    <vscode-option value="warning" ${config.ui.notificationLevel === 'warning' ? 'selected' : ''}>Warning</vscode-option>
+                    <vscode-option value="info" ${config.ui.notificationLevel === 'info' ? 'selected' : ''}>Info</vscode-option>
+                    <vscode-option value="none" ${config.ui.notificationLevel === 'none' ? 'selected' : ''}>None</vscode-option>
+                </vscode-dropdown>
+            </div>
+            <div class="setting-item">
+                <vscode-checkbox id="showStatusBar" ${config.ui.showStatusBar ? 'checked' : ''}>Status bar</vscode-checkbox>
+                <div class="setting-description">Show FaultLine and Sounds toggles in the status bar.</div>
+            </div>
+            <div class="setting-item">
+                <vscode-checkbox id="flashStatusBar" ${config.ui.flashStatusBar ? 'checked' : ''}>Flash status bar on fail</vscode-checkbox>
+            </div>
+            <div class="setting-item">
+                <vscode-checkbox id="statusBarCounter" ${config.ui.statusBarCounter ? 'checked' : ''}>Daily fail counter</vscode-checkbox>
             </div>
         </div>
 
@@ -454,6 +555,14 @@ export class SettingsPanel {
                 </div>
             </div>
             <div class="setting-item">
+                <vscode-checkbox id="errorExplanationEnabled" ${config.ai.errorExplanationEnabled ? 'checked' : ''}>Enable fault explanation</vscode-checkbox>
+                <div class="setting-description">Allow Analyze Last Failure / explanation panel to call your configured provider.</div>
+            </div>
+            <div class="setting-item">
+                <vscode-checkbox id="errorExplanationAutoShow" ${config.ai.errorExplanationAutoShow ? 'checked' : ''}>Auto-open explanation on fail</vscode-checkbox>
+                <div class="setting-description">Off by default. When on, opens analysis automatically after each failure (may send text to your provider).</div>
+            </div>
+            <div class="setting-item">
                 <vscode-checkbox id="aiSummaryEnabled" ${config.ai.summaryEnabled ? 'checked' : ''}>Enable AI Summaries</vscode-checkbox>
                 <div class="setting-description">Automatically generate a concise summary of every failure in the output log.</div>
             </div>
@@ -476,23 +585,31 @@ export class SettingsPanel {
         function notifyChange() {
             const config = {
                 enabled: document.getElementById('enabled').checked,
-                volume: parseInt(document.getElementById('volume').value),
+                soundsEnabled: document.getElementById('soundsEnabled').checked,
+                showNotification: document.getElementById('showNotification').checked,
+                notificationLevel: document.getElementById('notificationLevel').value,
+                showStatusBar: document.getElementById('showStatusBar').checked,
+                flashStatusBar: document.getElementById('flashStatusBar').checked,
+                statusBarCounter: document.getElementById('statusBarCounter').checked,
+                volume: parseInt(document.getElementById('volume').value, 10),
                 soundPack: document.getElementById('soundPack').value,
                 successSound: document.getElementById('successSound').value,
                 successEnabled: document.getElementById('successEnabled').checked,
                 aiProvider: document.getElementById('aiProvider').value,
                 'ai.model': document.getElementById('aiModel').value,
-                'aiSummary.enabled': document.getElementById('aiSummaryEnabled').checked
+                'aiSummary.enabled': document.getElementById('aiSummaryEnabled').checked,
+                'errorExplanation.enabled': document.getElementById('errorExplanationEnabled').checked,
+                'errorExplanation.autoShow': document.getElementById('errorExplanationAutoShow').checked
             };
-            
+
             const secrets = {};
             const apiKey = document.getElementById('apiKey').value;
             if (apiKey) {
                 secrets[config.aiProvider] = apiKey;
             }
 
-            vscode.postMessage({ 
-                command: 'changed', 
+            vscode.postMessage({
+                command: 'changed',
                 config,
                 secrets
             });
@@ -510,22 +627,37 @@ export class SettingsPanel {
             notifyChange();
         });
 
-        document.getElementById('enabled').addEventListener('change', notifyChange);
+        [
+            'enabled', 'soundsEnabled', 'showNotification', 'notificationLevel',
+            'showStatusBar', 'flashStatusBar', 'statusBarCounter',
+            'soundPack', 'successSound', 'aiSummaryEnabled',
+            'errorExplanationEnabled', 'errorExplanationAutoShow', 'aiModel'
+        ].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', notifyChange);
+            }
+        });
         document.getElementById('volume').addEventListener('input', notifyChange);
-        
-        document.getElementById('soundPack').addEventListener('change', notifyChange);
-        document.getElementById('successSound').addEventListener('change', notifyChange);
         document.getElementById('successEnabled').addEventListener('change', (e) => {
             document.getElementById('success-sound-container').style.opacity = e.target.checked ? '1' : '0.5';
             document.getElementById('success-sound-container').style.pointerEvents = e.target.checked ? 'auto' : 'none';
             notifyChange();
         });
-        
+
         document.getElementById('testErrorSoundBtn').addEventListener('click', () => {
-            vscode.postMessage({ command: 'testSound', sound: document.getElementById('soundPack').value, volume: document.getElementById('volume').value });
+            vscode.postMessage({
+                command: 'testSound',
+                sound: document.getElementById('soundPack').value,
+                volume: document.getElementById('volume').value
+            });
         });
         document.getElementById('testSuccessSoundBtn').addEventListener('click', () => {
-            vscode.postMessage({ command: 'testSound', sound: document.getElementById('successSound').value, volume: document.getElementById('volume').value });
+            vscode.postMessage({
+                command: 'testSound',
+                sound: document.getElementById('successSound').value,
+                volume: document.getElementById('volume').value
+            });
         });
         const openAdvancedBtn = document.getElementById('openAdvancedBtn');
         if (openAdvancedBtn) {
@@ -534,10 +666,7 @@ export class SettingsPanel {
             });
         }
 
-
         document.getElementById('apiKey').addEventListener('input', notifyChange);
-        document.getElementById('aiSummaryEnabled').addEventListener('change', notifyChange);
-        document.getElementById('aiModel').addEventListener('change', notifyChange);
 
         const fetchModelsBtn = document.getElementById('fetchModelsBtn');
         const aiModelDropdown = document.getElementById('aiModel');

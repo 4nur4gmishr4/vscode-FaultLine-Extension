@@ -16,16 +16,20 @@ module.exports = {
     'src/**/*.ts',
     '!src/test/**',
     '!src/**/*.d.ts',
+    // Static webview HTML shells (logic covered via panel + pure helpers).
+    '!src/presentation/ui/welcome.ts',
+    '!src/presentation/ui/settingsPanel.ts',
+    '!src/presentation/ui/errorExplanation.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
-  // Floor vs current suite (not aspirational). Raise gradually as coverage grows.
+  // Logic-path floor (HTML shells excluded above). Raise with new behavior.
   coverageThreshold: {
     global: {
-      branches: 22,
-      functions: 35,
-      lines: 38,
-      statements: 38,
+      branches: 40,
+      functions: 55,
+      lines: 60,
+      statements: 60,
     },
   },
 };

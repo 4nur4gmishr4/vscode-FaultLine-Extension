@@ -64,23 +64,30 @@ export class TerminalDetector {
         }
 
         // Detect failure via terminal closure (fallback)
-        disposables.push(
-            vscode.window.onDidCloseTerminal((t: vscode.Terminal) => {
-                try {
-                    const cfg = this.config().detection;
-                    if (!cfg.sources.has('terminal')) {
-                        return;
-                    }
+        const closeTerminal = vscode.window.onDidCloseTerminal;
+        if (typeof closeTerminal === 'function') {
+            disposables.push(
+                closeTerminal.call(vscode.window, (t: vscode.Terminal) => {
+                    try {
+                        const cfg = this.config().detection;
+                        if (!cfg.sources.has('terminal')) {
+                            return;
+                        }
 
-                    const code = t.exitStatus?.code;
-                    if (code !== undefined && code !== 0) {
-                        this.onFailure({ source: 'terminal', label: t.name, timestamp: Date.now() });
+                        const code = t.exitStatus?.code;
+                        if (code !== undefined && code !== 0) {
+                            this.onFailure({
+                                source: 'terminal',
+                                label: t.name,
+                                timestamp: Date.now()
+                            });
+                        }
+                    } catch (err) {
+                        this.logger.error('Terminal close handler failed', err);
                     }
-                } catch (err) {
-                    this.logger.error('Unhandled rejection in Terminal Detector', err);
-                }
-            })
-        );
+                })
+            );
+        }
     }
 
     /**

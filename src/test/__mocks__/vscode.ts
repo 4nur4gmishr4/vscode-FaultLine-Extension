@@ -34,6 +34,8 @@ const vscode = {
         onDidStartTerminalShellExecution: jest.fn(() => ({ dispose: jest.fn() })),
         onDidEndTerminalShellExecution: jest.fn(() => ({ dispose: jest.fn() })),
         onDidCloseTerminal: jest.fn(() => ({ dispose: jest.fn() })),
+        showOpenDialog: jest.fn(async () => undefined),
+        showQuickPick: jest.fn(async () => undefined),
     },
     workspace: {
         getConfiguration: jest.fn(() => ({

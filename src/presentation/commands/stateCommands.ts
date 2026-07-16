@@ -2,15 +2,7 @@ import * as vscode from 'vscode';
 import { FaultLineRuntime } from '../../application/runtime/faultline';
 import { listProviders } from '../../infrastructure/services/aiProviders';
 import { t } from '../../shared/utils/i18n';
-
-async function runCommand(name: string, action: () => void | Promise<void>): Promise<void> {
-    try {
-        await action();
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        void vscode.window.showErrorMessage(`FaultLine (${name}): ${msg}`);
-    }
-}
+import { runCommand } from '../../shared/utils/commandGuard';
 
 export function registerStateCommands(ext: FaultLineRuntime, disposables: vscode.Disposable[]): void {
     disposables.push(
@@ -104,6 +96,10 @@ async function clearStoredSecrets(ext: FaultLineRuntime): Promise<void> {
         ...EXTRA_SECRET_PROVIDERS
     ]);
     for (const provider of providers) {
-        await ext.secretManager.deleteApiKey(provider);
+        try {
+            await ext.secretManager.deleteApiKey(provider);
+        } catch {
+            // Best-effort: one missing secret must not abort factory reset.
+        }
     }
 }

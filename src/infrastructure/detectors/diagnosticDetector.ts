@@ -12,38 +12,28 @@ export class DiagnosticDetector {
 
     constructor(
         private readonly config: () => FaultLineConfig,
-        private readonly onFailure: FailureHandler
+        private readonly onFailure: FailureHandler,
+        private readonly onError?: (err: unknown) => void
     ) {}
 
     public register(disposables: vscode.Disposable[]): void {
+        const onChange = vscode.languages?.onDidChangeDiagnostics;
+        if (typeof onChange !== 'function') {
+            this.onError?.(new Error('vscode.languages.onDidChangeDiagnostics is unavailable'));
+            return;
+        }
+
         disposables.push(
-            vscode.languages.onDidChangeDiagnostics((e) => {
+            onChange.call(vscode.languages, (e: vscode.DiagnosticChangeEvent) => {
                 if (this.diagTimeout) {
                     clearTimeout(this.diagTimeout);
                 }
 
                 this.diagTimeout = setTimeout(() => {
-                    const configObj = this.config();
-                    const cfg = configObj.detection;
-                    if (!cfg.sources.has('diagnostics')) {
-                        return;
-                    }
-
-                    for (const uri of e.uris) {
-                        const diag = vscode.languages.getDiagnostics(uri);
-                        const errorCount = diag.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length;
-                        const key = uri.toString();
-                        const lastCount = this.lastDiagnosticCounts.get(key) ?? 0;
-
-                        if (errorCount > lastCount && (errorCount - lastCount) >= cfg.diagnosticsThreshold) {
-                            const fileName = uri.path.split('/').pop() ?? 'File';
-                            this.onFailure({
-                                source: 'diagnostics',
-                                label: `${fileName}: ${errorCount} errors`,
-                                timestamp: Date.now()
-                            });
-                        }
-                        this.lastDiagnosticCounts.set(key, errorCount);
+                    try {
+                        this.processDiagnosticChange(e);
+                    } catch (err) {
+                        this.onError?.(err);
                     }
                 }, 500);
             })
@@ -51,11 +41,15 @@ export class DiagnosticDetector {
 
         // Cleanup interval
         const diagCleanupInterval = setInterval(() => {
-            const live = new Set(vscode.workspace.textDocuments.map(d => d.uri.toString()));
-            for (const key of this.lastDiagnosticCounts.keys()) {
-                if (!live.has(key)) {
-                    this.lastDiagnosticCounts.delete(key);
+            try {
+                const live = new Set(vscode.workspace.textDocuments.map(d => d.uri.toString()));
+                for (const key of this.lastDiagnosticCounts.keys()) {
+                    if (!live.has(key)) {
+                        this.lastDiagnosticCounts.delete(key);
+                    }
                 }
+            } catch {
+                // Workspace may be shutting down; ignore cleanup errors.
             }
         }, CLEANUP_INTERVAL_MS);
 
@@ -70,5 +64,30 @@ export class DiagnosticDetector {
                 this.diagTimeout = null;
             }
         }});
+    }
+
+    private processDiagnosticChange(e: vscode.DiagnosticChangeEvent): void {
+        const configObj = this.config();
+        const cfg = configObj.detection;
+        if (!cfg.sources.has('diagnostics')) {
+            return;
+        }
+
+        for (const uri of e.uris) {
+            const diag = vscode.languages.getDiagnostics(uri);
+            const errorCount = diag.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length;
+            const key = uri.toString();
+            const lastCount = this.lastDiagnosticCounts.get(key) ?? 0;
+
+            if (errorCount > lastCount && (errorCount - lastCount) >= cfg.diagnosticsThreshold) {
+                const fileName = uri.path.split('/').pop() ?? 'File';
+                this.onFailure({
+                    source: 'diagnostics',
+                    label: `${fileName}: ${errorCount} errors`,
+                    timestamp: Date.now()
+                });
+            }
+            this.lastDiagnosticCounts.set(key, errorCount);
+        }
     }
 }

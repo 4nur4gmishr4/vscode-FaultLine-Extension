@@ -267,7 +267,9 @@ export class WebhookService {
             return;
         }
 
-        void this.postWebhookSafe(label, source, cfg.url, cfg.allowedDomains);
+        void this.postWebhookSafe(label, source, cfg.url, cfg.allowedDomains).catch((err: unknown) => {
+            this.logger.error('Webhook post failed', err);
+        });
     }
 
     private async postWebhookSafe(

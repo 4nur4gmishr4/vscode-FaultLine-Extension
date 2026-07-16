@@ -64,17 +64,24 @@ export class ErrorExplanationManager {
         if (this.disposed) {
             return;
         }
-        const safe = parseFailureEvent(failure) ?? {
-            source: 'shell' as const,
-            label: 'Unknown failure',
-            timestamp: Date.now()
-        };
-        if (!this.panel) {
-            this.pendingFailures.push(safe);
-            this.createPanel();
-        } else {
-            this.panel.reveal();
-            this.sendFailureToWebview(safe);
+        try {
+            const safe = parseFailureEvent(failure) ?? {
+                source: 'shell' as const,
+                label: 'Unknown failure',
+                timestamp: Date.now()
+            };
+            if (!this.panel) {
+                this.pendingFailures.push(safe);
+                this.createPanel();
+            } else {
+                this.panel.reveal();
+                this.sendFailureToWebview(safe);
+            }
+        } catch (err) {
+            this.logger.error('Failed to show failure explanation', err);
+            void vscode.window.showErrorMessage(
+                `FaultLine: could not open error analysis (${err instanceof Error ? err.message : String(err)}).`
+            );
         }
     }
 
@@ -107,42 +114,46 @@ export class ErrorExplanationManager {
 
         this.panel.webview.onDidReceiveMessage(
             async (message: unknown) => {
-                if (!message || typeof message !== 'object') {
-                    return;
-                }
-                const msg = message as Record<string, unknown>;
-                const command = typeof msg.command === 'string' ? msg.command : '';
-                switch (command) {
-                    case 'explainError': {
-                        const failure = parseFailureEvent(msg.failure);
-                        if (failure) {
-                            await this.explainError(failure);
-                        }
+                try {
+                    if (!message || typeof message !== 'object') {
                         return;
                     }
-                    case 'chatMessage':
-                        await this.handleChatMessage(
-                            clampStr(msg.history, MAX_CHAT_HISTORY),
-                            clampStr(msg.text, MAX_CHAT_TEXT)
-                        );
-                        return;
-                    case 'ready':
-                        this.pendingFailures.forEach(f => this.sendFailureToWebview(f));
-                        this.pendingFailures = [];
-                        return;
-                    case 'copyError': {
-                        const text = clampStr(msg.errorText, MAX_CLIPBOARD);
-                        if (text) {
-                            await vscode.env.clipboard.writeText(text);
-                            void vscode.window.showInformationMessage('Error copied to clipboard');
+                    const msg = message as Record<string, unknown>;
+                    const command = typeof msg.command === 'string' ? msg.command : '';
+                    switch (command) {
+                        case 'explainError': {
+                            const failure = parseFailureEvent(msg.failure);
+                            if (failure) {
+                                await this.explainError(failure);
+                            }
+                            return;
                         }
-                        return;
+                        case 'chatMessage':
+                            await this.handleChatMessage(
+                                clampStr(msg.history, MAX_CHAT_HISTORY),
+                                clampStr(msg.text, MAX_CHAT_TEXT)
+                            );
+                            return;
+                        case 'ready':
+                            this.pendingFailures.forEach(f => this.sendFailureToWebview(f));
+                            this.pendingFailures = [];
+                            return;
+                        case 'copyError': {
+                            const text = clampStr(msg.errorText, MAX_CLIPBOARD);
+                            if (text) {
+                                await vscode.env.clipboard.writeText(text);
+                                void vscode.window.showInformationMessage('Error copied to clipboard');
+                            }
+                            return;
+                        }
+                        case 'showWelcome':
+                            void vscode.commands.executeCommand('faultline.showWelcome');
+                            return;
+                        default:
+                            return;
                     }
-                    case 'showWelcome':
-                        void vscode.commands.executeCommand('faultline.showWelcome');
-                        return;
-                    default:
-                        return;
+                } catch (err) {
+                    this.logger.error('Error explanation webview message failed', err);
                 }
             },
             undefined,
@@ -226,6 +237,7 @@ export class ErrorExplanationManager {
         }
     }
 
+    /* istanbul ignore next -- large static webview HTML shell */
     private getWebviewContent(webview: vscode.Webview): string {
         const nonce = this.getNonce();
         const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'vendor', 'webview-ui-toolkit', 'dist', 'toolkit.min.js')).toString();

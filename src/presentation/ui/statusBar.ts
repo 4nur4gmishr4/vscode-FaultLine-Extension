@@ -39,12 +39,12 @@ export class StatusBarManager {
      * Creates a new StatusBarManager instance.
      *
      * @param config - Function that returns the current extension configuration
-     * @param _logger - Logger instance for diagnostic output (currently unused)
+     * @param logger - Logger instance for diagnostic output
      * @param getFailCount - Returns today's failure count for the optional counter badge
      */
     public constructor(
         private readonly config: () => FaultLineConfig,
-        _logger: Logger,
+        private readonly logger: Logger,
         private readonly getFailCount: () => number = () => 0
     ) {}
 
@@ -95,41 +95,50 @@ export class StatusBarManager {
      * ```
      */
     public refresh(): void {
-        const config = this.config();
-        const cfg = config.ui;
-        if (!cfg.showStatusBar) {
-            this.item?.hide();
-            this.soundsItem?.hide();
+        if (this.disposed) {
             return;
         }
-        if (!this.item) {
-            this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
-            this.item.command = 'faultline.toggle';
-        }
-        if (!this.soundsItem) {
-            this.soundsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
-            this.soundsItem.command = 'faultline.toggleSounds';
-        }
+        try {
+            const config = this.config();
+            const cfg = config.ui;
+            if (!cfg.showStatusBar) {
+                this.item?.hide();
+                this.soundsItem?.hide();
+                return;
+            }
+            if (!this.item) {
+                this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
+                this.item.command = 'faultline.toggle';
+            }
+            if (!this.soundsItem) {
+                this.soundsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
+                this.soundsItem.command = 'faultline.toggleSounds';
+            }
 
-        const enabled = config.core.enabled;
-        const count = this.getFailCount();
-        const counterBadge = cfg.statusBarCounter && count > 0 ? ` ($(error) ${count})` : '';
-        this.item.text = enabled ? `$(pulse) FaultLine: ON${counterBadge}` : `$(circle-slash) FaultLine: OFF`;
-        this.item.tooltip = enabled
-            ? `FaultLine is ON (debugger and fault explainer). Click to disable.${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`
-            : 'FaultLine is OFF. Click to enable.';
-        this.item.show();
+            const enabled = config.core.enabled;
+            const count = this.getFailCount();
+            const counterBadge = cfg.statusBarCounter && count > 0 ? ` ($(error) ${count})` : '';
+            this.item.text = enabled
+                ? `$(pulse) FaultLine: ON${counterBadge}`
+                : `$(circle-slash) FaultLine: OFF`;
+            this.item.tooltip = enabled
+                ? `FaultLine is ON (debugger and fault explainer). Click to disable.${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`
+                : 'FaultLine is OFF. Click to enable.';
+            this.item.show();
 
-        const soundsEnabled = config.audio.soundsEnabled;
-        this.soundsItem.text = soundsEnabled ? `$(unmute) Sounds` : `$(mute) Sounds`;
-        this.soundsItem.tooltip = soundsEnabled
-            ? 'Sounds ON (optional notifier). Click to disable.'
-            : 'Sounds OFF. Click to enable.';
-        
-        if (enabled) {
-            this.soundsItem.show();
-        } else {
-            this.soundsItem.hide();
+            const soundsEnabled = config.audio.soundsEnabled;
+            this.soundsItem.text = soundsEnabled ? `$(unmute) Sounds` : `$(mute) Sounds`;
+            this.soundsItem.tooltip = soundsEnabled
+                ? 'Sounds ON (optional notifier). Click to disable.'
+                : 'Sounds OFF. Click to enable.';
+
+            if (enabled) {
+                this.soundsItem.show();
+            } else {
+                this.soundsItem.hide();
+            }
+        } catch (err) {
+            this.logger.error('Status bar refresh failed', err);
         }
     }
 
@@ -191,23 +200,28 @@ export class StatusBarManager {
         if (this.disposed) {
             return;
         }
-        const cfg = this.config().ui;
-        if (!cfg.flashStatusBar || !this.item) {
-            return;
-        }
-        if (this.flashing) {
-            return;
-        }
-        this.flashing = true;
-        const original = this.item.backgroundColor;
-        this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-        this.flashTimer = setTimeout(() => {
-            this.flashTimer = null;
-            if (this.item) {
-                this.item.backgroundColor = original;
+        try {
+            const cfg = this.config().ui;
+            if (!cfg.flashStatusBar || !this.item) {
+                return;
             }
+            if (this.flashing) {
+                return;
+            }
+            this.flashing = true;
+            const original = this.item.backgroundColor;
+            this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+            this.flashTimer = setTimeout(() => {
+                this.flashTimer = null;
+                if (this.item) {
+                    this.item.backgroundColor = original;
+                }
+                this.flashing = false;
+            }, 1000);
+        } catch (err) {
             this.flashing = false;
-        }, 1000);
+            this.logger.error('Status bar flash failed', err);
+        }
     }
 
 
