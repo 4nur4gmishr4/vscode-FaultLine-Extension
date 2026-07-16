@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/faultline-logo.png" alt="FaultLine logo" width="128" height="128" />
+  <img src="docs/media/logo-pulse.gif" alt="FaultLine" width="180" />
 </p>
 
 <h1 align="center">FaultLine</h1>
@@ -25,12 +25,6 @@
 
 ---
 
-<p align="center">
-  <img src="docs/media/logo-pulse.gif" alt="FaultLine logo" width="200" />
-</p>
-
----
-
 ## Why FaultLine?
 
 You run a command. It fails. You scroll the terminal, copy the error, paste into chat, explain the context again…
@@ -44,21 +38,19 @@ You run a command. It fails. You scroll the terminal, copy the error, paste into
 
 Made by **Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)).
 
-### See it in motion
+### Watch a failure get caught
 
-Honest demos only — **your real logo**, a real failing-command sequence, and the product flow.  
-No fake screenshots of other apps. No mock UIs that aren’t this extension.
+One motion demo — a failed build, then FaultLine’s status lines.  
+Uses **your real logo** only. No fake VS Code UI. No stock “other product” art.
 
 <p align="center">
-  <img src="docs/media/terminal-fail.gif" alt="Terminal fails and FaultLine notices" width="90%" />
+  <img src="docs/media/terminal-fail.gif" alt="Build fails and FaultLine detects it" width="92%" />
 </p>
 
-<p align="center">
-  <em>A command fails → FaultLine detects it → ready for Analyze Last Failure (AI stays opt-in).</em>
-</p>
+### How it works (3 steps)
 
 <p align="center">
-  <img src="docs/media/how-it-works.gif" alt="How FaultLine works in three steps" width="90%" />
+  <img src="docs/media/how-it-works.gif" alt="Fail, notice, analyze" width="92%" />
 </p>
 
 ---
@@ -287,11 +279,17 @@ Report vulnerabilities privately — see [SECURITY.md](./SECURITY.md).
 
 ---
 
-## Media kit
+## Media
 
-Branded visuals are already in **`docs/media/`** (hero, fail, AI, settings, marketplace stills).
+Only **three** animations live in [`docs/media/`](./docs/media/README.md) (no duplicates):
 
-Want real screen-recording GIFs later? Optional guide → **[docs/media/README.md](./docs/media/README.md)**
+| File | Where used |
+|------|------------|
+| `logo-pulse.gif` | Header (real project logo) |
+| `terminal-fail.gif` | “Watch a failure get caught” |
+| `how-it-works.gif` | “How it works” |
+
+Regenerate anytime: `python scripts/make-docs-gifs.py`
 
 ---
 

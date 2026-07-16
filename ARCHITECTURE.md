@@ -27,6 +27,10 @@ It runs inside your editor and:
 4. Optionally talks to AI or webhooks / Jira  
 5. Remembers recent failures for “analyze last error”
 
+<p align="center">
+  <img src="docs/media/how-it-works.gif" alt="How FaultLine works" width="85%" />
+</p>
+
 ```mermaid
 flowchart LR
   A[Terminal / Task / Diagnostics] --> B[Detectors]

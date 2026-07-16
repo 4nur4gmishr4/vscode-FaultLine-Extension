@@ -6,6 +6,8 @@
   <img src="https://img.shields.io/badge/secrets-SecretStorage-success?style=for-the-badge" alt="SecretStorage" />
 </p>
 
+> Animations that show product demos live on the [README](./README.md) — this page stays text-first so security readers can scan fast.
+
 FaultLine watches your **local** VS Code environment (terminals, tasks, optional diagnostics).  
 That means security and privacy are not optional — they are the product.
 

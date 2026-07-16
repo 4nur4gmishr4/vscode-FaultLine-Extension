@@ -494,6 +494,7 @@
     "test:coverage": "jest --coverage",
     "test:integration": "jest --testPathPattern=integration",
     "vendor:sync": "node scripts/sync-vendor.js",
+    "docs:gifs": "python scripts/make-docs-gifs.py",
     "vscode:prepublish": "npm run vendor:sync && npm run compile",
     "compile": "tsc -noEmit && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",

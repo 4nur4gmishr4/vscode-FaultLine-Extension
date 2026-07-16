@@ -72,7 +72,7 @@ Newest first. Written for humans first, engineers second.
 - [SECURITY](./SECURITY.md) — privacy & threat model  
 - [ARCHITECTURE](./ARCHITECTURE.md) — how it works  
 - [CONTRIBUTING](./CONTRIBUTING.md) — how to help  
-- [Media kit](./docs/media/README.md) — GIFs & screenshots to add  
+- [Media](./docs/media/README.md) — 3 honest motion GIFs (logo / terminal / flow)
 
 ---
 
