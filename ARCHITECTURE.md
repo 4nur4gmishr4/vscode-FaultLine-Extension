@@ -85,7 +85,7 @@ src/
     state/stateStore.ts
   presentation/
     commands/                       # sound / state / UI commands
-    ui/                             # settings, error analysis, welcome, status bar
+    ui/                             # settings, error analysis, welcome (intro+body), status bar
   shared/
     config/                         # ConfigManager, SecretManager, constants
     utils/                          # scheduler, history, logger, i18n, git
@@ -93,10 +93,13 @@ src/
 resources/
   packs/                            # built-in audio
   vendor/                           # toolkit.min.js + codicon assets (vendored)
-  faultline-logo.png
-scripts/sync-vendor.js              # copy vendor assets from node_modules
-docs/media/                         # GIF / screenshot kit for README
+  faultline-logo.png                # official brand art
+scripts/
+  sync-vendor.js                    # copy vendor assets from node_modules
+  make-docs-gifs.py                 # regenerate docs/media GIFs
+docs/media/                         # logo-pulse, terminal-fail, how-it-works only
 ```
+
 
 ## Detectors
 
