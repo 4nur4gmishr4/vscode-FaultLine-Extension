@@ -33,7 +33,11 @@ export class WelcomePanel {
      * @param extensionUri - The URI of the extension root directory
      * @returns void
      */
-    public static createOrShow(extensionUri: vscode.Uri): void {
+    /**
+     * @param withIntro - When true (first install), show typing greeting then welcome body.
+     *                    When false (command palette), open the welcome body immediately.
+     */
+    public static createOrShow(extensionUri: vscode.Uri, withIntro = false): void {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -53,13 +57,21 @@ export class WelcomePanel {
             }
         );
 
-        WelcomePanel.currentPanel = new WelcomePanel(panel, extensionUri);
+        WelcomePanel.currentPanel = new WelcomePanel(panel, extensionUri, withIntro);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        private readonly withIntro: boolean
+    ) {
         this._panel = panel;
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-        this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, extensionUri);
+        this._panel.webview.html = this._getHtmlForWebview(
+            this._panel.webview,
+            extensionUri,
+            this.withIntro
+        );
 
         // Handle messages from the webview. Strictly typed and shape-validated
         // before use so a compromised webview can't smuggle arbitrary fields
@@ -141,11 +153,17 @@ export class WelcomePanel {
      * @param extensionUri - The URI of the extension root directory
      * @returns The complete HTML string for the webview
      */
-    private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
+    private _getHtmlForWebview(
+        webview: vscode.Webview,
+        extensionUri: vscode.Uri,
+        withIntro: boolean
+    ): string {
         const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'faultline-logo.png')).toString();
         const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'faultline.mp3'));
         const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'vendor', 'codicons', 'dist', 'codicon.css'));
         const nonce = generateNonce();
+        const introDisplay = withIntro ? 'flex' : 'none';
+        const mainDisplay = withIntro ? 'none' : 'flex';
 
         return `<!DOCTYPE html>
 <html lang="en">
@@ -163,7 +181,10 @@ export class WelcomePanel {
             --secondary-bg: #1a1a1a;
             --border-color: #333333;
             --danger-color: #ff4444;
+            --muted: #9a9a9a;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -179,10 +200,96 @@ export class WelcomePanel {
             position: relative;
         }
 
+        /* ----- Intro (typing) ----- */
+        #intro {
+            display: ${introDisplay};
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100%;
+            padding: 40px 24px;
+            text-align: center;
+        }
+
+        #intro.hidden { display: none !important; }
+
+        .intro-logo {
+            width: 88px;
+            height: 88px;
+            margin-bottom: 36px;
+            filter: grayscale(1) brightness(2);
+            opacity: 0.9;
+        }
+
+        .type-wrap {
+            max-width: 520px;
+            min-height: 140px;
+            margin: 0 auto 28px;
+            text-align: left;
+        }
+
+        #type-text {
+            font-size: 1.25rem;
+            line-height: 1.7;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            white-space: pre-wrap;
+            color: var(--text-color);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.15em;
+            background: var(--accent-color);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink 0.9s step-end infinite;
+        }
+
+        .cursor.done { display: none; }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .skip-btn {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border-color);
+            padding: 10px 28px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .skip-btn:hover {
+            color: var(--text-color);
+            border-color: var(--accent-color);
+        }
+
+        /* ----- Main welcome ----- */
+        #main {
+            display: ${mainDisplay};
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        #main.visible { display: flex !important; animation: fadeIn 0.55s ease-out; }
+
         .header-actions {
             position: absolute;
             top: 20px;
             right: 20px;
+            z-index: 2;
         }
 
         .btn-danger {
@@ -243,7 +350,6 @@ export class WelcomePanel {
             max-width: 800px;
             padding: 40px;
             text-align: center;
-            animation: fadeIn 1s ease-out;
         }
 
         @keyframes fadeIn {
@@ -281,7 +387,19 @@ export class WelcomePanel {
             letter-spacing: 4px;
             text-transform: uppercase;
             opacity: 0.5;
-            margin-bottom: 50px;
+            margin-bottom: 24px;
+        }
+
+        .credit {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-bottom: 48px;
+            line-height: 1.5;
+        }
+
+        .credit strong {
+            color: var(--text-color);
+            font-weight: 600;
         }
 
         .grid {
@@ -364,75 +482,160 @@ export class WelcomePanel {
         .bar:nth-child(3) { animation-delay: 0.2s; }
         .bar:nth-child(4) { animation-delay: 0.4s; }
         .bar:nth-child(5) { animation-delay: 0.15s; }
+
+        .footer-credit {
+            margin-top: 48px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
     </style>
 </head>
 <body>
-    <div class="header-actions">
-        <button id="settings-btn" class="btn" style="padding: 8px 16px; font-size: 0.8rem; margin-right: 10px;" type="button">
-            <span class="codicon codicon-settings-gear" style="vertical-align: middle;"></span> AI & Settings
-        </button>
-        <button id="reset-btn" class="btn-danger" type="button">Reset All Settings</button>
+    <!-- First-install greeting -->
+    <div id="intro" aria-live="polite">
+        <img src="${logoUri}" class="intro-logo" alt="FaultLine" />
+        <div class="type-wrap">
+            <span id="type-text"></span><span id="cursor" class="cursor"></span>
+        </div>
+        <button type="button" class="skip-btn" id="skip-btn">Skip</button>
     </div>
 
-    <div class="container">
-        <div class="logo-container">
-            <img src="${logoUri}" class="logo" alt="FaultLine Logo">
+    <!-- Main welcome -->
+    <div id="main">
+        <div class="header-actions">
+            <button id="settings-btn" class="btn" style="padding: 8px 16px; font-size: 0.8rem; margin-right: 10px;" type="button">
+                <span class="codicon codicon-settings-gear" style="vertical-align: middle;"></span> AI &amp; Settings
+            </button>
+            <button id="reset-btn" class="btn-danger" type="button">Reset All Settings</button>
         </div>
-        <h1>FaultLine!</h1>
-        <div class="tagline">Audio error feedback</div>
 
-        <div class="grid">
-            <div class="card">
-                <div class="card-icon"><span class="codicon codicon-zap"></span></div>
-                <div class="card-title">Zero Latency</div>
+        <div class="container">
+            <div class="logo-container">
+                <img src="${logoUri}" class="logo" alt="FaultLine Logo">
             </div>
-            <div class="card">
-                <div class="card-icon"><span class="codicon codicon-megaphone"></span></div>
-                <div class="card-title">Pure Audio</div>
+            <h1>FaultLine</h1>
+            <div class="tagline">When builds fail, you're not alone</div>
+            <p class="credit">Made by <strong>Anurag Mishra</strong> — for every developer who ships.</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon"><span class="codicon codicon-zap"></span></div>
+                    <div class="card-title">Catches fails fast</div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><span class="codicon codicon-megaphone"></span></div>
+                    <div class="card-title">Optional sounds</div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><span class="codicon codicon-hubot"></span></div>
+                    <div class="card-title">AI when you want</div>
+                </div>
             </div>
-            <div class="card">
-                <div class="card-icon"><span class="codicon codicon-hubot"></span></div>
-                <div class="card-title">AI Insights</div>
+
+            <div class="sound-selector">
+                <label for="sound-select" class="selector-label">Choose Failure Sound</label>
+                <select id="sound-select" class="sound-select">
+                    <option value="faultline.mp3">Classic FaultLine (Default)</option>
+                    <option value="faultlinehard.mp3">Impact Strike</option>
+                    <option value="fartreverb.mp3">Reverb Blast</option>
+                    <option value="faultlinedeep.mp3">Deep Resonance</option>
+                    <option value="faultlinebroke.mp3">System Crash</option>
+                    <option value="ohshit.mp3">Quick Expletive</option>
+                </select>
+                <button id="test-btn" class="btn" style="margin-top: 10px;" type="button">Test Failure Audio Now</button>
             </div>
-        </div>
 
-        <div class="sound-selector">
-            <label for="sound-select" class="selector-label">Choose Failure Sound</label>
-            <select id="sound-select" class="sound-select">
-                <option value="faultline.mp3">Classic FaultLine (Default)</option>
-                <option value="faultlinehard.mp3">Impact Strike</option>
-                <option value="fartreverb.mp3">Reverb Blast</option>
-                <option value="faultlinedeep.mp3">Deep Resonance</option>
-                <option value="faultlinebroke.mp3">System Crash</option>
-                <option value="ohshit.mp3">Quick Expletive</option>
-            </select>
-            <button id="test-btn" class="btn" style="margin-top: 10px;" type="button">Test Failure Audio Now</button>
-        </div>
+            <div class="sound-selector" style="margin-top: 20px;">
+                <label for="success-sound-select" class="selector-label">Choose Success Sound</label>
+                <select id="success-sound-select" class="sound-select">
+                    <option value="success_ding.mp3">Success Ding (Default)</option>
+                    <option value="success_trumphet.mp3">Success Trumpet</option>
+                </select>
+                <button id="test-success-btn" class="btn" style="margin-top: 10px;" type="button">Test Success Audio Now</button>
+            </div>
 
-        <div class="sound-selector" style="margin-top: 20px;">
-            <label for="success-sound-select" class="selector-label">Choose Success Sound</label>
-            <select id="success-sound-select" class="sound-select">
-                <option value="success_ding.mp3">Success Ding (Default)</option>
-                <option value="success_trumphet.mp3">Success Trumpet</option>
-            </select>
-            <button id="test-success-btn" class="btn" style="margin-top: 10px;" type="button">Test Success Audio Now</button>
-        </div>
+            <div id="visualizer" class="visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
 
-        <div id="visualizer" class="visualizer">
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-        </div>
+            <p class="footer-credit">FaultLine · by Anurag Mishra · for developers everywhere</p>
 
-        <audio id="faultline-audio" src="${audioUri.toString()}" preload="auto"></audio>
+            <audio id="faultline-audio" src="${audioUri.toString()}" preload="auto"></audio>
+        </div>
     </div>
 
     <script nonce="${nonce}">
         (function() {
             const vscode = acquireVsCodeApi();
-            
+            const withIntro = ${withIntro ? 'true' : 'false'};
+
+            const greetLines = [
+                "Hey — I'm Anurag Mishra.",
+                "",
+                "I built FaultLine for every developer who ships,",
+                "so when things break, you are not alone in the terminal.",
+                "",
+                "Welcome. Let's get you set up."
+            ];
+            const fullText = greetLines.join("\\n");
+
+            const intro = document.getElementById('intro');
+            const main = document.getElementById('main');
+            const typeEl = document.getElementById('type-text');
+            const cursor = document.getElementById('cursor');
+            const skipBtn = document.getElementById('skip-btn');
+
+            let typingTimer = null;
+            let finished = false;
+
+            function showMain() {
+                if (finished) return;
+                finished = true;
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                    typingTimer = null;
+                }
+                if (intro) intro.classList.add('hidden');
+                if (main) main.classList.add('visible');
+                if (cursor) cursor.classList.add('done');
+            }
+
+            function typeGreet() {
+                if (!typeEl || !withIntro) {
+                    showMain();
+                    return;
+                }
+                let i = 0;
+                const speed = 28;
+                function tick() {
+                    if (finished) return;
+                    if (i <= fullText.length) {
+                        typeEl.textContent = fullText.slice(0, i);
+                        i += 1;
+                        // Slight pause on newlines
+                        const prev = fullText[i - 2];
+                        const delay = prev === "\\n" ? 220 : speed;
+                        typingTimer = setTimeout(tick, delay);
+                    } else {
+                        if (cursor) cursor.classList.add('done');
+                        typingTimer = setTimeout(showMain, 650);
+                    }
+                }
+                tick();
+            }
+
+            skipBtn?.addEventListener('click', () => showMain());
+
+            if (withIntro) {
+                typeGreet();
+            } else {
+                showMain();
+            }
+
             document.getElementById('test-btn')?.addEventListener('click', () => {
                 vscode.postMessage({ command: 'test' });
             });
@@ -445,24 +648,18 @@ export class WelcomePanel {
             document.getElementById('reset-btn')?.addEventListener('click', () => {
                 vscode.postMessage({ command: 'reset' });
             });
-            
+
             document.getElementById('sound-select')?.addEventListener('change', (e) => {
                 const select = e.target;
                 if (select) {
-                    vscode.postMessage({ 
-                        command: 'setSound',
-                        sound: select.value
-                    });
+                    vscode.postMessage({ command: 'setSound', sound: select.value });
                 }
             });
 
             document.getElementById('success-sound-select')?.addEventListener('change', (e) => {
                 const select = e.target;
                 if (select) {
-                    vscode.postMessage({ 
-                        command: 'setSuccessSound',
-                        sound: select.value
-                    });
+                    vscode.postMessage({ command: 'setSuccessSound', sound: select.value });
                 }
             });
         })();

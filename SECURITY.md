@@ -135,5 +135,5 @@ Please upgrade to the latest release when reporting issues.
 ---
 
 <p align="center">
-  <sub>FaultLine Security · 3.5.0 · MIT · Anurag Mishra</sub>
+  <sub>FaultLine · Anurag Mishra · MIT</sub>
 </p>

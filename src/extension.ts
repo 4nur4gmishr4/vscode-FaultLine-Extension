@@ -60,7 +60,8 @@ async function maybeShowWelcomeOnInstall(ctx: vscode.ExtensionContext, rt: Fault
     const lastVersion = rt.stateStore.getLastVersion();
     
     if (shouldShowWelcome(lastVersion, version)) {
-        WelcomePanel.createOrShow(ctx.extensionUri);
+        // First install (or major jump): typing greeting, then welcome UI
+        WelcomePanel.createOrShow(ctx.extensionUri, true);
     }
     
     // Migration logic moved to Runtime or kept here for lifecycle

@@ -18,9 +18,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-3.5.0-blue?style=flat-square" alt="3.5.0" />
-  <img src="https://img.shields.io/badge/ship_quality-1000%2F1000-brightgreen?style=flat-square" alt="1000/1000" />
   <img src="https://img.shields.io/badge/VS_Code-%5E1.93-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
   <img src="https://img.shields.io/badge/privacy-defaults_off-important?style=flat-square" alt="Privacy" />
+  <img src="https://img.shields.io/badge/by-Anurag_Mishra-lightgrey?style=flat-square" alt="Anurag Mishra" />
 </p>
 
 ---
@@ -36,7 +36,7 @@ You run a command. It fails. You scroll the terminal, copy the error, paste into
 3. It can **open AI analysis** (when you ask — auto-open is off by default) with the command + output already attached  
 4. Keys stay in **VS Code SecretStorage**; sensitive-looking text is **redacted** before AI calls  
 
-Made by **Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)).
+**Built by Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)) — for every developer who ships.
 
 ### Watch a failure get caught
 
@@ -155,21 +155,6 @@ Full story → [SECURITY.md](./SECURITY.md)
 - Large automated test suite + multi-OS CI + GitHub Releases  
 
 Details → [CHANGELOG.md](./CHANGELOG.md) · Release → [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)
-
----
-
-## Ship quality (1000 / 1000)
-
-We treat **3.5.0** as a full production bar:
-
-| Area | Bar |
-|------|-----|
-| Security | HTTPS webhooks, SSRF, DNS re-check, IP pin, SecretStorage, PII |
-| Privacy | Safe defaults, no AI text at `info` logs |
-| Reliability | Mute vs sound limits, branch fail-closed, clean dispose |
-| Packaging | Vendor webview assets, ~1.1 MB VSIX |
-| Tests | 89 automated tests + activate smoke |
-| Docs | This guide + security + architecture + contributing |
 
 ---
 
@@ -294,6 +279,6 @@ Regenerate anytime: `python scripts/make-docs-gifs.py`
 ---
 
 <p align="center">
-  <strong>FaultLine 3.5.0</strong> · Ship quality 1000/1000 · Built for developers who ship<br/>
-  <sub>© Anurag Mishra · MIT License</sub>
+  <strong>FaultLine 3.5.0</strong> · made by Anurag Mishra for developers everywhere<br/>
+  <sub>MIT License</sub>
 </p>

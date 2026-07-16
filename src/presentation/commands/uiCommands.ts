@@ -12,7 +12,8 @@ export function registerUICommands(ext: FaultLineRuntime, extensionUri: vscode.U
         }),
 
         vscode.commands.registerCommand('faultline.showWelcome', () => {
-            WelcomePanel.createOrShow(extensionUri);
+            // Command palette: open welcome body (no intro typing every time)
+            WelcomePanel.createOrShow(extensionUri, false);
         }),
 
         vscode.commands.registerCommand('faultline.openSettings', (section?: string) => {

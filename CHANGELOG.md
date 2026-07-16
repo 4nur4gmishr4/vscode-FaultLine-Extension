@@ -3,7 +3,6 @@
 <p align="center">
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions"><img src="https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square" alt="CI" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/ship-1000%2F1000-brightgreen?style=flat-square" alt="1000/1000" />
 </p>
 
 All notable changes to **FaultLine** are listed here.  
@@ -77,5 +76,5 @@ Newest first. Written for humans first, engineers second.
 ---
 
 <p align="center">
-  <sub>FaultLine · maintained by Anurag Mishra · MIT</sub>
+  <sub>FaultLine · by Anurag Mishra, for developers · MIT</sub>
 </p>

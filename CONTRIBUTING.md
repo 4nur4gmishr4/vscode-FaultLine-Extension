@@ -3,7 +3,7 @@
 Thanks for helping make FaultLine better 💙  
 
 This guide is **simple first**, then **technical**.  
-Ship quality bar for **3.5.0** is production-grade (we treat it as **1000/1000**).
+**3.5.0** is the production line — keep changes solid, tested, and kind to users.
 
 ---
 
