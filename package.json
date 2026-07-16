@@ -51,25 +51,7 @@
     "workspace"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onCommand:faultline.test",
-    "onCommand:faultline.testSuccess",
-    "onCommand:faultline.toggle",
-    "onCommand:faultline.toggleSounds",
-    "onCommand:faultline.toggleWorkspace",
-    "onCommand:faultline.selectSound",
-    "onCommand:faultline.selectSoundFolder",
-    "onCommand:faultline.resetSound",
-    "onCommand:faultline.pickSoundPack",
-    "onCommand:faultline.stop",
-    "onCommand:faultline.snooze",
-    "onCommand:faultline.showOutput",
-    "onCommand:faultline.resetSettings",
-    "onCommand:faultline.factoryReset",
-    "onCommand:faultline.showWelcome",
-    "onCommand:faultline.explainError",
-    "onCommand:faultline.openSettings",
-    "onCommand:faultline.testSound"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
