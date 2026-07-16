@@ -25,11 +25,10 @@
 
 ---
 
-> **Visuals:** Drop demo GIFs into [`docs/media/`](./docs/media/README.md) — the slots below light up automatically once those files exist.
+> **Visuals** live in [`docs/media/`](./docs/media/README.md) (branded stills included; optional real product GIFs welcome later).
 
-<!-- Hero GIF: docs/media/hero.gif -->
 <p align="center">
-  <img src="docs/media/hero.gif" alt="FaultLine hero demo — add docs/media/hero.gif" width="90%" />
+  <img src="docs/media/hero.jpg" alt="FaultLine — AI when builds fail" width="90%" />
 </p>
 
 ---
@@ -59,18 +58,15 @@ Made by **Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)).
 | Stay safe by default | AI auto-open **off**, Jira **off**, webhooks **HTTPS only** |
 | Use your own AI | Copilot, OpenRouter, Groq, Gemini, OpenAI, Anthropic, and more |
 
-### Demo placeholders
+### Product visuals
 
-| Demo | File to add |
-|------|-------------|
-| Fail detected | `docs/media/demo-fail-detect.gif` |
-| AI chat | `docs/media/demo-ai-chat.gif` |
-| Settings | `docs/media/demo-settings.gif` |
+| Fail detection | AI analysis |
+|----------------|-------------|
+| <img src="docs/media/demo-fail-detect.jpg" alt="Fail detection" width="100%" /> | <img src="docs/media/demo-ai-chat.jpg" alt="AI chat" width="100%" /> |
 
-<p align="center">
-  <img src="docs/media/demo-fail-detect.gif" alt="Fail detection demo" width="48%" />
-  <img src="docs/media/demo-ai-chat.gif" alt="AI chat demo" width="48%" />
-</p>
+| Settings panel |
+|----------------|
+| <img src="docs/media/demo-settings.jpg" alt="FaultLine settings" width="80%" /> |
 
 ---
 
@@ -286,20 +282,11 @@ Report vulnerabilities privately — see [SECURITY.md](./SECURITY.md).
 
 ---
 
-## Media kit (GIFs & screenshots you should add)
+## Media kit
 
-We left image slots in this README. **You** record the media once — paths are ready:
+Branded visuals are already in **`docs/media/`** (hero, fail, AI, settings, marketplace stills).
 
-Full checklist → **[docs/media/README.md](./docs/media/README.md)**
-
-**Minimum set to look pro on GitHub + Marketplace:**
-
-1. `docs/media/hero.gif` — fail + status bar (hero)  
-2. `docs/media/demo-ai-chat.gif` — AI analysis  
-3. `docs/media/demo-settings.gif` — configuration panel  
-4. `docs/media/marketplace-1.png` … `marketplace-3.png` — stills for the store  
-
-Until those files exist, GitHub may show broken-image icons for the GIF tags — that’s expected; add the files and it fills in.
+Want real screen-recording GIFs later? Optional guide → **[docs/media/README.md](./docs/media/README.md)**
 
 ---
 

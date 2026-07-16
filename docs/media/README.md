@@ -1,43 +1,34 @@
-# Media kit for FaultLine docs
+# FaultLine media kit
 
-Drop the files listed below into **this folder** (`docs/media/`).  
-The main [README](../../README.md) already points at these paths — once the files exist, GitHub will show them automatically.
+## Already included (no work needed)
 
-**Tip:** Keep GIFs under ~5–8 MB each. Prefer **dark VS Code theme**, **1080p or 720p**, **8–20 seconds**, no real secrets on screen.
+These files are in this folder and used by the main README:
 
-| File name | What to record | Length | Used in |
-|-----------|----------------|--------|---------|
-| `hero.gif` or `hero.png` | Status bar + terminal fail + sound vibe (logo optional) | 10–15s | README top |
-| `demo-fail-detect.gif` | Run a failing command → notification / status bar flash | 8–12s | README “What it does” |
-| `demo-ai-chat.gif` | **FaultLine: Analyze Last Failure** → AI panel + one chat reply | 12–20s | README AI section |
-| `demo-settings.gif` | Open Configuration → pick provider / test sound | 10–15s | README setup |
-| `demo-success.gif` | Optional: task succeeds → success sound | 6–10s | README audio |
-| `logo-banner.png` | Wide banner (1600×400 or similar) with logo + tagline | still | README / social |
-| `marketplace-1.png` | Clean screenshot: settings panel | still | Marketplace listing |
-| `marketplace-2.png` | Clean screenshot: error analysis chat | still | Marketplace listing |
-| `marketplace-3.png` | Clean screenshot: status bar + terminal | still | Marketplace listing |
+| File | Use |
+|------|-----|
+| `hero.jpg` | Top banner |
+| `demo-fail-detect.jpg` | Fail / terminal concept |
+| `demo-ai-chat.jpg` | AI analysis concept |
+| `demo-settings.jpg` | Settings concept |
+| `logo-banner.jpg` | Social / banner |
+| `marketplace-1.jpg` … `marketplace-3.jpg` | Store-style stills |
 
-## Recording checklist (so nothing leaks)
+They are **branded product visuals** generated for docs (not live screen recordings of your machine).
 
-- [ ] No API keys, tokens, or personal emails on screen  
-- [ ] No real production URLs with credentials  
-- [ ] Use a fake fail like `exit 1` or a tiny broken npm script  
-- [ ] Blur or avoid private file paths if sensitive  
+## Optional later (if you want real GIFs)
 
-## Tools that work well
+If you ever record the real extension:
 
-- **Windows:** ScreenToGif, ShareX, Clipchamp  
-- **macOS:** Kap, CleanShot  
-- **Cross-platform:** OBS → short clip → ezgif.com to GIF  
+| File | Content | Length |
+|------|---------|--------|
+| `hero.gif` | Real fail + status bar | 10–15s |
+| `demo-fail-detect.gif` | Real terminal fail | 8–12s |
+| `demo-ai-chat.gif` | Real Analyze Last Failure | 12–20s |
+| `demo-settings.gif` | Real settings panel | 10–15s |
 
-## After you add files
+Keep under ~8 MB, dark theme, no secrets on screen.
 
-```text
-docs/media/hero.gif
-docs/media/demo-fail-detect.gif
-docs/media/demo-ai-chat.gif
-docs/media/demo-settings.gif
-…etc
-```
+## License note
 
-Commit them, push, and the README visuals light up.
+Generated brand stills are for **FaultLine project documentation and Marketplace marketing**.  
+Do not reclaim third-party VS Code trademarks beyond fair product depiction.
