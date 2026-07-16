@@ -1,7 +1,7 @@
 {
   "name": "fahh",
   "displayName": "FaultLine",
-  "description": "An AI-powered debugger, explainer, and solver assistant for developers, with secondary background audio notifications for success and errors.",
+  "description": "Debugger and fault explainer for VS Code terminals and tasks. Optional sounds and notifications second.",
   "version": "3.5.0",
   "publisher": "4nur4gmishr4",
   "author": "Anurag Mishra",

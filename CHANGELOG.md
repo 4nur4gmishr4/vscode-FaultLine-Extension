@@ -5,56 +5,55 @@
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square" alt="Release" /></a>
 </p>
 
-All notable changes to **FaultLine** are listed here.  
-Newest first. Written for humans first, engineers second.
+Notable changes to **FaultLine**. Newest first.  
+Plain language first, technical detail second.
 
 ---
 
-## [3.5.0] — Production release
+## [3.5.0] Production release
 
-**The production bar.** Terminal truth, privacy defaults, hard security, slim package, serious tests.
+**Focus:** debugger and fault explainer first; error notifier second.
 
-📦 [GitHub Release v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0) · 🏷️ tag `v3.5.0`
+Release: [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0) (tag `v3.5.0`)
 
 ### For everyone
 
-- **More reliable failure detection** for terminals and tasks  
-- **Safer by default:** AI does not auto-open; Jira does not auto-create tickets  
-- **Factory Reset** clears settings, history, **and API keys**  
-- **Smaller, cleaner install package** (no huge dependency tree inside the VSIX)  
-- Optional sounds, status bar counter, snooze — still there, better behaved  
-- **First install:** a short typed greeting from **Anurag Mishra** (“for every developer who ships”), then the welcome screen — with a **Skip** button  
-- Quiet credits on the welcome screen and docs (no hype scores)
+- Stronger capture of terminal and task failures  
+- **Analyze Last Failure** keeps command and output for explanation  
+- Auto-open analysis stays **off** unless you enable it  
+- Optional sounds, status bar, snooze (notifier features, secondary)  
+- **Factory Reset** clears settings, history, and stored API keys  
+- Slimmer install package  
+- First install: typed greeting from Anurag Mishra, then welcome screen, with **Skip**  
 
 ### For power users
 
-- Webhooks: **HTTPS only**, private hosts blocked unless allowlisted  
+- Webhooks: **HTTPS only**; private hosts blocked unless allowlisted  
 - Ignore patterns, cooldowns, max-per-minute, quiet hours, branch filters  
-- Branch filter **fails closed** if git branch cannot be read  
-- Jira opt-in with rate limit and Atlassian hosts only  
+- Branch filter fails closed if the git branch cannot be read  
+- Jira is opt-in, rate limited, Atlassian hosts only  
 
 ### For engineers
 
 | Area | Highlights |
 |------|------------|
 | Terminal | `execution.read()`, `commandLine`, end `exitCode`, WeakMap concurrency, output cap |
-| Security | PII sanitize (label + output + AI egress); SSRF DNS re-check; **connect IP pin + SNI**; SecretStorage |
-| Privacy | `errorExplanation.autoShow` default **false**; `aiSummary.enabled` default **false**; no AI text at `info` |
-| Packaging | `resources/vendor/*` via `vendor:sync`; VSIX ~22 files; CI blocks packaging `coverage/` / `src/` / `node_modules/` |
-| Tests | 89 automated tests — detectors, handleFailure, SSRF/Jira, factory reset, AI fetch mocks, i18n, activate smoke |
-| CI/CD | Multi-OS CI; release on `v*` tags; CodeQL + pinned TruffleHog |
-| i18n | Core command toasts use `t()` |
-| Welcome | `WelcomePanel.createOrShow(uri, withIntro)` — intro typing on first install only |
+| Explainer | Last failure context, provider registry, redaction, payload caps |
+| Security | SSRF DNS re-check, connect IP pin and SNI, SecretStorage |
+| Privacy | `errorExplanation.autoShow` default false; `aiSummary.enabled` default false |
+| Packaging | `resources/vendor/*`, VSIX without `node_modules` tree, CI package smoke |
+| Tests | Detectors, handleFailure, SSRF/Jira, factory reset, provider mocks, i18n, activate smoke |
+| Welcome | Typing intro on first install only; Skip; command palette skips intro |
 
 ### Upgrade notes
 
 | If you used… | Do this |
 |--------------|---------|
-| HTTP webhooks | Switch to **https://** |
-| Auto AI popups | Set `faultline.errorExplanation.autoShow` to `true` if you still want them |
-| Factory Reset | Re-add AI / Jira keys after reset |
-| Sound test in Settings | Only built-in pack **file names**, not full paths |
-| Cooldown | Default `cooldownMs` is **2000**; set `0` for no cooldown |
+| HTTP webhooks | Use `https://` |
+| Auto analysis popups | Set `faultline.errorExplanation.autoShow` to `true` if you still want them |
+| Factory Reset | Re-enter provider and Jira keys |
+| Settings sound test | Built-in pack file names only |
+| Cooldown | Default `cooldownMs` is `2000`; set `0` for none |
 
 ---
 
@@ -62,22 +61,22 @@ Newest first. Written for humans first, engineers second.
 
 ### Added
 
-- Full interactive AI chat in Error Explanation  
-- Context-aware debugging with terminal command + output  
-- Enhanced webview UI (chat bubbles, typing indicators)  
+- Interactive chat in Error Explanation  
+- Failure context (command and output) for analysis  
+- Updated Error Analysis layout  
 
 ---
 
 ## Links
 
-- [README](./README.md) — product guide  
-- [SECURITY](./SECURITY.md) — privacy & threat model  
-- [ARCHITECTURE](./ARCHITECTURE.md) — how it works  
-- [CONTRIBUTING](./CONTRIBUTING.md) — how to help  
-- [Media](./docs/media/README.md) — 3 honest motion GIFs (logo / terminal / flow)
+- [README](./README.md)  
+- [SECURITY](./SECURITY.md)  
+- [ARCHITECTURE](./ARCHITECTURE.md)  
+- [CONTRIBUTING](./CONTRIBUTING.md)  
+- [Media](./docs/media/README.md)  
 
 ---
 
 <p align="center">
-  <sub>FaultLine · by Anurag Mishra, for developers · MIT</sub>
+  <sub>FaultLine by Anurag Mishra for developers · MIT</sub>
 </p>

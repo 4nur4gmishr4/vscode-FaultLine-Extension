@@ -1,12 +1,12 @@
 # FaultLine docs media
 
-**Exactly 3 GIFs.** No duplicates. No stock art. No fake product screenshots.
+Exactly **three** GIFs. No duplicates. No stock art. No fake product screenshots.
 
 | File | Built from | Used in |
 |------|------------|---------|
-| `logo-pulse.gif` | Real `resources/faultline-logo.png` | README header only |
-| `terminal-fail.gif` | Animated terminal story + logo badge | README “Watch a failure” |
-| `how-it-works.gif` | 3-step flow + logo | README + ARCHITECTURE intro |
+| `logo-pulse.gif` | Real `resources/faultline-logo.png` | README header |
+| `terminal-fail.gif` | Terminal failure story + logo badge | README failure demo |
+| `how-it-works.gif` | Three-step flow + logo | README and ARCHITECTURE |
 
 ## Regenerate
 
@@ -15,16 +15,16 @@ npm run docs:gifs
 # or: python scripts/make-docs-gifs.py
 ```
 
-Requires: Python 3 + Pillow (`pip install pillow`).
+Needs Python 3 and Pillow (`pip install pillow`).
 
 ## Rules
 
-1. **One logo animation** in the README header — not both static PNG and pulse.  
-2. **Do not** add random internet GIFs (wrong brand / looks like other tools).  
-3. **Do not** add AI mock “settings/chat panels” that aren’t this app.  
-4. In-product first-install **typing greeting** is **code** (`welcome.ts`), not a GIF.  
-5. Optional later: real VS Code screen recordings — only if filmed from **this** extension.  
+1. One logo animation in the README header.  
+2. Do not add random internet GIFs.  
+3. Do not invent settings or chat panels that are not this extension.  
+4. First-install typing greeting is implemented in `welcome.ts`, not as a GIF.  
+5. Product framing in docs: **debugger and fault explainer first**, notifier second.  
 
-## Source of the logo
+## Logo source
 
-`resources/faultline-logo.png` — official project icon.
+`resources/faultline-logo.png`

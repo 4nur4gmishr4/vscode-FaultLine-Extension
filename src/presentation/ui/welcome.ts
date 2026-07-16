@@ -514,21 +514,21 @@ export class WelcomePanel {
                 <img src="${logoUri}" class="logo" alt="FaultLine Logo">
             </div>
             <h1>FaultLine</h1>
-            <div class="tagline">When builds fail, you're not alone</div>
-            <p class="credit">Made by <strong>Anurag Mishra</strong> — for every developer who ships.</p>
+            <div class="tagline">Debugger and fault explainer</div>
+            <p class="credit">Made by <strong>Anurag Mishra</strong> for every developer who ships.<br/>Optional sounds and notifications come second.</p>
 
             <div class="grid">
                 <div class="card">
-                    <div class="card-icon"><span class="codicon codicon-zap"></span></div>
-                    <div class="card-title">Catches fails fast</div>
+                    <div class="card-icon"><span class="codicon codicon-debug-alt"></span></div>
+                    <div class="card-title">Catch failures</div>
                 </div>
                 <div class="card">
-                    <div class="card-icon"><span class="codicon codicon-megaphone"></span></div>
-                    <div class="card-title">Optional sounds</div>
+                    <div class="card-icon"><span class="codicon codicon-search"></span></div>
+                    <div class="card-title">Explain faults</div>
                 </div>
                 <div class="card">
-                    <div class="card-icon"><span class="codicon codicon-hubot"></span></div>
-                    <div class="card-title">AI when you want</div>
+                    <div class="card-icon"><span class="codicon codicon-bell"></span></div>
+                    <div class="card-title">Notify optionally</div>
                 </div>
             </div>
 
@@ -574,12 +574,13 @@ export class WelcomePanel {
             const withIntro = ${withIntro ? 'true' : 'false'};
 
             const greetLines = [
-                "Hey — I'm Anurag Mishra.",
+                "Hey. I am Anurag Mishra.",
                 "",
-                "I built FaultLine for every developer who ships,",
-                "so when things break, you are not alone in the terminal.",
+                "I built FaultLine for every developer who ships:",
+                "a debugger and fault explainer first,",
+                "with optional error notifications second.",
                 "",
-                "Welcome. Let's get you set up."
+                "Welcome. Let us get you set up."
             ];
             const fullText = greetLines.join("\\n");
 

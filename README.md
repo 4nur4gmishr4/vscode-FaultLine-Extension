@@ -5,8 +5,8 @@
 <h1 align="center">FaultLine</h1>
 
 <p align="center">
-  <strong>Your AI pair when builds and terminals fail.</strong><br/>
-  Instant explanations · Optional sounds · Privacy-first defaults · Built for real VS Code workflows
+  <strong>Debugger and fault explainer for VS Code.</strong><br/>
+  Understand terminal and task failures first. Optional sounds and notifications second.
 </p>
 
 <p align="center">
@@ -19,29 +19,37 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-3.5.0-blue?style=flat-square" alt="3.5.0" />
   <img src="https://img.shields.io/badge/VS_Code-%5E1.93-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
-  <img src="https://img.shields.io/badge/privacy-defaults_off-important?style=flat-square" alt="Privacy" />
   <img src="https://img.shields.io/badge/by-Anurag_Mishra-lightgrey?style=flat-square" alt="Anurag Mishra" />
 </p>
 
 ---
 
-## Why FaultLine?
+## What FaultLine is
 
-You run a command. It fails. You scroll the terminal, copy the error, paste into chat, explain the context again…
+**First:** a **debugger and fault explainer**. When a terminal command or task fails, FaultLine keeps the failure context and helps you understand it (including optional model-backed explanation when you ask).
 
-**FaultLine shortens that loop.**
+**Second:** an **error notifier**. Optional sounds, status bar, toasts, webhooks, and Jira so you notice failures without staring at the panel.
 
-1. It **notices** failing terminals and tasks in VS Code  
-2. It can **play a sound** so you look up without staring at the panel  
-3. It can **open AI analysis** (when you ask — auto-open is off by default) with the command + output already attached  
-4. Keys stay in **VS Code SecretStorage**; sensitive-looking text is **redacted** before AI calls  
+Built by **Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)) for developers who ship.
 
-**Built by Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)) — for every developer who ships.
+### Primary job: catch the fault and explain it
+
+1. Detects failing **terminals**, **tasks**, and optionally **diagnostics**  
+2. Stores a sanitized copy of the last failure (command + output when available)  
+3. Opens **Analyze Last Failure** when you want a clear explanation and follow-up chat  
+4. Supports GitHub Copilot (no key) or other providers you configure  
+5. Redacts common secrets before any outbound explanation request  
+
+### Secondary job: notify you
+
+- Optional failure and success **sounds**  
+- Status bar + daily fail count  
+- Snooze, quiet hours, cooldowns  
+- Optional HTTPS webhooks and opt-in Jira  
+
+Auto-open of the analysis panel stays **off** by default. You choose when to open it.
 
 ### Watch a failure get caught
-
-One motion demo — a failed build, then FaultLine’s status lines.  
-Uses **your real logo** only. No fake VS Code UI. No stock “other product” art.
 
 <p align="center">
   <img src="docs/media/terminal-fail.gif" alt="Build fails and FaultLine detects it" width="92%" />
@@ -50,160 +58,154 @@ Uses **your real logo** only. No fake VS Code UI. No stock “other product” a
 ### How it works (3 steps)
 
 <p align="center">
-  <img src="docs/media/how-it-works.gif" alt="Fail, notice, analyze" width="92%" />
+  <img src="docs/media/how-it-works.gif" alt="Fail, notice, explain" width="92%" />
 </p>
 
 ---
 
-## What you get (plain English)
+## What you get
 
 | You want… | FaultLine does… |
 |-----------|------------------|
-| Know when something broke | Watches **terminals**, **tasks**, and optionally **diagnostics** |
-| Stay in flow | Optional **failure / success sounds**, status bar, snooze |
-| Understand the error | **AI chat** with last failure context |
-| Stay safe by default | AI auto-open **off**, Jira **off**, webhooks **HTTPS only** |
-| Use your own AI | Copilot, OpenRouter, Groq, Gemini, OpenAI, Anthropic, and more |
+| Understand a failed command | Keeps last failure and opens analysis on demand |
+| Debug without copy-paste | Passes command + output (redacted) into the explainer |
+| Pick your model backend | Copilot, OpenRouter, Groq, Gemini, OpenAI, Anthropic, and more |
+| Notice fails while coding | Optional sounds, status bar, notifications |
+| Stay careful with data | Auto analysis off; keys in SecretStorage; HTTPS webhooks only |
 
 ---
 
-## Install in 60 seconds
+## Install
 
-### From Marketplace
+### Marketplace
 
 1. Open VS Code  
-2. Extensions → search **FaultLine**  
-3. Install → reload if asked  
+2. Extensions, search **FaultLine**  
+3. Install  
 
-### From GitHub Release (VSIX)
+### GitHub Release (VSIX)
 
-1. Download `faultline.vsix` from [**Releases · v3.5.0**](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)  
-2. VS Code → **⋯** on Extensions → **Install from VSIX…**  
+1. Download `faultline.vsix` from [Releases v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)  
+2. Extensions view, menu, **Install from VSIX…**  
 
 ### First install
 
-On **first install**, FaultLine opens a short **typed hello** from **Anurag Mishra** (for every developer who ships).  
-When it finishes — or if you press **Skip** — you land on the **welcome screen** (sounds, quick tour, settings).
+On first install you see a short typed greeting from Anurag Mishra, then the welcome screen.  
+Press **Skip** anytime under the text to jump to the welcome screen.
 
-You can reopen the welcome anytime: **FaultLine: Show Welcome Screen** (skips the typing intro).
+Reopen later with **FaultLine: Show Welcome Screen** (no typing intro).
 
 ### First setup
 
-1. `Ctrl+Shift+P` / `Cmd+Shift+P`  
+1. Command Palette  
 2. **FaultLine: Open Configuration**  
-3. Leave AI on **GitHub Copilot** (no key), **or** pick another provider and save a key  
-4. Hit **Play** next to a sound to test audio  
-5. Run something that fails — you should get feedback without pasting logs by hand  
-
-> **Privacy tip:** Auto-open AI stays **off**. Use **FaultLine: Analyze Last Failure** when *you* want analysis.
+3. Keep **Copilot** or pick a provider and save a key  
+4. Test a sound if you want notifications  
+5. Run a failing command, then **FaultLine: Analyze Last Failure**  
 
 ---
 
-## Everyday commands
+## Commands
 
 | Command | What it does |
 |---------|----------------|
-| **FaultLine: Open Configuration** | Friendly settings UI |
-| **FaultLine: Analyze Last Failure** | AI panel for the last error |
+| **FaultLine: Analyze Last Failure** | Open the fault explainer for the last error |
+| **FaultLine: Open Configuration** | Settings (providers, sounds, basics) |
 | **FaultLine: Toggle Enable / Disable** | Master on/off |
 | **FaultLine: Toggle Sounds** | Sounds only |
-| **FaultLine: Snooze** | Quiet for N minutes |
-| **FaultLine: Show Output Log** | Debug / AI log channel |
-| **FaultLine: Factory Reset** | Wipe settings, history, **and stored API keys** |
-| **FaultLine: Show Welcome Screen** | Welcome UI (no typing intro) |
+| **FaultLine: Snooze** | Quiet notifications for a while |
+| **FaultLine: Show Output Log** | Extension log channel |
+| **FaultLine: Factory Reset** | Clear settings, history, and stored keys |
+| **FaultLine: Show Welcome Screen** | Welcome UI without typing intro |
 
 ---
 
-## Settings you’ll actually use
+## Settings you will use most
 
-Open **FaultLine: Open Configuration**, or VS Code Settings and search:
+Open **FaultLine: Open Configuration**, or search settings:
 
 `@ext:4nur4gmishr4.fahh`
 
-| Setting | Simple meaning | Default |
-|---------|----------------|---------|
+| Setting | Meaning | Default |
+|---------|---------|---------|
 | `faultline.enabled` | Master switch | on |
+| `faultline.errorExplanation.enabled` | Allow fault explanation panel | on |
+| `faultline.errorExplanation.autoShow` | Open explainer automatically on fail | **off** |
+| `faultline.aiProvider` | Explanation backend | `copilot` |
+| `faultline.ai.model` | Model id when not using Copilot | free OpenRouter default |
+| `faultline.aiSummary.enabled` | Short summary line in the log | **off** |
 | `faultline.soundsEnabled` | Play sounds | on |
-| `faultline.volume` | Loudness 0–100 | 100 |
-| `faultline.soundPack` | Which fail sound | built-in pack |
-| `faultline.successEnabled` | Sound when tasks succeed | off/on per your setup |
-| `faultline.aiProvider` | Which AI | `copilot` |
-| `faultline.errorExplanation.enabled` | Allow AI analysis | on |
-| `faultline.errorExplanation.autoShow` | Open AI **automatically** on fail | **off** |
-| `faultline.aiSummary.enabled` | Short AI line in the log | **off** |
-| `faultline.cooldownMs` | Min time between sounds | 2000 |
-| `faultline.ignorePatterns` | Regex — skip matching fails | empty |
-| `faultline.webhookUrl` | Notify Slack/Discord/etc. | empty (**https only**) |
-| `faultline.jiraEnabled` | Create Jira bugs on fail | **off** |
+| `faultline.volume` | Volume 0 to 100 | 100 |
+| `faultline.soundPack` | Failure sound file | built-in pack |
+| `faultline.successEnabled` | Success sound | configurable |
+| `faultline.cooldownMs` | Min gap between sounds | 2000 |
+| `faultline.ignorePatterns` | Skip matching failures (regex) | empty |
+| `faultline.webhookUrl` | Outbound notify URL | empty (**https only**) |
+| `faultline.jiraEnabled` | Create Jira issues on fail | **off** |
 
-More options (quiet hours, sources, branch filters, allowlists) live in full VS Code Settings — use **Open all FaultLine settings** in the config panel.
+More options (quiet hours, sources, branch filters, allowlists) are in VS Code Settings via **Open all FaultLine settings**.
 
 ---
 
-## Privacy & safety (short version)
+## Privacy and safety
 
-- **AI is opt-in for auto-open.** You choose when to analyze.  
-- **API keys** go in VS Code’s **SecretStorage** (not plain `settings.json`).  
-- **PII-style redaction** runs before text is sent to AI (keys, tokens, emails, etc. — best-effort).  
-- **Webhooks** must be `https://`. Private/internal hosts are blocked unless you allowlist them.  
-- **Jira** is off until you turn it on; only official Atlassian hosts.  
-- **Factory Reset** really deletes keys — re-add them after.
+- Explanation **auto-open is off**. You open analysis when you want.  
+- API keys use VS Code **SecretStorage**.  
+- Common secrets are redacted before outbound explanation calls (best effort).  
+- Webhooks require `https://`. Private hosts need an allowlist.  
+- Jira is off until you enable it; Atlassian hosts only.  
+- **Factory Reset** deletes stored keys.  
 
-Full story → [SECURITY.md](./SECURITY.md)
-
----
-
-## What’s new in 3.5.0
-
-- Rock-solid terminal capture (concurrent commands, full exit codes)  
-- Production security: SSRF + DNS check + **IP pin**, PII, factory reset  
-- Privacy defaults: auto AI **off**, Jira **off**  
-- Slim package (~22 files in the VSIX — no huge `node_modules` blob)  
-- Large automated test suite + multi-OS CI + GitHub Releases  
-
-Details → [CHANGELOG.md](./CHANGELOG.md) · Release → [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)
+Details: [SECURITY.md](./SECURITY.md)
 
 ---
 
-<br/>
+## What is new in 3.5.0
 
-# For developers & contributors
+- Reliable terminal and task failure capture  
+- Fault explainer with last-failure context and optional providers  
+- Safer defaults for auto-open analysis and Jira  
+- Stronger outbound URL checks (HTTPS, DNS, IP pin)  
+- Slim VSIX, automated tests, multi-OS CI, GitHub Releases  
+- First-install greeting with Skip  
 
-*Everything below is for people who build, review, or extend FaultLine.*
+Full notes: [CHANGELOG.md](./CHANGELOG.md) · [Release v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)
 
 ---
+
+# For developers and contributors
+
+*Build, review, or extend FaultLine.*
 
 ## Architecture at a glance
 
 ```text
 Terminal / Task / Diagnostics
-            │
-            ▼
+            |
+            v
      FaultLineRuntime.handleFailure
-            │
-    ┌───────┼───────────┬────────────┬────────────┐
-    ▼       ▼           ▼            ▼            ▼
-  Mute?   PII       Sound        History      Webhook
-  Branch  sanitize  (optional)   (capped)     / Jira
-  Ignore                                      (opt-in)
-            │
-            ▼
-     AI panel / summary (only if enabled)
+            |
+    +-------+--------+----------+----------+
+    v       v        v          v          v
+  Mute?   PII     History    Sound     Webhook
+  Branch  sanitize (capped)  (optional) / Jira
+  Ignore
+            |
+            v
+     Explainer panel (on demand, or auto if enabled)
 ```
 
 | Layer | Folder | Role |
 |-------|--------|------|
 | Entry | `src/extension.ts` | Activate, config reload, migrations |
-| Runtime | `src/application/runtime/` | Orchestrates failures & success |
+| Runtime | `src/application/runtime/` | Failure and success handling |
 | Detectors | `src/infrastructure/detectors/` | Terminal, task, diagnostics |
-| AI / HTTP | `src/infrastructure/services/` | Providers, webhooks, Jira |
-| Security | `src/infrastructure/security/` | PII helpers |
+| Services | `src/infrastructure/services/` | Explainer backends, webhooks, Jira |
+| Security | `src/infrastructure/security/` | Redaction helpers |
 | UI | `src/presentation/` | Commands, webviews, status bar |
 | Shared | `src/shared/` | Config, secrets, scheduler, i18n |
 
-Deep dive → [ARCHITECTURE.md](./ARCHITECTURE.md)
-
----
+More detail: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## Local development
 
@@ -211,54 +213,49 @@ Deep dive → [ARCHITECTURE.md](./ARCHITECTURE.md)
 git clone https://github.com/4nur4gmishr4/vscode-FaultLine-Extension.git
 cd vscode-FaultLine-Extension
 npm ci
-npm run vendor:sync    # copy webview toolkit/codicons into resources/vendor
+npm run vendor:sync
 npm run lint
 npm test -- --coverage
 npm run compile
 ```
 
-Press **F5** in VS Code for the Extension Development Host, or:
+Press **F5** for the Extension Development Host, or:
 
 ```bash
-npm run package:prod   # produces a .vsix (gitignored)
+npm run package:prod
 ```
 
 | Script | Purpose |
 |--------|---------|
-| `vendor:sync` | Refresh `resources/vendor/*` from devDependencies |
-| `lint` | Typecheck + ESLint |
-| `test` | Jest unit + integration smoke |
-| `test:integration` | Activate-path smoke only |
-| `compile` | esbuild → `out/extension.js` |
-| `package:prod` | Clean → vendor → compile → vsce package |
+| `vendor:sync` | Copy webview assets into `resources/vendor` |
+| `lint` | Typecheck and ESLint |
+| `test` | Jest tests |
+| `test:integration` | Activate smoke tests |
+| `compile` | Bundle to `out/extension.js` |
+| `package:prod` | Clean, vendor, compile, package VSIX |
+| `docs:gifs` | Regenerate docs media GIFs |
 
-Contributing rules → [CONTRIBUTING.md](./CONTRIBUTING.md)
+Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
----
+## Security notes for engineers
 
-## Security model (engineers)
+| Control | Behavior |
+|---------|----------|
+| Secrets | SecretStorage |
+| Webhooks | HTTPS only, private host block, DNS re-check, connect IP pin and SNI |
+| Jira | Opt-in, HTTPS, Atlassian hosts, origin-only URL |
+| Explainer egress | Redaction plus payload size caps |
+| Settings webview | Allowlisted keys, key format checks |
+| Pack sound test | Basename only under `resources/packs` |
 
-| Control | Implementation |
-|---------|------------------|
-| Secrets | `SecretManager` + VS Code SecretStorage |
-| Webhook SSRF | HTTPS-only, private host block, DNS re-check **per attempt**, **connect IP pin + SNI** |
-| Jira | `jiraEnabled` default false; HTTPS; `*.atlassian.net` / `*.jira.com`; origin-only URL |
-| AI egress | Dual PII sanitize; payload size caps on Error Analysis webview |
-| Settings UI | Allowlisted keys only; provider key format validation |
-| Pack sounds | Basename-only under `resources/packs/{default,success}` |
+Report issues privately: [SECURITY.md](./SECURITY.md)
 
-Report vulnerabilities privately — see [SECURITY.md](./SECURITY.md).
+## Tests and CI
 
----
-
-## Tests & CI
-
-- **Jest:** detectors, `handleFailure`, SSRF/DNS/Jira, factory reset, allowlists, AI mocks, i18n, activate smoke  
-- **GitHub Actions:** Windows / Linux / macOS — lint, test+coverage, compile, Ubuntu VSIX content smoke  
-- **Release:** tag `v*` → lint/test/compile → attach `faultline.vsix` to GitHub Release  
-- **Security:** CodeQL + pinned TruffleHog  
-
----
+- Jest unit and integration smoke tests  
+- GitHub Actions on Windows, Linux, macOS  
+- Release workflow on `v*` tags attaches `faultline.vsix`  
+- CodeQL and pinned TruffleHog  
 
 ## Project links
 
@@ -269,23 +266,22 @@ Report vulnerabilities privately — see [SECURITY.md](./SECURITY.md).
 | Issues | https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues |
 | License | [MIT](./LICENSE) |
 
----
-
 ## Media
 
-Only **three** animations live in [`docs/media/`](./docs/media/README.md) (no duplicates):
+Three animations in [`docs/media/`](./docs/media/README.md):
 
 | File | Where used |
 |------|------------|
-| `logo-pulse.gif` | Header (real project logo) |
-| `terminal-fail.gif` | “Watch a failure get caught” |
-| `how-it-works.gif` | “How it works” |
+| `logo-pulse.gif` | Header (project logo) |
+| `terminal-fail.gif` | Failure demo |
+| `how-it-works.gif` | Three-step flow |
 
-Regenerate anytime: `python scripts/make-docs-gifs.py`
+Regenerate: `npm run docs:gifs`
 
 ---
 
 <p align="center">
-  <strong>FaultLine 3.5.0</strong> · made by Anurag Mishra for developers everywhere<br/>
-  <sub>MIT License</sub>
+  <strong>FaultLine 3.5.0</strong><br/>
+  Debugger and fault explainer first. Notifier second.<br/>
+  Made by Anurag Mishra for developers everywhere · MIT
 </p>
