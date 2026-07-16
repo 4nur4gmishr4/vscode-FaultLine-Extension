@@ -37,13 +37,20 @@ jobs:
       - name: Compile
         run: npm run compile
 
+      # Package id stays `fahh` (Marketplace downloads). Display name is FaultLine.
       - name: Package extension
-        run: npx @vscode/vsce package -o faultline.vsix
+        run: |
+          set -euo pipefail
+          npx @vscode/vsce package
+          # Friendly alias for humans; Marketplace publish uses the fahh-*.vsix identity.
+          cp fahh-*.vsix faultline.vsix
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: faultline.vsix
+          files: |
+            fahh-*.vsix
+            faultline.vsix
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

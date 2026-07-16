@@ -3,17 +3,31 @@ import * as path from 'path';
 
 const root = path.resolve(__dirname, '../../..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+    name: string;
+    displayName: string;
+    publisher: string;
     main: string;
     engines: { vscode: string };
+    keywords?: string[];
     activationEvents?: string[];
     contributes: {
-        commands: { command: string; title?: string }[];
+        commands: { command: string; title?: string; category?: string }[];
         walkthroughs?: unknown[];
         configuration: { properties: Record<string, { pattern?: string }> };
     };
 };
 
 describe('package manifest (packaging / activation smoke)', () => {
+    it('keeps Marketplace identity (downloads) and FaultLine display name', () => {
+        // Never rename `name` or `publisher` — that creates a new Marketplace extension and loses history/downloads.
+        expect(pkg.name).toBe('fahh');
+        expect(pkg.publisher).toBe('4nur4gmishr4');
+        expect(pkg.displayName).toBe('FaultLine');
+        expect(pkg.keywords).toEqual(expect.arrayContaining(['FaultLine', 'faultline', 'fahh']));
+        const sample = pkg.contributes.commands.find((c) => c.command === 'faultline.toggle');
+        expect(sample?.category).toBe('FaultLine');
+    });
+
     it('declares entrypoint and activation', () => {
         expect(pkg.main).toBe('./out/extension.js');
         expect(pkg.activationEvents).toEqual(expect.arrayContaining(['onStartupFinished']));

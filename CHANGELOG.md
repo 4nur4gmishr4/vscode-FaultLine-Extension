@@ -14,6 +14,9 @@ Plain language first, technical detail second.
 
 **Focus:** debugger and fault explainer first; error notifier second.
 
+**Marketplace identity (do not change):** users install **FaultLine** (`displayName`).  
+Extension id stays **`4nur4gmishr4.fahh`** so downloads and updates keep working. The package `name` is `fahh` on purpose.
+
 Release: [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0) (tag `v3.5.0`)
 
 ### For everyone
@@ -25,6 +28,8 @@ Release: [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/rel
 - **Factory Reset** clears settings, history, and stored API keys  
 - Slimmer install package  
 - First install: typed greeting from Anurag Mishra, then welcome screen, with **Skip**  
+- Commands and Settings stay available even if a detector or VS Code API is missing  
+- Settings UI: sounds, notifications, status bar, and explanation privacy toggles  
 
 ### For power users
 
@@ -41,8 +46,9 @@ Release: [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/rel
 | Explainer | Last failure context, provider registry, redaction, payload caps |
 | Security | SSRF DNS re-check, connect IP pin and SNI, SecretStorage |
 | Privacy | `errorExplanation.autoShow` default false; `aiSummary.enabled` default false |
+| Reliability | Commands registered before detectors; API guards; `runCommand` error boundary |
 | Packaging | `resources/vendor/*`, VSIX without `node_modules` tree, CI package smoke |
-| Tests | Detectors, handleFailure, SSRF/Jira, factory reset, provider mocks, i18n, activate smoke |
+| Tests | Detectors, handleFailure, command e2e, SSRF/Jira, factory reset, AI, activate smoke |
 | Welcome | Typing intro on first install only; Skip; command palette skips intro |
 
 ### Upgrade notes

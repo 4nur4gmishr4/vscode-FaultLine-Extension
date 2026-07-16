@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh"><img src="https://img.shields.io/visual-studio-marketplace/v/4nur4gmishr4.fahh?style=for-the-badge&label=Marketplace&logo=visualstudiocode&logoColor=white" alt="Marketplace" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions"><img src="https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge&label=Release" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge" alt="License" /></a>
@@ -83,9 +84,13 @@ Auto-open of the analysis panel stays **off** by default. You choose when to ope
 2. Extensions, search **FaultLine**  
 3. Install  
 
+You will see **FaultLine** as the title. Under the hood the extension id is `4nur4gmishr4.fahh` (kept stable so updates and download history stay on the same listing).
+
+Marketplace page: [FaultLine on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh)
+
 ### GitHub Release (VSIX)
 
-1. Download `faultline.vsix` from [Releases v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)  
+1. Download `fahh-3.5.0.vsix` or `faultline.vsix` from [Releases v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)  
 2. Extensions view, menu, **Install from VSIX…**  
 
 ### First install
@@ -254,13 +259,14 @@ Report issues privately: [SECURITY.md](./SECURITY.md)
 
 - Jest unit and integration smoke tests  
 - GitHub Actions on Windows, Linux, macOS  
-- Release workflow on `v*` tags attaches `faultline.vsix`  
+- Release workflow on `v*` tags packages the Marketplace VSIX (`fahh-*.vsix`)  
 - CodeQL and pinned TruffleHog  
 
 ## Project links
 
 | | |
 |--|--|
+| Marketplace | https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh |
 | Source | https://github.com/4nur4gmishr4/vscode-FaultLine-Extension |
 | Releases | https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases |
 | Issues | https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues |
