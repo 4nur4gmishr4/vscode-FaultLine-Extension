@@ -31,28 +31,39 @@ export class TerminalDetector {
     ) {}
 
     public register(disposables: vscode.Disposable[]): void {
-        // Shell integration APIs (VS Code >= 1.93; matches package.json engines).
-        disposables.push(
-            vscode.window.onDidStartTerminalShellExecution((e) => {
-                try {
-                    this.beginCapture(e.execution);
-                } catch (err) {
-                    this.logger.debug(
-                        `Failed to attach terminal stream reader: ${err instanceof Error ? err.message : String(err)}`
-                    );
-                }
-            })
-        );
+        // Shell integration APIs (VS Code >= 1.93). Guard so missing APIs never block activation.
+        const startShell = vscode.window.onDidStartTerminalShellExecution;
+        const endShell = vscode.window.onDidEndTerminalShellExecution;
 
-        disposables.push(
-            vscode.window.onDidEndTerminalShellExecution((e) => {
-                void this.handleShellEnd(e).catch((err: unknown) => {
-                    this.logger.error('Unhandled rejection in Terminal Detector', err);
-                });
-            })
-        );
+        if (typeof startShell === 'function') {
+            disposables.push(
+                startShell.call(vscode.window, (e: vscode.TerminalShellExecutionStartEvent) => {
+                    try {
+                        this.beginCapture(e.execution);
+                    } catch (err) {
+                        this.logger.debug(
+                            `Failed to attach terminal stream reader: ${err instanceof Error ? err.message : String(err)}`
+                        );
+                    }
+                })
+            );
+        } else {
+            this.logger.warn(
+                'onDidStartTerminalShellExecution is unavailable. Shell command capture is limited. Update VS Code to 1.93+.'
+            );
+        }
 
-        // Detect failure via terminal closure (fallback, legacy)
+        if (typeof endShell === 'function') {
+            disposables.push(
+                endShell.call(vscode.window, (e: vscode.TerminalShellExecutionEndEvent) => {
+                    void this.handleShellEnd(e).catch((err: unknown) => {
+                        this.logger.error('Unhandled rejection in Terminal Detector', err);
+                    });
+                })
+            );
+        }
+
+        // Detect failure via terminal closure (fallback)
         disposables.push(
             vscode.window.onDidCloseTerminal((t: vscode.Terminal) => {
                 try {

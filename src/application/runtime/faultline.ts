@@ -73,8 +73,17 @@ export class FaultLineRuntime {
     public activate(): void {
         // Fire-and-forget: temp cleanup must never block extension activation on slow I/O.
         void this.cleanOrphanedTempFiles();
-        this.registerDetectors();
-        this.statusBar.refresh();
+        try {
+            this.registerDetectors();
+        } catch (err) {
+            // Commands must still work even if a detector API is missing on this VS Code build.
+            this.logger.error('Failed to register detectors (commands still available)', err);
+        }
+        try {
+            this.statusBar.refresh();
+        } catch (err) {
+            this.logger.error('Failed to refresh status bar', err);
+        }
     }
 
     private async cleanOrphanedTempFiles(): Promise<void> {
@@ -103,19 +112,34 @@ export class FaultLineRuntime {
     public registerDetectors(): void {
         if (this.detectors) {
             this.detectors.dispose();
+            this.detectors = null;
         }
 
         const disposables: vscode.Disposable[] = [];
         const configFn = () => this.configManager.readConfig();
-        
-        const onFailure = (e: FailureEvent) => { void this.handleFailure(e); };
+
+        const onFailure = (e: FailureEvent) => {
+            void this.handleFailure(e);
+        };
         const onSuccess = (e: { source: FailureSource; label: string; executionTime?: number }) => {
             void this.handleSuccess(e.source, e.label, e.executionTime);
         };
 
-        new TaskDetector(configFn, this.logger, onFailure, onSuccess).register(disposables);
-        new TerminalDetector(configFn, this.logger, onFailure).register(disposables);
-        new DiagnosticDetector(configFn, onFailure).register(disposables);
+        try {
+            new TaskDetector(configFn, this.logger, onFailure, onSuccess).register(disposables);
+        } catch (err) {
+            this.logger.error('TaskDetector failed to register', err);
+        }
+        try {
+            new TerminalDetector(configFn, this.logger, onFailure).register(disposables);
+        } catch (err) {
+            this.logger.error('TerminalDetector failed to register', err);
+        }
+        try {
+            new DiagnosticDetector(configFn, onFailure).register(disposables);
+        } catch (err) {
+            this.logger.error('DiagnosticDetector failed to register', err);
+        }
 
         this.detectors = vscode.Disposable.from(...disposables);
     }

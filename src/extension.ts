@@ -8,40 +8,65 @@ let runtime: FaultLineRuntime | null = null;
 
 /**
  * Activates the FaultLine extension.
+ * Commands are registered as early as possible so a detector/API failure cannot
+ * leave the palette with dead "command not found" entries.
  */
 export function activate(ctx: vscode.ExtensionContext): void {
-    runtime = new FaultLineRuntime(ctx);
-    
-    const version = ((ctx.extension.packageJSON as { version?: string })?.version) ?? 'unknown';
-    runtime.logger.info(`FaultLine v${version} activating on ${process.platform} (VS Code ${vscode.version}).`);
+    try {
+        runtime = new FaultLineRuntime(ctx);
 
-    runtime.activate();
-    registerCommands(runtime, ctx.extensionUri, ctx.subscriptions);
+        const version =
+            ((ctx.extension.packageJSON as { version?: string })?.version) ?? 'unknown';
+        runtime.logger.info(
+            `FaultLine v${version} activating on ${process.platform} (VS Code ${vscode.version}).`
+        );
 
-    // Initial setup
-    const config = runtime.configManager.readConfig();
-    setLanguage(config.core.language);
+        // Register commands BEFORE detectors so UI commands always work.
+        registerCommands(runtime, ctx.extensionUri, ctx.subscriptions);
 
-    // Lifecycle events
-    ctx.subscriptions.push(
-        vscode.workspace.onDidChangeConfiguration((event) => {
-            if (runtime?.configManager.affectsFaultLine(event)) {
-                const newConfig = runtime.configManager.readConfig();
-                runtime.logger.setLevel(newConfig.core.logLevel);
-                setLanguage(newConfig.core.language);
-                runtime.statusBar.refresh();
-                // Detectors read config via live configFn(); re-registering would drop
-                // in-flight task start maps. Only rebind if wiring must change.
-                if (runtime.configManager.affectsDetectors(event)) {
-                    runtime.registerDetectors();
+        try {
+            const config = runtime.configManager.readConfig();
+            setLanguage(config.core.language);
+            runtime.logger.setLevel(config.core.logLevel);
+        } catch (err) {
+            runtime.logger.error('Failed to load initial config', err);
+        }
+
+        runtime.activate();
+
+        ctx.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration((event) => {
+                if (!runtime?.configManager.affectsFaultLine(event)) {
+                    return;
                 }
-                runtime.logger.debug('Configuration reloaded.');
-            }
-        }),
-        runtime
-    );
+                try {
+                    const newConfig = runtime.configManager.readConfig();
+                    runtime.logger.setLevel(newConfig.core.logLevel);
+                    setLanguage(newConfig.core.language);
+                    runtime.statusBar.refresh();
+                    if (runtime.configManager.affectsDetectors(event)) {
+                        runtime.registerDetectors();
+                    }
+                    runtime.logger.debug('Configuration reloaded.');
+                } catch (err) {
+                    runtime?.logger.error('Failed to reload configuration', err);
+                }
+            }),
+            runtime
+        );
 
-    void maybeShowWelcomeOnInstall(ctx, runtime);
+        void maybeShowWelcomeOnInstall(ctx, runtime).catch((err: unknown) => {
+            runtime?.logger.error('Welcome / migration failed', err);
+        });
+    } catch (err) {
+        // Last-resort: surface activation failure so users are not stuck with silent commands.
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[FaultLine] activation failed:', err);
+        void vscode.window.showErrorMessage(
+            `FaultLine failed to activate: ${msg}. Open "FaultLine: Show Output Log" after reloading if available.`
+        );
+        throw err;
+    }
 }
 
 /**
