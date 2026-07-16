@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh"><img src="https://img.shields.io/visual-studio-marketplace/v/4nur4gmishr4.fahh?style=for-the-badge&label=Marketplace&logo=visualstudiocode&logoColor=white" alt="Marketplace" /></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh"><img src="https://img.shields.io/badge/VS_Code-FaultLine-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="FaultLine for VS Code" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions"><img src="https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge&label=Release" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge" alt="License" /></a>
@@ -19,6 +19,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-3.5.0-blue?style=flat-square" alt="3.5.0" />
+  <img src="https://img.shields.io/badge/id-4nur4gmishr4.fahh-informational?style=flat-square" alt="4nur4gmishr4.fahh" />
   <img src="https://img.shields.io/badge/VS_Code-%5E1.93-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
   <img src="https://img.shields.io/badge/by-Anurag_Mishra-lightgrey?style=flat-square" alt="Anurag Mishra" />
 </p>
@@ -87,6 +88,8 @@ Auto-open of the analysis panel stays **off** by default. You choose when to ope
 You will see **FaultLine** as the title. Under the hood the extension id is `4nur4gmishr4.fahh` (kept stable so updates and download history stay on the same listing).
 
 Marketplace page: [FaultLine on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh)
+
+> Note: install from the **GitHub Release VSIX** below if the Marketplace page is not live yet in your region. The old “retired” badge was a shields.io false positive when the listing is empty — not the product status.
 
 ### GitHub Release (VSIX)
 
