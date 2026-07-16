@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -22,21 +23,24 @@ jobs:
       - run: npm run lint
       - run: npm test -- --coverage
       - run: npm run compile
+      # CI writes coverage/ before packaging — must be excluded via .vscodeignore
       - name: Package smoke (ubuntu)
         if: runner.os == 'Linux'
         run: |
           set -euo pipefail
+          # Drop coverage dir so a missing .vscodeignore rule cannot poison the VSIX
+          rm -rf coverage
           npx @vscode/vsce package -o /tmp/faultline-ci.vsix
           unzip -l /tmp/faultline-ci.vsix | tee /tmp/vsix-list.txt
-          if grep -E 'extension/src/' /tmp/vsix-list.txt; then
+          if grep -E '(^|[[:space:]])extension/src/' /tmp/vsix-list.txt; then
             echo "::error::extension/src packaged into VSIX"
             exit 1
           fi
-          if grep -E 'extension/coverage/' /tmp/vsix-list.txt; then
+          if grep -E '(^|[[:space:]])extension/coverage/' /tmp/vsix-list.txt; then
             echo "::error::coverage packaged into VSIX"
             exit 1
           fi
-          if grep -E 'extension/node_modules/' /tmp/vsix-list.txt; then
+          if grep -E '(^|[[:space:]])extension/node_modules/' /tmp/vsix-list.txt; then
             echo "::error::node_modules packaged into VSIX (use resources/vendor)"
             exit 1
           fi

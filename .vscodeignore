@@ -1,16 +1,13 @@
-# --- Paths that exist in this repo and must NOT ship in the VSIX ---
+# --- Repo paths that must NOT ship in the VSIX ---
 
-# Git / CI (repo-only)
 .git/**
 .github/**
 
-# Source (runtime is out/extension.js only)
+# Source (runtime is out/extension.js)
 src/**
-
-# Vendor sync script (dev only)
 scripts/**
 
-# Tooling configs (exist at repo root)
+# Tooling configs
 .gitignore
 .vscodeignore
 .editorconfig
@@ -26,5 +23,19 @@ ARCHITECTURE.md
 CONTRIBUTING.md
 SECURITY.md
 
-# Dependencies are not packaged; webview assets are in resources/vendor/
+# Dependencies not packaged; webview assets live in resources/vendor/
 node_modules/**
+
+# --- Generated during CI / local builds ---
+# From: npm test -- --coverage (CI runs this before package)
+coverage/**
+# From: tsc incremental metadata under out/
+**/.tsbuildinfo
+out/**/*.map
+out/**/*.test.js
+out/**/*.spec.js
+
+# Local package smoke leftovers (never ship)
+_vsix_check/**
+*.vsix
+*.zip

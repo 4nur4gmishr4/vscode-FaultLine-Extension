@@ -9,6 +9,10 @@ coverage/
 
 # Packaged extension (npm run package / package:prod)
 *.vsix
+*.zip
+
+# Local VSIX extract smoke folder
+_vsix_check/
 
 # OS
 Thumbs.db
