@@ -116,15 +116,15 @@ export class StatusBarManager {
         const counterBadge = cfg.statusBarCounter && count > 0 ? ` ($(error) ${count})` : '';
         this.item.text = enabled ? `$(pulse) FaultLine: ON${counterBadge}` : `$(circle-slash) FaultLine: OFF`;
         this.item.tooltip = enabled
-            ? `FaultLine AI tracking is ON — click to disable${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`
-            : 'FaultLine AI tracking is OFF — click to enable';
+            ? `FaultLine is ON (debugger and fault explainer). Click to disable.${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`
+            : 'FaultLine is OFF. Click to enable.';
         this.item.show();
 
         const soundsEnabled = config.audio.soundsEnabled;
         this.soundsItem.text = soundsEnabled ? `$(unmute) Sounds` : `$(mute) Sounds`;
         this.soundsItem.tooltip = soundsEnabled
-            ? 'FaultLine Sounds are ON — click to disable'
-            : 'FaultLine Sounds are OFF — click to enable';
+            ? 'Sounds ON (optional notifier). Click to disable.'
+            : 'Sounds OFF. Click to enable.';
         
         if (enabled) {
             this.soundsItem.show();
