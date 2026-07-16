@@ -1,34 +1,32 @@
-# FaultLine media kit
+# FaultLine media (honest assets only)
 
-## Already included (no work needed)
+Everything here is **safe for GitHub / Marketplace** and will not look like a different product.
 
-These files are in this folder and used by the main README:
+## What’s included
 
-| File | Use |
-|------|-----|
-| `hero.jpg` | Top banner |
-| `demo-fail-detect.jpg` | Fail / terminal concept |
-| `demo-ai-chat.jpg` | AI analysis concept |
-| `demo-settings.jpg` | Settings concept |
-| `logo-banner.jpg` | Social / banner |
-| `marketplace-1.jpg` … `marketplace-3.jpg` | Store-style stills |
+| File | What it is |
+|------|------------|
+| `logo-pulse.gif` | **Your real** `resources/faultline-logo.png` with a simple pulse |
+| `terminal-fail.gif` | Motion demo: build fails → FaultLine status lines (generic terminal chrome, **not** a fake VS Code clone UI) |
+| `how-it-works.gif` | 3-step flow animation with your logo |
 
-They are **branded product visuals** generated for docs (not live screen recordings of your machine).
+## What we deliberately do **not** ship
 
-## Optional later (if you want real GIFs)
+- AI-generated mock “settings panels” or “chat UIs” that aren’t screenshots of FaultLine  
+- Random coding GIFs from the internet (wrong brand, copyright, looks like other tools)  
+- Anything that could make people think FaultLine is a different extension  
 
-If you ever record the real extension:
+## Optional later (real screen recordings)
 
-| File | Content | Length |
-|------|---------|--------|
-| `hero.gif` | Real fail + status bar | 10–15s |
-| `demo-fail-detect.gif` | Real terminal fail | 8–12s |
-| `demo-ai-chat.gif` | Real Analyze Last Failure | 12–20s |
-| `demo-settings.gif` | Real settings panel | 10–15s |
+If you ever record the **actual** extension in VS Code, drop files here:
 
-Keep under ~8 MB, dark theme, no secrets on screen.
+| File | Content |
+|------|---------|
+| `real-settings.gif` | Your real Open Configuration panel |
+| `real-ai-chat.gif` | Your real Analyze Last Failure panel |
 
-## License note
+Then link them from the README. Until then, the three GIFs above are enough and stay honest.
 
-Generated brand stills are for **FaultLine project documentation and Marketplace marketing**.  
-Do not reclaim third-party VS Code trademarks beyond fair product depiction.
+## Source of the logo
+
+`resources/faultline-logo.png` (project icon — authoritative brand art).

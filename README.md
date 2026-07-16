@@ -25,10 +25,8 @@
 
 ---
 
-> **Visuals** live in [`docs/media/`](./docs/media/README.md) (branded stills included; optional real product GIFs welcome later).
-
 <p align="center">
-  <img src="docs/media/hero.jpg" alt="FaultLine — AI when builds fail" width="90%" />
+  <img src="docs/media/logo-pulse.gif" alt="FaultLine logo" width="200" />
 </p>
 
 ---
@@ -46,6 +44,23 @@ You run a command. It fails. You scroll the terminal, copy the error, paste into
 
 Made by **Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)).
 
+### See it in motion
+
+Honest demos only — **your real logo**, a real failing-command sequence, and the product flow.  
+No fake screenshots of other apps. No mock UIs that aren’t this extension.
+
+<p align="center">
+  <img src="docs/media/terminal-fail.gif" alt="Terminal fails and FaultLine notices" width="90%" />
+</p>
+
+<p align="center">
+  <em>A command fails → FaultLine detects it → ready for Analyze Last Failure (AI stays opt-in).</em>
+</p>
+
+<p align="center">
+  <img src="docs/media/how-it-works.gif" alt="How FaultLine works in three steps" width="90%" />
+</p>
+
 ---
 
 ## What you get (plain English)
@@ -57,16 +72,6 @@ Made by **Anurag Mishra** ([4nur4gmishr4](https://github.com/4nur4gmishr4)).
 | Understand the error | **AI chat** with last failure context |
 | Stay safe by default | AI auto-open **off**, Jira **off**, webhooks **HTTPS only** |
 | Use your own AI | Copilot, OpenRouter, Groq, Gemini, OpenAI, Anthropic, and more |
-
-### Product visuals
-
-| Fail detection | AI analysis |
-|----------------|-------------|
-| <img src="docs/media/demo-fail-detect.jpg" alt="Fail detection" width="100%" /> | <img src="docs/media/demo-ai-chat.jpg" alt="AI chat" width="100%" /> |
-
-| Settings panel |
-|----------------|
-| <img src="docs/media/demo-settings.jpg" alt="FaultLine settings" width="80%" /> |
 
 ---
 
