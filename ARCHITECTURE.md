@@ -1,82 +1,199 @@
 # FaultLine Architecture
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions)
-[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
+<p align="center">
+  <img src="https://img.shields.io/badge/version-3.5.0-blue?style=for-the-badge" alt="3.5.0" />
+  <img src="https://img.shields.io/badge/layout-layered-informational?style=for-the-badge" alt="Layered" />
+</p>
 
-FaultLine is a modular VS Code extension that intercepts development failures, plays optional audio feedback, and offers AI-assisted explanation. Version **3.5.0** emphasizes production hardening: terminal integration, config fidelity, SSRF/Jira safety, privacy defaults, slim VSIX packaging, and automated CI/release gates.
+This document explains **how FaultLine is built**.  
 
-## Layering
+- **First half:** simple map (product + flow)  
+- **Second half:** folders, lifecycle, packaging (for contributors)
 
+Related: [README](./README.md) · [SECURITY](./SECURITY.md) · [CONTRIBUTING](./CONTRIBUTING.md)
+
+---
+
+# Part 1 — Simple map (everyone)
+
+## What the extension does
+
+FaultLine is a **VS Code extension** (not a separate server).  
+It runs inside your editor and:
+
+1. Listens for failures (terminal / tasks / optional diagnostics)  
+2. Decides whether to notify you (mute, quiet hours, ignore patterns, branch filters)  
+3. Optionally plays audio  
+4. Optionally talks to AI or webhooks / Jira  
+5. Remembers recent failures for “analyze last error”
+
+```mermaid
+flowchart LR
+  A[Terminal / Task / Diagnostics] --> B[Detectors]
+  B --> C[FaultLineRuntime]
+  C --> D[Sound]
+  C --> E[History]
+  C --> F[AI]
+  C --> G[Webhook / Jira]
+  C --> H[Status bar / toast]
 ```
+
+## Big pieces in plain language
+
+| Piece | Job |
+|-------|-----|
+| **Detectors** | “Something failed” events |
+| **Runtime** | Central brain — sanitize, mute, fan-out |
+| **Scheduler** | Snooze, quiet hours, cooldowns |
+| **AI service** | Talk to Copilot or HTTP providers |
+| **Webhook service** | Safe HTTPS outbound + optional Jira |
+| **Webviews** | Settings UI + Error Analysis chat |
+| **Secret manager** | API keys in SecretStorage |
+
+## Failure path (user-visible order)
+
+1. Detector fires (`shell` / `task` / `terminal` / `diagnostics`)  
+2. Full mute check (disabled / snooze / quiet hours / focus)  
+3. **PII sanitize** on label + output  
+4. Ignore patterns + branch patterns (branch **fail-closed** if unknown)  
+5. Sound (if allowed by cooldown / max-per-minute)  
+6. History (capped, sanitized)  
+7. Webhook / Jira (if configured)  
+8. Status bar + notification  
+9. AI panel only if enabled **and** auto-show (default: you open it yourself)
+
+---
+
+# Part 2 — Technical map (developers)
+
+## Repository layout
+
+```text
 src/
-  extension.ts                 # activate / config reload / migrations
-  application/runtime/         # FaultLineRuntime — handleFailure / success
-  application/core/            # AudioPlayer, SoundResolver, WSL helpers
-  infrastructure/detectors/    # task, terminal/shell, diagnostics
-  infrastructure/services/     # AI providers, AIService, WebhookService
-  infrastructure/security/     # PII sanitize
-  infrastructure/state/        # daily counter, version, migrations
-  presentation/                # commands, webviews, status bar
-  shared/                      # config, secrets, history, scheduler, logger
+  extension.ts                      # activate / deactivate / config reload
+  application/
+    runtime/faultline.ts            # handleFailure / handleSuccess
+    core/                           # AudioPlayer, SoundResolver, WSL
+  infrastructure/
+    detectors/                      # terminal, task, diagnostic
+    services/                       # AI providers, AIService, WebhookService
+    security/pii.ts
+    state/stateStore.ts
+  presentation/
+    commands/                       # sound / state / UI commands
+    ui/                             # settings, error analysis, welcome, status bar
+  shared/
+    config/                         # ConfigManager, SecretManager, constants
+    utils/                          # scheduler, history, logger, i18n, git
+  test/                             # Jest unit + integration smoke
+resources/
+  packs/                            # built-in audio
+  vendor/                           # toolkit.min.js + codicon assets (vendored)
+  faultline-logo.png
+scripts/sync-vendor.js              # copy vendor assets from node_modules
+docs/media/                         # GIF / screenshot kit for README
 ```
 
-## Core components
+## Detectors
 
-### Detectors
+| Detector | Source id | Mechanism |
+|----------|-----------|-----------|
+| `TerminalDetector` | `shell` | `onDidStart/EndTerminalShellExecution` — `read()` buffer (capped), `exitCode`, `commandLine`; WeakMap per execution |
+| `TerminalDetector` | `terminal` | Terminal closed with non-zero exit (fallback) |
+| `TaskDetector` | `task` | `onDidStart/EndTaskProcess` + optional success; branch filter |
+| `DiagnosticDetector` | `diagnostics` | Debounced `onDidChangeDiagnostics` + threshold |
 
-- **TerminalDetector**: On shell start, `execution.read()` into a WeakMap buffer (capped). On end, exitCode + commandLine → `shell` failures. Terminal close → `terminal` source.
-- **TaskDetector**: Task process start/end; branch filter (fail-closed if branch unknown); optional success sounds.
-- **DiagnosticDetector**: Debounced diagnostics; threshold; cleanup interval disposed cleanly.
+Detectors use a **live** `() => FaultLineConfig`.  
+Config changes **do not** tear down listeners by default (`affectsDetectors` → false), so in-flight task maps survive.
 
-Detectors register once at activation and use a live `configFn()`. Config changes do **not** re-subscribe by default (`ConfigManager.affectsDetectors()` returns false). Branch patterns are also enforced in `handleFailure` for all sources.
+## Runtime (`FaultLineRuntime`)
 
-### Failure pipeline
+Public surface used by commands:
 
+- `configManager`, `secretManager`, `scheduler`, `player`, `resolver`  
+- `history`, `ai`, `webhook`, `errorExplanation`, `statusBar`  
+- `extensionPath` (no private `ctx` casting from commands)
+
+Dispose is **idempotent**: detectors, player, status bar, scheduler, webhook, logger.
+
+## Configuration
+
+- Single section: `faultline.*`  
+- `ConfigManager` clamps numbers, compiles ignore regexes (count + length caps)  
+- Settings webview writes **allowlisted keys only**  
+- Secrets never go through that allowlist as free-form settings dumps  
+
+## AI providers
+
+Registry in `aiProviders.ts`:
+
+- **Builtin:** Copilot via `vscode.lm`  
+- **HTTP:** OpenRouter, Groq, Gemini, Hugging Face, Mistral, Together, Cohere, OpenAI, Anthropic  
+
+All chat paths:
+
+1. `sanitizePII`  
+2. Load key from SecretStorage when required  
+3. Timeout wrapper  
+
+Unit tests mock `fetch` and assert URL / auth shapes.
+
+## Webhooks & Jira
+
+```text
+postWebhook
+  → evaluateWebhookUrlResolved (HTTPS, allowlist, DNS, private IP block)
+  → https.request({ host: connectHost IP, servername: original host })
+  → retries re-run DNS + pin
 ```
-detector → handleFailure
-  → scheduler.isMuted (enabled / snooze / quiet hours / mute-when-focused)
-  → PII sanitize label/output
-  → ignorePatterns / branchPatterns
-  → sound (if enabled & not sound-rate-limited)
-  → optional AI summary (debug log only)
-  → webhook + optional Jira
-  → history (sanitized, output capped)
-  → daily counter / status bar / notification
-  → optional auto AI panel (default off)
+
+Jira:
+
+```text
+jiraEnabled? → evaluateJiraUrl (HTTPS + Atlassian host)
+  → Basic auth email + SecretStorage token
+  → POST {origin}/rest/api/3/issue
+  → rate limit 30s
 ```
 
-### Audio
+## UI / webviews
 
-Cross-platform playback (Windows VBS + cscript; macOS afplay; Linux ffplay/paplay/aplay). Pack sounds under `resources/packs`. `faultline.testSound` only allows basenames under packs.
+| Panel | Purpose | Assets |
+|-------|---------|--------|
+| Settings | Core + AI setup | `resources/vendor/*`, CSP nonce |
+| Error Analysis | Explain + chat | same |
+| Welcome | First-run | same |
 
-### AI
+`localResourceRoots` = `resources` only (no packaging `node_modules`).
 
-`AIService` → provider registry (`aiProviders.ts`). Prompts re-sanitized at egress. Keys per-call from SecretStorage. Copilot uses `vscode.lm`.
-
-### Webhooks & Jira
-
-- Webhooks: HTTPS only, host allowlist, DNS private re-check **per attempt**, connect **IP pin** + TLS SNI.
-- Jira: opt-in, HTTPS, Atlassian hosts, request URL from `origin` only, rate limit, SecretStorage token.
-
-### Configuration & webviews
-
-`ConfigManager` validates/clamps settings. Settings webview allowlists keys. Error Analysis validates message schema and length caps. Webview assets load from **`resources/vendor/`** (synced by `npm run vendor:sync`); `localResourceRoots` is `resources` only.
-
-### State & history
-
-- **StateStore**: daily fail count, last version, migration flags.
-- **HistoryManager**: ring buffer in globalState for last-failure AI / factory reset.
-
-## Packaging
+## Packaging model
 
 | Step | Output |
 |------|--------|
-| `vendor:sync` | Copy toolkit + codicons → `resources/vendor/` |
-| `compile` | esbuild bundle → `out/extension.js` |
-| `vsce package` | No `node_modules`; slim VSIX |
+| `npm run vendor:sync` | `resources/vendor/**` from devDependencies |
+| `npm run compile` | `out/extension.js` (esbuild bundle) |
+| `vsce package` | Slim VSIX (~22 files); `.vscodeignore` drops `src`, `coverage`, `node_modules`, tooling |
 
-## Related docs
+## Testing strategy
 
-- [SECURITY.md](./SECURITY.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [CHANGELOG.md](./CHANGELOG.md)
+| Layer | Examples |
+|-------|----------|
+| Unit | SSRF, PII, detectors, handleFailure, i18n, sound path sandbox |
+| Integration smoke | `activate()` + command registration with vscode mock |
+| CI | Matrix OS + coverage floors + VSIX path assertions |
+| Release | Tag `v*` → package → GitHub Release asset |
+
+## Extension points (if you contribute)
+
+| Want to… | Start here |
+|----------|------------|
+| New detector | `infrastructure/detectors/` + register in runtime |
+| New AI provider | `aiProviders.ts` registry + tests |
+| New setting | `package.json` contributes + `ConfigManager` + types |
+| New command | `presentation/commands/*` + `package.nls.json` |
+
+---
+
+<p align="center">
+  <sub>FaultLine Architecture · 3.5.0 · MIT</sub>
+</p>

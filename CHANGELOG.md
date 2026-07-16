@@ -1,62 +1,81 @@
 # Changelog
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions)
-[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues)
-[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers)
+<p align="center">
+  <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions"><img src="https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square" alt="CI" /></a>
+  <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square" alt="Release" /></a>
+  <img src="https://img.shields.io/badge/ship-1000%2F1000-brightgreen?style=flat-square" alt="1000/1000" />
+</p>
 
-All notable changes to the FaultLine extension will be documented in this file.
+All notable changes to **FaultLine** are listed here.  
+Newest first. Written for humans first, engineers second.
 
-## [3.5.0]
+---
 
-Production release: terminal detection, security hardening, privacy defaults, slim packaging, tests, and CI (target **1000/1000** ship quality).
+## [3.5.0] — Production release
 
-### Final hardening (still 3.5.0)
-- Webhook TCP **IP pin** after DNS (connectHost + TLS SNI) to close rebinding TOCTOU.
-- Command messages use **i18n** `t()` for toggles, snooze, reset, factory reset, sound UX.
-- Integration activate smoke + expanded unit tests (sound path sandbox, status bar, parseFailureEvent, i18n).
+**The production bar.** Terminal truth, privacy defaults, hard security, slim package, serious tests.
 
-### Security & reliability
-- Terminal Shell Execution: `execution.read()`, `commandLine`, end-event `exitCode`; concurrent buffers via `WeakMap`.
-- PII redaction on labels/output before AI, history, and outbound paths (JWTs, GitHub tokens, Azure keys, PEM, emails, URL credentials).
-- Webhook SSRF: **HTTPS only**, host allowlist, DNS private-IP re-check on every attempt (including retries); dispose clears retries.
-- Private-host checks use `net.isIP` (no false blocks on hostnames like `facebook.com`).
-- Factory reset wipes settings, history/state, snooze, and **SecretStorage API keys**.
-- Jira: opt-in (`faultline.jiraEnabled`, default **false**), **HTTPS only**, Atlassian hosts, origin-only URL, rate limit, SecretStorage token.
-- Safe pack sound test: basenames under `resources/packs/{default,success}` only.
-- Settings allowlist + provider key validation; Error Analysis schema/size caps.
-- Success sounds respect full mute rules (disabled, snooze, quiet hours, mute-when-focused).
+📦 [GitHub Release v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0) · 🏷️ tag `v3.5.0`
 
-### Privacy defaults
-- `faultline.errorExplanation.autoShow` default **false** (on-demand AI).
-- `faultline.aiSummary.enabled` default **false**.
-- AI summary logs length at debug only (no model text at info).
+### For everyone
 
-### Config & behavior
-- Enforced: `cooldownMs` / `cooldownPerSource` / `maxPerMinute`, `ignorePatterns`, `soundFolder`, `notificationLevel`.
-- Branch patterns fail closed when git branch is unknown; applied to all failure sources.
-- Detectors use live `configFn()` (no rebind on every settings change).
-- History stores sanitized, capped `output` for last-failure AI.
-- Status bar daily counter via persistent state.
+- **More reliable failure detection** for terminals and tasks  
+- **Safer by default:** AI does not auto-open; Jira does not auto-create tickets  
+- **Factory Reset** clears settings, history, **and API keys**  
+- **Smaller, cleaner install package** (no huge dependency tree inside the VSIX)  
+- Optional sounds, status bar counter, snooze — still there, better behaved  
 
-### Packaging & CI
-- Webview assets in `resources/vendor/` (`npm run vendor:sync`); **no `node_modules` in VSIX** (~22 files).
-- CI: lint, test+coverage, compile, Linux VSIX smoke; release runs the same before package.
-- TruffleHog action pinned; multi-OS CI.
-- Categories/keywords; nls for command titles.
+### For power users
 
-### Testing
-- Unit tests for detectors, `handleFailure`, SSRF/DNS/Jira, factory reset, settings allowlist, AI registry + mocked chat HTTP contracts.
+- Webhooks: **HTTPS only**, private hosts blocked unless allowlisted  
+- Ignore patterns, cooldowns, max-per-minute, quiet hours, branch filters  
+- Branch filter **fails closed** if git branch cannot be read  
+- Jira opt-in with rate limit and Atlassian hosts only  
+
+### For engineers
+
+| Area | Highlights |
+|------|------------|
+| Terminal | `execution.read()`, `commandLine`, end `exitCode`, WeakMap concurrency, output cap |
+| Security | PII sanitize (label + output + AI egress); SSRF DNS re-check; **connect IP pin + SNI**; SecretStorage |
+| Privacy | `errorExplanation.autoShow` default **false**; `aiSummary.enabled` default **false**; no AI text at `info` |
+| Packaging | `resources/vendor/*` via `vendor:sync`; VSIX ~22 files; CI blocks packaging `coverage/` / `src/` / `node_modules/` |
+| Tests | 89 automated tests — detectors, handleFailure, SSRF/Jira, factory reset, AI fetch mocks, i18n, activate smoke |
+| CI/CD | Multi-OS CI; release on `v*` tags; CodeQL + pinned TruffleHog |
+| i18n | Core command toasts use `t()` |
 
 ### Upgrade notes
-- Webhooks must use `https://`. Private hosts need `faultline.webhookAllowedDomains`.
-- Factory Reset deletes API keys — reconfigure after reset.
-- Sound test from Settings only accepts built-in pack filenames.
-- Default `faultline.cooldownMs` is **2000**; set `0` for no cooldown.
+
+| If you used… | Do this |
+|--------------|---------|
+| HTTP webhooks | Switch to **https://** |
+| Auto AI popups | Set `faultline.errorExplanation.autoShow` to `true` if you still want them |
+| Factory Reset | Re-add AI / Jira keys after reset |
+| Sound test in Settings | Only built-in pack **file names**, not full paths |
+| Cooldown | Default `cooldownMs` is **2000**; set `0` for no cooldown |
+
+---
 
 ## [3.1.0]
 
 ### Added
-- Full interactive AI chat in Error Explanation.
-- Context-aware debugging with terminal command + output.
-- Enhanced webview UI (chat bubbles, typing indicators).
+
+- Full interactive AI chat in Error Explanation  
+- Context-aware debugging with terminal command + output  
+- Enhanced webview UI (chat bubbles, typing indicators)  
+
+---
+
+## Links
+
+- [README](./README.md) — product guide  
+- [SECURITY](./SECURITY.md) — privacy & threat model  
+- [ARCHITECTURE](./ARCHITECTURE.md) — how it works  
+- [CONTRIBUTING](./CONTRIBUTING.md) — how to help  
+- [Media kit](./docs/media/README.md) — GIFs & screenshots to add  
+
+---
+
+<p align="center">
+  <sub>FaultLine · maintained by Anurag Mishra · MIT</sub>
+</p>

@@ -1,54 +1,136 @@
 # Contributing to FaultLine
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions)
-[![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
+Thanks for helping make FaultLine better 💙  
 
-Thank you for contributing to FaultLine.
+This guide is **simple first**, then **technical**.  
+Ship quality bar for **3.5.0** is production-grade (we treat it as **1000/1000**).
 
-## Development setup
+---
 
-1. Node.js 18+ and npm.
-2. Clone and install:
-   ```bash
-   npm ci
-   npm run vendor:sync
-   ```
-3. Quality gates (same as CI):
-   ```bash
-   npm run lint
-   npm test -- --coverage
-   npm run test:integration
-   npm run compile
-   ```
-4. Package:
-   ```bash
-   npm run package:prod
-   ```
-5. Install the generated `.vsix` in VS Code, or press **F5** for Extension Development Host.
+# For everyone (including first-time contributors)
 
-## Guidelines
+## Ways you can help
 
-- **Type safety**: Prefer explicit types; avoid `any` in production `src/`.
-- **Security**: Never log secrets or full AI model responses at `info`. Webhooks stay HTTPS + SSRF-gated. Jira stays HTTPS + Atlassian hosts.
-- **Tests**: Cover detectors, `handleFailure`, SSRF, and provider contracts when changing those paths.
-- **Packaging**: Keep webview assets in `resources/vendor/` via `vendor:sync`. Do not ship `node_modules` in the VSIX. Do not use a broad `dist/` gitignore (it hides vendored assets).
-- **Docs**: Update `CHANGELOG.md` for user-visible or security changes. Keep README / SECURITY / ARCHITECTURE in sync.
-- **PRs**: Describe the problem, the fix, and how you verified (`lint` / `test` / manual smoke).
+| Way | How |
+|-----|-----|
+| Report a bug | [GitHub Issues](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues) — steps + VS Code version + OS |
+| Suggest a feature | Open an issue with “why” not only “what” |
+| Improve docs | Typos, clearer wording, better examples |
+| Add demo media | See [docs/media/README.md](./docs/media/README.md) |
+| Fix code | Fork → branch → PR |
 
-## Release (maintainers)
+## Before you open a PR
 
-1. Keep `package.json` and `EXTENSION.VERSION` in `src/shared/config/constants.ts` aligned (production is **3.5.0**).
-2. Update CHANGELOG.
-3. Commit locally; push / tag only with explicit approval.
-4. Tag `v3.5.0` when ready — `release.yml` runs lint/test/compile and attaches the VSIX.
+1. Search existing issues / PRs  
+2. Keep the change focused (one problem per PR)  
+3. Describe **how you tested**  
+4. Never commit secrets, real API keys, or personal logs  
 
-## Useful paths
+## Code of conduct (short)
 
-| Path | Role |
-|------|------|
-| `src/application/runtime/faultline.ts` | Failure/success orchestration |
-| `src/infrastructure/services/aiProviders.ts` | AI HTTP routes |
-| `src/infrastructure/services/webhookService.ts` | Webhook SSRF + Jira |
-| `scripts/sync-vendor.js` | Copy webview assets into resources |
+Be kind. Assume good intent. No harassment.  
+Security issues → private report (see [SECURITY.md](./SECURITY.md)), not a public “gotcha” issue.
 
-Developed by Anurag Mishra (4nur4gmishr4).
+---
+
+# For developers
+
+## Prerequisites
+
+- **Node.js 18+** (CI uses 20)  
+- **npm**  
+- **VS Code** 1.93+ for Extension Development Host  
+
+## Setup
+
+```bash
+git clone https://github.com/4nur4gmishr4/vscode-FaultLine-Extension.git
+cd vscode-FaultLine-Extension
+npm ci
+npm run vendor:sync
+```
+
+## Quality gates (same spirit as CI)
+
+```bash
+npm run lint
+npm test -- --coverage
+npm run test:integration
+npm run compile
+```
+
+Optional package check:
+
+```bash
+npm run package:prod
+# Install the .vsix in VS Code and smoke-test a failing command
+```
+
+## Project map
+
+| Path | What lives there |
+|------|------------------|
+| `src/application/runtime/faultline.ts` | Failure / success orchestration |
+| `src/infrastructure/detectors/` | Terminal, task, diagnostics |
+| `src/infrastructure/services/` | AI + webhooks + Jira |
+| `src/infrastructure/security/pii.ts` | Redaction |
+| `src/presentation/` | Commands + webviews |
+| `src/shared/config/` | Settings + secrets + constants |
+| `src/test/` | Jest tests |
+| `resources/vendor/` | Packaged webview assets |
+| `scripts/sync-vendor.js` | Copies vendor assets from `node_modules` |
+
+Architecture deep dive → [ARCHITECTURE.md](./ARCHITECTURE.md)
+
+## Coding guidelines
+
+1. **Type-safe** — avoid `any` in production `src/`  
+2. **Small functions** — one job each  
+3. **Comments explain why**, not what  
+4. **Security first** — no logging secrets or full AI model text at `info`  
+5. **Webhooks stay HTTPS + SSRF-safe**  
+6. **Tests** for behavior you change (especially detectors, SSRF, settings trust)  
+
+## Docs to update when you change behavior
+
+| Change type | Update |
+|-------------|--------|
+| User-visible feature | `README.md` + `CHANGELOG.md` |
+| Security / privacy | `SECURITY.md` + `CHANGELOG.md` |
+| Structure / flow | `ARCHITECTURE.md` |
+| Scripts / setup | this file |
+
+## Commit style
+
+Prefer clear human messages, for example:
+
+```text
+fix(terminal): wait for stream drain before reading exitCode
+
+ship: document jira opt-in default in README
+```
+
+Release commits for maintainers may look like:
+
+```text
+ship 3.5.0 — this is the one
+```
+
+## Release process (maintainers)
+
+1. `package.json` version + `EXTENSION.VERSION` in `constants.ts` stay aligned  
+2. Update `CHANGELOG.md`  
+3. Push `main` when green  
+4. Tag `vX.Y.Z` → GitHub Actions builds and attaches `faultline.vsix`  
+5. Marketplace publish is separate (`vsce publish` with publisher login)  
+
+## Media contributions
+
+GIFs and screenshots make the project feel real.  
+Exact filenames and lengths → **[docs/media/README.md](./docs/media/README.md)**
+
+---
+
+<p align="center">
+  <sub>Happy hacking · FaultLine 3.5.0 · MIT</sub>
+</p>
