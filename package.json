@@ -47,7 +47,6 @@
     "theme": "dark"
   },
   "extensionKind": [
-    "ui",
     "workspace"
   ],
   "activationEvents": [
