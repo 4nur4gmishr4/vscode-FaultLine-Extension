@@ -17,6 +17,7 @@ This guide is simple first, then technical.
 | Way | How |
 |-----|-----|
 | Report a bug | [GitHub Issues](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues) with steps, VS Code version, and OS |
+| Commands broken after install | See [docs/commands-troubleshooting.md](./docs/commands-troubleshooting.md) · reload window after VSIX |
 | Suggest a feature | Open an issue with why it helps, not only what to add |
 | Improve docs | Clearer wording and accurate behavior |
 | Improve media | Only the three project GIFs; see [docs/media/README.md](./docs/media/README.md) |
