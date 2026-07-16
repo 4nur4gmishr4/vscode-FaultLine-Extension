@@ -166,7 +166,20 @@ jiraEnabled? → evaluateJiraUrl (HTTPS + Atlassian host)
 |-------|---------|--------|
 | Settings | Core + AI setup | `resources/vendor/*`, CSP nonce |
 | Error Analysis | Explain + chat | same |
-| Welcome | First-run | same |
+| Welcome | First-run + optional typing intro | same |
+
+### Welcome / first install
+
+```text
+First install (or major version jump)
+  → WelcomePanel.createOrShow(uri, withIntro: true)
+  → Typing greeting (Anurag Mishra · for developers who ship)
+  → Skip button under the type area  OR  typing finishes
+  → Main welcome body (sounds, cards, settings link)
+
+Command: FaultLine: Show Welcome Screen
+  → createOrShow(uri, withIntro: false)  // no intro every time
+```
 
 `localResourceRoots` = `resources` only (no packaging `node_modules`).
 
@@ -199,5 +212,5 @@ jiraEnabled? → evaluateJiraUrl (HTTPS + Atlassian host)
 ---
 
 <p align="center">
-  <sub>FaultLine Architecture · 3.5.0 · MIT</sub>
+  <sub>FaultLine Architecture · 3.5.0 · by Anurag Mishra · MIT</sub>
 </p>

@@ -11,6 +11,8 @@
 FaultLine watches your **local** VS Code environment (terminals, tasks, optional diagnostics).  
 That means security and privacy are not optional — they are the product.
 
+**Built by Anurag Mishra** for developers who ship. First install shows a short typed hello, then the welcome screen (you can **Skip**).
+
 If you only need a short summary, read **For everyone**.  
 If you review or harden extensions, scroll to **For engineers**.
 

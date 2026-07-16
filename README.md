@@ -80,6 +80,13 @@ Uses **your real logo** only. No fake VS Code UI. No stock “other product” a
 1. Download `faultline.vsix` from [**Releases · v3.5.0**](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)  
 2. VS Code → **⋯** on Extensions → **Install from VSIX…**  
 
+### First install
+
+On **first install**, FaultLine opens a short **typed hello** from **Anurag Mishra** (for every developer who ships).  
+When it finishes — or if you press **Skip** — you land on the **welcome screen** (sounds, quick tour, settings).
+
+You can reopen the welcome anytime: **FaultLine: Show Welcome Screen** (skips the typing intro).
+
 ### First setup
 
 1. `Ctrl+Shift+P` / `Cmd+Shift+P`  
@@ -88,7 +95,7 @@ Uses **your real logo** only. No fake VS Code UI. No stock “other product” a
 4. Hit **Play** next to a sound to test audio  
 5. Run something that fails — you should get feedback without pasting logs by hand  
 
-> **Privacy tip:** Auto-open AI stays **off**. Use **FaultLine: Analyze Last Failure** when *you* want analysis. Turn auto-open on only if you like that.
+> **Privacy tip:** Auto-open AI stays **off**. Use **FaultLine: Analyze Last Failure** when *you* want analysis.
 
 ---
 
@@ -103,7 +110,7 @@ Uses **your real logo** only. No fake VS Code UI. No stock “other product” a
 | **FaultLine: Snooze** | Quiet for N minutes |
 | **FaultLine: Show Output Log** | Debug / AI log channel |
 | **FaultLine: Factory Reset** | Wipe settings, history, **and stored API keys** |
-| **FaultLine: Show Welcome Screen** | Welcome / tour |
+| **FaultLine: Show Welcome Screen** | Welcome UI (no typing intro) |
 
 ---
 

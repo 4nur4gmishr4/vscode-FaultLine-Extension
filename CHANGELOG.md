@@ -23,6 +23,8 @@ Newest first. Written for humans first, engineers second.
 - **Factory Reset** clears settings, history, **and API keys**  
 - **Smaller, cleaner install package** (no huge dependency tree inside the VSIX)  
 - Optional sounds, status bar counter, snooze — still there, better behaved  
+- **First install:** a short typed greeting from **Anurag Mishra** (“for every developer who ships”), then the welcome screen — with a **Skip** button  
+- Quiet credits on the welcome screen and docs (no hype scores)
 
 ### For power users
 
@@ -42,6 +44,7 @@ Newest first. Written for humans first, engineers second.
 | Tests | 89 automated tests — detectors, handleFailure, SSRF/Jira, factory reset, AI fetch mocks, i18n, activate smoke |
 | CI/CD | Multi-OS CI; release on `v*` tags; CodeQL + pinned TruffleHog |
 | i18n | Core command toasts use `t()` |
+| Welcome | `WelcomePanel.createOrShow(uri, withIntro)` — intro typing on first install only |
 
 ### Upgrade notes
 

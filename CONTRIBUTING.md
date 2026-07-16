@@ -1,7 +1,8 @@
 # Contributing to FaultLine
 
-Thanks for helping make FaultLine better 💙  
+Thanks for helping make FaultLine better.
 
+**FaultLine** is built by **Anurag Mishra** for developers who ship.  
 This guide is **simple first**, then **technical**.  
 **3.5.0** is the production line — keep changes solid, tested, and kind to users.
 
@@ -16,8 +17,14 @@ This guide is **simple first**, then **technical**.
 | Report a bug | [GitHub Issues](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues) — steps + VS Code version + OS |
 | Suggest a feature | Open an issue with “why” not only “what” |
 | Improve docs | Typos, clearer wording, better examples |
-| Add demo media | See [docs/media/README.md](./docs/media/README.md) |
+| Improve media | Only the 3 honest GIFs — see [docs/media/README.md](./docs/media/README.md) |
 | Fix code | Fork → branch → PR |
+
+### First-install UX (don’t break this)
+
+On first install, `WelcomePanel` shows a **typing greeting** then the welcome body.  
+There is a **Skip** control under the type area.  
+`FaultLine: Show Welcome Screen` opens the body **without** replaying the intro.
 
 ## Before you open a PR
 

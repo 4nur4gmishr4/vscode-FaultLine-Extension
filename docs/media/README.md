@@ -11,14 +11,20 @@
 ## Regenerate
 
 ```bash
-python scripts/make-docs-gifs.py
+npm run docs:gifs
+# or: python scripts/make-docs-gifs.py
 ```
 
 Requires: Python 3 + Pillow (`pip install pillow`).
 
 ## Rules
 
-1. **One logo animation** in the README header — do not also paste the static PNG above it.  
+1. **One logo animation** in the README header — not both static PNG and pulse.  
 2. **Do not** add random internet GIFs (wrong brand / looks like other tools).  
 3. **Do not** add AI mock “settings/chat panels” that aren’t this app.  
-4. Optional later: real VS Code screen recordings — only if filmed from **this** extension.  
+4. In-product first-install **typing greeting** is **code** (`welcome.ts`), not a GIF.  
+5. Optional later: real VS Code screen recordings — only if filmed from **this** extension.  
+
+## Source of the logo
+
+`resources/faultline-logo.png` — official project icon.
