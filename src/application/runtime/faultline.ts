@@ -67,7 +67,12 @@ export class FaultLineRuntime {
         this.webhook = new WebhookService(this.configManager, this.secretManager, this.logger);
         this.errorExplanation = new ErrorExplanationManager(this.logger, this.ai, this.ctx.extensionUri);
 
-        this.logger.setLevel(configFn().core.logLevel);
+        // Never throw from the constructor — a failed activate() kills all commands.
+        try {
+            this.logger.setLevel(configFn().core.logLevel);
+        } catch (err) {
+            this.logger.error('Failed to apply initial log level', err);
+        }
     }
 
     public activate(): void {

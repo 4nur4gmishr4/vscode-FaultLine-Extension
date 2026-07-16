@@ -10,6 +10,17 @@ Plain language first, technical detail second.
 
 ---
 
+## [3.5.1] Command activation fix
+
+- Activation no longer rethrows after commands are registered (that left palette entries as “command not found”)  
+- Runtime construction / detector failures no longer kill command registration  
+- Explicit `onCommand` activation events restored for reliable palette use  
+- Emergency handlers if full startup fails (reload guidance)  
+
+Marketplace id unchanged: **`4nur4gmishr4.fahh`**. Display name: **FaultLine**.
+
+---
+
 ## [3.5.0] Production release
 
 **Focus:** debugger and fault explainer first; error notifier second.

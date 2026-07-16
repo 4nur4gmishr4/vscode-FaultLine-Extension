@@ -75,6 +75,22 @@ describe('extension activate smoke', () => {
         );
     });
 
+    it('still registers emergency commands when runtime construction fails', () => {
+        const ctx = mockContext();
+        jest.spyOn(FaultLineRuntime.prototype as never, 'constructor' as never);
+        // Force constructor failure by breaking secrets shape after first successful patterns —
+        // simulate by making getConfiguration throw only after Logger exists is hard; instead
+        // break ExtensionContext so FaultLineRuntime throws.
+        const badCtx = {
+            ...ctx,
+            secrets: null,
+            globalState: null
+        };
+        expect(() => activate(badCtx as never)).not.toThrow();
+        const ids = (vscode.commands.registerCommand as jest.Mock).mock.calls.map((c) => c[0] as string);
+        expect(ids).toEqual(expect.arrayContaining(['faultline.showOutput', 'faultline.toggle']));
+    });
+
     it('deactivate is safe when never activated', () => {
         expect(() => deactivate()).not.toThrow();
     });

@@ -30,8 +30,11 @@ describe('package manifest (packaging / activation smoke)', () => {
 
     it('declares entrypoint and activation', () => {
         expect(pkg.main).toBe('./out/extension.js');
-        // onCommand:* is generated from contributes.commands — only keep explicit events.
-        expect(pkg.activationEvents).toEqual(['onStartupFinished']);
+        // Keep onStartupFinished for detectors + explicit onCommand for reliable palette activation.
+        expect(pkg.activationEvents).toEqual(expect.arrayContaining(['onStartupFinished']));
+        expect(pkg.activationEvents).toEqual(
+            expect.arrayContaining(['onCommand:faultline.toggle', 'onCommand:faultline.openSettings'])
+        );
         expect(pkg.engines.vscode).toMatch(/^\^1\./);
     });
 

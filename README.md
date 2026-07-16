@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.5.0-blue?style=flat-square" alt="3.5.0" />
+  <img src="https://img.shields.io/badge/version-3.5.1-blue?style=flat-square" alt="3.5.1" />
   <img src="https://img.shields.io/badge/VS_Code-%5E1.93-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
   <img src="https://img.shields.io/badge/by-Anurag_Mishra-lightgrey?style=flat-square" alt="Anurag Mishra" />
 </p>
@@ -287,7 +287,7 @@ Regenerate: `npm run docs:gifs`
 ---
 
 <p align="center">
-  <strong>FaultLine 3.5.0</strong><br/>
+  <strong>FaultLine 3.5.1</strong><br/>
   Debugger and fault explainer first. Notifier second.<br/>
   Made by Anurag Mishra for developers everywhere · MIT
 </p>
