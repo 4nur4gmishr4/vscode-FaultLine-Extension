@@ -10,17 +10,6 @@ Plain language first, technical detail second.
 
 ---
 
-## [3.5.1] Command activation fix
-
-- Activation no longer rethrows after commands are registered (that left palette entries as “command not found”)  
-- Runtime construction / detector failures no longer kill command registration  
-- Explicit `onCommand` activation events restored for reliable palette use  
-- Emergency handlers if full startup fails (reload guidance)  
-
-Marketplace id unchanged: **`4nur4gmishr4.fahh`**. Display name: **FaultLine**.
-
----
-
 ## [3.5.0] Production release
 
 **Focus:** debugger and fault explainer first; error notifier second.
@@ -41,6 +30,8 @@ Release: [v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/rel
 - First install: typed greeting from Anurag Mishra, then welcome screen, with **Skip**  
 - Commands and Settings stay available even if a detector or VS Code API is missing  
 - Settings UI: sounds, notifications, status bar, and explanation privacy toggles  
+- Activation no longer rethrows after commands register (avoids dead palette commands)  
+- Explicit `onCommand` activation for reliable palette use; emergency handlers if startup fails hard  
 
 ### For power users
 

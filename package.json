@@ -2,7 +2,7 @@
   "name": "fahh",
   "displayName": "FaultLine",
   "description": "Debugger and fault explainer for VS Code terminals and tasks. Optional sounds and notifications second.",
-  "version": "3.5.1",
+  "version": "3.5.0",
   "publisher": "4nur4gmishr4",
   "author": "Anurag Mishra",
   "license": "MIT",
