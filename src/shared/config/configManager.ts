@@ -38,7 +38,7 @@ export class ConfigManager {
     private readonly secretManager: ISecretManager;
     private readonly logger?: Logger;
     private readonly validSources: ReadonlySet<FailureSource> = new Set<FailureSource>([
-        'task', 'shell', 'terminal', 'diagnostics', 'build', 'longTask'
+        'task', 'shell', 'terminal', 'diagnostics'
     ]);
     private readonly knownProviders: ReadonlySet<string> = new Set(
         listProviders().map((p: { id: string }) => p.id)
@@ -151,6 +151,15 @@ export class ConfigManager {
             },
             detection: {
                 sources,
+                cooldownMs: this.clamp(
+                    cfg.get<number>(CONFIG.KEYS.COOLDOWN_MS, DEFAULTS.COOLDOWN_MS),
+                    VALIDATION.COOLDOWN.MIN,
+                    VALIDATION.COOLDOWN.MAX
+                ),
+                cooldownPerSource: cfg.get<boolean>(
+                    CONFIG.KEYS.COOLDOWN_PER_SOURCE,
+                    DEFAULTS.COOLDOWN_PER_SOURCE
+                ),
                 maxPerMinute: this.clamp(
                     cfg.get<number>(CONFIG.KEYS.MAX_PER_MINUTE, DEFAULTS.MAX_PER_MINUTE),
                     VALIDATION.MAX_PER_MINUTE.MIN,
@@ -161,11 +170,6 @@ export class ConfigManager {
                     cfg.get<number>(CONFIG.KEYS.DIAGNOSTICS_THRESHOLD, DEFAULTS.DIAGNOSTICS_THRESHOLD),
                     VALIDATION.DIAGNOSTICS_THRESHOLD.MIN,
                     VALIDATION.DIAGNOSTICS_THRESHOLD.MAX
-                ),
-                longTaskThresholdMs: this.clamp(
-                    cfg.get<number>(CONFIG.KEYS.LONG_TASK_THRESHOLD_MS, DEFAULTS.LONG_TASK_THRESHOLD_MS),
-                    VALIDATION.LONG_TASK_THRESHOLD.MIN,
-                    VALIDATION.LONG_TASK_THRESHOLD.MAX
                 ),
                 branchPatterns: cfg.get<string[]>(CONFIG.KEYS.BRANCH_PATTERNS, []),
                 quietHours: {
@@ -181,6 +185,7 @@ export class ConfigManager {
                     cfg.get<string[]>(CONFIG.KEYS.WEBHOOK_ALLOWED_DOMAINS, [])
                 ),
                 format: cfg.get<'default' | 'slack' | 'discord'>(CONFIG.KEYS.WEBHOOK_FORMAT, DEFAULTS.WEBHOOK_FORMAT),
+                jiraEnabled: cfg.get<boolean>(CONFIG.KEYS.JIRA_ENABLED, DEFAULTS.JIRA_ENABLED),
                 jiraUrl: cfg.get<string>(CONFIG.KEYS.JIRA_URL, DEFAULTS.JIRA_URL).trim(),
                 jiraProject: cfg.get<string>(CONFIG.KEYS.JIRA_PROJECT, DEFAULTS.JIRA_PROJECT).trim(),
                 jiraEmail: cfg.get<string>(CONFIG.KEYS.JIRA_EMAIL, DEFAULTS.JIRA_EMAIL).trim()
@@ -190,14 +195,17 @@ export class ConfigManager {
                 provider: aiProvider,
                 model: cfg.get<string>(CONFIG.KEYS.MODEL, DEFAULTS.MODEL),
                 errorExplanationEnabled: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_ENABLED, true),
-                errorExplanationAutoShow: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_AUTO_SHOW, true)
+                errorExplanationAutoShow: cfg.get<boolean>(CONFIG.KEYS.ERROR_EXPLANATION_AUTO_SHOW, false)
             },
             ui: {
                 showNotification: cfg.get<boolean>(CONFIG.KEYS.SHOW_NOTIFICATION, true),
                 notificationLevel: cfg.get<NotificationLevel>(CONFIG.KEYS.NOTIFICATION_LEVEL, DEFAULTS.NOTIFICATION_LEVEL),
                 showStatusBar: cfg.get<boolean>(CONFIG.KEYS.SHOW_STATUS_BAR, true),
                 flashStatusBar: cfg.get<boolean>(CONFIG.KEYS.FLASH_STATUS_BAR, true),
-                statusBarCounter: cfg.get<boolean>(CONFIG.KEYS.STATUS_BAR_COUNTER, false)
+                statusBarCounter: cfg.get<boolean>(
+                    CONFIG.KEYS.STATUS_BAR_COUNTER,
+                    DEFAULTS.STATUS_BAR_COUNTER
+                )
             }
         };
     }
@@ -329,6 +337,17 @@ export class ConfigManager {
     }
 
     /**
+     * True when a config change requires disposing/recreating detector subscriptions.
+     * Detectors already call a live `configFn()` per event, so most settings apply
+     * without rebind. Keep this list empty unless a future change needs new listeners.
+     */
+    affectsDetectors(event: vscode.ConfigurationChangeEvent): boolean {
+        // No detector wiring keys currently require re-subscription.
+        void event;
+        return false;
+    }
+
+    /**
      * Reset all FaultLine settings to their default values.
      * 
      * This method removes all user-configured values at all configuration levels
@@ -375,6 +394,8 @@ export class ConfigManager {
      */
     private compilePatterns(patterns: string[]): RegExp[] {
         const MAX_PATTERNS = 100;
+        /** Cap length to reduce ReDoS risk from pathological user regexes. */
+        const MAX_PATTERN_LENGTH = 200;
         const capped = patterns.slice(0, MAX_PATTERNS);
         if (patterns.length > MAX_PATTERNS) {
             this.warn(`Too many ignore patterns (${patterns.length}); only the first ${MAX_PATTERNS} are used.`);
@@ -383,14 +404,19 @@ export class ConfigManager {
         const compiled: RegExp[] = [];
         let invalid = 0;
         for (const pattern of capped) {
+            if (typeof pattern !== 'string' || pattern.length === 0 || pattern.length > MAX_PATTERN_LENGTH) {
+                invalid++;
+                continue;
+            }
             try {
+                // No global/sticky flags — avoid lastIndex surprises on shared RegExp usage.
                 compiled.push(new RegExp(pattern));
             } catch {
                 invalid++;
             }
         }
         if (invalid > 0) {
-            this.warn(`Ignored ${invalid} invalid regex pattern(s) in faultline.ignorePatterns.`);
+            this.warn(`Ignored ${invalid} invalid/oversized regex pattern(s) in faultline.ignorePatterns.`);
         }
         return compiled;
     }

@@ -38,9 +38,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Pin to a release tag — @main can break the pipeline without notice
       - name: TruffleHog OSS
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.88.2
         with:
           path: ./
-          extra_args: --debug --only-verified
-
+          extra_args: --only-verified

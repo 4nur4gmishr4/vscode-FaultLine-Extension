@@ -2,7 +2,7 @@
   "name": "fahh",
   "displayName": "FaultLine",
   "description": "An AI-powered debugger, explainer, and solver assistant for developers, with secondary background audio notifications for success and errors.",
-  "version": "3.1.1",
+  "version": "3.5.0",
   "publisher": "4nur4gmishr4",
   "author": "Anurag Mishra",
   "license": "MIT",
@@ -19,16 +19,23 @@
     "node": ">=18.0.0"
   },
   "categories": [
-    "Other"
+    "Debuggers",
+    "Other",
+    "Machine Learning"
   ],
   "keywords": [
+    "ai",
+    "debugger",
+    "error",
+    "terminal",
+    "build",
     "sound",
     "audio",
-    "fail",
-    "error",
     "notification",
-    "build",
-    "terminal"
+    "webhook",
+    "pii",
+    "copilot",
+    "fail"
   ],
   "icon": "resources/faultline-logo.png",
   "galleryBanner": {
@@ -122,52 +129,18 @@
       },
       {
         "command": "faultline.explainError",
-        "title": "FaultLine: Analyze Last Failure",
+        "title": "%command.faultline.explainError%",
         "category": "FaultLine"
       },
       {
         "command": "faultline.openSettings",
-        "title": "Open Configuration",
+        "title": "%command.faultline.openSettings%",
         "category": "FaultLine"
       },
       {
         "command": "faultline.testSound",
         "title": "%command.faultline.testSound%",
         "category": "FaultLine"
-      }
-    ],
-    "walkthroughs": [
-      {
-        "id": "faultline.welcome",
-        "title": "%walkthrough.faultline.title%",
-        "description": "%walkthrough.faultline.description%",
-        "steps": [
-          {
-            "id": "faultline.welcome.test",
-            "title": "%walkthrough.faultline.step1.title%",
-            "description": "%walkthrough.faultline.step1.description%",
-            "media": {
-              "markdown": "resources/step1.md"
-            }
-          },
-          {
-            "id": "faultline.welcome.sound",
-            "title": "%walkthrough.faultline.step2.title%",
-            "description": "%walkthrough.faultline.step2.description%",
-            "media": {
-              "markdown": "resources/step2.md"
-            }
-          },
-          {
-            "id": "faultline.welcome.configure",
-            "title": "%walkthrough.faultline.step3.title%",
-            "description": "%walkthrough.faultline.step3.description%",
-            "media": {
-              "image": "resources/settings.png",
-              "altText": "FaultLine settings"
-            }
-          }
-        ]
       }
     ],
     "configuration": {
@@ -263,17 +236,13 @@
               "task",
               "shell",
               "terminal",
-              "diagnostics",
-              "build",
-              "longTask"
+              "diagnostics"
             ],
             "enumDescriptions": [
               "%config.faultline.sources.task%",
               "%config.faultline.sources.shell%",
               "%config.faultline.sources.terminal%",
-              "%config.faultline.sources.diagnostics%",
-              "%config.faultline.sources.build%",
-              "%config.faultline.sources.longTask%"
+              "%config.faultline.sources.diagnostics%"
             ]
           },
           "uniqueItems": true
@@ -356,13 +325,6 @@
           "maximum": 100,
           "description": "%config.faultline.diagnosticsThreshold%"
         },
-        "faultline.longTaskThresholdMs": {
-          "type": "number",
-          "default": 60000,
-          "minimum": 1000,
-          "maximum": 3600000,
-          "description": "%config.faultline.longTaskThresholdMs%"
-        },
         "faultline.logLevel": {
           "type": "string",
           "default": "warn",
@@ -387,8 +349,8 @@
           "default": "",
           "description": "%config.faultline.webhookUrl%",
           "scope": "machine",
-          "pattern": "^$|^https?://.+",
-          "patternErrorMessage": "Webhook URL must start with http:// or https:// (or be empty to disable)."
+          "pattern": "^$|^https://.+",
+          "patternErrorMessage": "Webhook URL must start with https:// (or be empty to disable)."
         },
         "faultline.webhookAllowedDomains": {
           "type": "array",
@@ -433,11 +395,6 @@
           ],
           "description": "%config.faultline.aiProvider%"
         },
-        "faultline.dailySummary": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.faultline.dailySummary%"
-        },
         "faultline.errorExplanation.enabled": {
           "type": "boolean",
           "default": true,
@@ -445,8 +402,8 @@
         },
         "faultline.errorExplanation.autoShow": {
           "type": "boolean",
-          "default": true,
-          "description": "Auto-show error explanations on failure"
+          "default": false,
+          "description": "Auto-open AI error analysis on failure (off by default; uses Explain Error notification or command instead)"
         },
         "faultline.branchPatterns": {
           "type": "array",
@@ -455,6 +412,11 @@
             "type": "string"
           },
           "description": "Git branch patterns to trigger on (empty = all branches). Supports glob patterns like 'main', 'feature/*', 'release/*'"
+        },
+        "faultline.jiraEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Create a Jira issue on failure (requires URL, project, email, and API key in SecretStorage)"
         },
         "faultline.jiraUrl": {
           "type": "string",
@@ -529,16 +491,19 @@
   },
   "scripts": {
     "test": "jest",
-    "vscode:prepublish": "npm run compile",
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest --testPathPattern=integration",
+    "vendor:sync": "node scripts/sync-vendor.js",
+    "vscode:prepublish": "npm run vendor:sync && npm run compile",
     "compile": "tsc -noEmit && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
-    "clean": "node -e \"require('fs').rmSync('out', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('coverage', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('*.vsix', {force: true})\"",
+    "clean": "node -e \"require('fs').rmSync('out', {recursive: true, force: true})\" && node -e \"require('fs').rmSync('coverage', {recursive: true, force: true})\" && node -e \"try{require('fs').readdirSync('.').filter(f=>f.endsWith('.vsix')).forEach(f=>require('fs').rmSync(f))}catch(e){}\"",
     "lint": "tsc --noEmit && eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "prebuild": "npm run clean",
     "build": "npm run compile",
-    "package": "npx @vscode/vsce package",
-    "package:prod": "npm run clean && npm run compile && npx @vscode/vsce package"
+    "package": "vsce package",
+    "package:prod": "npm run clean && npm run vendor:sync && npm run compile && vsce package"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
@@ -546,6 +511,9 @@
     "@types/vscode": "^1.93.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "@vscode/codicons": "^0.0.45",
+    "@vscode/vsce": "^3.9.2",
+    "@vscode/webview-ui-toolkit": "^1.4.0",
     "esbuild": "^0.28.1",
     "eslint": "^8.57.1",
     "jest": "^30.4.2",
@@ -556,100 +524,5 @@
   },
   "overrides": {
     "js-yaml": "^4.1.2"
-  },
-  "localizations": {
-    "translations": [
-      {
-        "id": "en",
-        "name": "English",
-        "translations": {
-          "command.faultline.test": "Play Test Sound",
-          "command.faultline.testSuccess": "Play Test Success Sound",
-          "command.faultline.toggle": "Toggle Enable / Disable",
-          "command.faultline.toggleWorkspace": "Toggle (This Workspace)",
-          "command.faultline.selectSound": "Select Custom Sound File...",
-          "command.faultline.selectSoundFolder": "Select Sound Folder (Random)",
-          "command.faultline.resetSound": "Reset Sound to Default",
-          "command.faultline.pickSoundPack": "Pick Sound Pack",
-          "command.faultline.stop": "Stop Currently Playing Sound",
-          "command.faultline.snooze": "Snooze for Configured Minutes",
-          "command.faultline.clearHistory": "Clear Failure History",
-          "command.faultline.replaySound": "Replay Last Failure Sound",
-          "command.faultline.showHistory": "Show Failure History",
-          "command.faultline.showOutput": "Show Output Log",
-          "command.faultline.resetSettings": "Reset Settings",
-          "command.faultline.factoryReset": "Factory Reset",
-          "command.faultline.showWelcome": "Show Welcome Screen",
-          "config.faultline.title": "FaultLine",
-          "config.faultline.enabled": "Enable FaultLine",
-          "config.faultline.soundPack": "Sound Pack",
-          "config.faultline.soundPath": "Custom Sound File",
-          "config.faultline.soundFolder": "Random Sound Folder",
-          "config.faultline.sounds.task": "Task Failure Sound",
-          "config.faultline.sounds.shell": "Shell Command Failure Sound",
-          "config.faultline.sounds.terminal": "Terminal Failure Sound",
-          "config.faultline.sounds.diagnostics": "Diagnostic Error Sound",
-          "config.faultline.sounds.build": "Build Failure Sound",
-          "config.faultline.sounds.longTask": "Long Task Failure Sound",
-          "config.faultline.successEnabled": "Enable Success Sounds",
-          "config.faultline.successSound": "Success Sound File",
-          "config.faultline.volumes.task": "Task Volume (-1 = global)",
-          "config.faultline.volumes.shell": "Shell Volume (-1 = global)",
-          "config.faultline.volumes.terminal": "Terminal Volume (-1 = global)",
-          "config.faultline.volumes.diagnostics": "Diagnostics Volume (-1 = global)",
-          "config.faultline.volumes.build": "Build Volume (-1 = global)",
-          "config.faultline.volumes.longTask": "Long Task Volume (-1 = global)",
-          "config.faultline.volume": "Master Volume",
-          "config.faultline.volumeCurve": "Volume Curve",
-          "config.faultline.showNotification": "Show Notifications",
-          "config.faultline.notificationLevel": "Notification Level",
-          "config.faultline.sources": "Monitor These Sources",
-          "config.faultline.sources.task": "Task failures",
-          "config.faultline.sources.shell": "Shell command failures",
-          "config.faultline.sources.terminal": "Terminal failures",
-          "config.faultline.sources.diagnostics": "Diagnostic errors",
-          "config.faultline.sources.build": "Build failures",
-          "config.faultline.sources.longTask": "Long task failures",
-          "config.faultline.cooldownMs": "Cooldown (ms)",
-          "config.faultline.cooldownPerSource": "Separate Cooldowns per Source",
-          "config.faultline.maxPerMinute": "Max Sounds per Minute",
-          "config.faultline.ignorePatterns": "Ignore Patterns",
-          "config.faultline.showStatusBar": "Show Status Bar Item",
-          "config.faultline.statusBarCounter": "Show Failure Counter",
-          "config.faultline.flashStatusBar": "Flash Status Bar on Failure",
-          "config.faultline.quietHours.enabled": "Enable Quiet Hours",
-          "config.faultline.quietHours.from": "Quiet Hours From",
-          "config.faultline.quietHours.to": "Quiet Hours To",
-          "config.faultline.muteWhenFocused": "Mute When VS Code is Focused",
-          "config.faultline.snoozeMinutes": "Snooze Duration (minutes)",
-          "config.faultline.diagnosticsThreshold": "Diagnostic Error Threshold",
-          "config.faultline.longTaskThresholdMs": "Long Task Threshold (ms)",
-          "config.faultline.logLevel": "Log Level",
-          "config.faultline.historyMax": "Maximum History Entries",
-          "config.faultline.speakLabel": "Speak Failure Labels",
-          "config.faultline.webhookUrl": "Webhook URL",
-          "config.faultline.webhookAllowedDomains": "Webhook Allowed Domains",
-          "config.faultline.aiSummary.enabled": "Enable AI Summaries",
-          "config.faultline.aiProvider": "AI Provider",
-          "config.faultline.openrouterApiKey": "OpenRouter API Key (deprecated; use FaultLine: Configure AI Provider)",
-          "config.faultline.openrouterModel": "OpenRouter Model",
-          "config.faultline.groqModel": "Groq Model",
-          "config.faultline.geminiModel": "Google Gemini Model",
-          "config.faultline.huggingfaceModel": "Hugging Face Model",
-          "config.faultline.mistralModel": "Mistral AI Model",
-          "config.faultline.togetherModel": "Together AI Model",
-          "config.faultline.cohereModel": "Cohere Model",
-          "config.faultline.openaiModel": "OpenAI Model",
-          "config.faultline.anthropicModel": "Anthropic Claude Model",
-          "config.faultline.dailySummary": "Daily Summary",
-          "config.faultline.errorExplanation.enabled": "Enable Error Explanations",
-          "config.faultline.errorExplanation.autoShow": "Auto-show Error Explanations"
-        }
-      }
-    ]
-  },
-  "dependencies": {
-    "@vscode/codicons": "^0.0.45",
-    "@vscode/webview-ui-toolkit": "^1.4.0"
   }
 }

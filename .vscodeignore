@@ -1,26 +1,30 @@
-.vscode/**
-.vscode-test/**
+# --- Paths that exist in this repo and must NOT ship in the VSIX ---
+
+# Git / CI (repo-only)
 .git/**
 .github/**
+
+# Source (runtime is out/extension.js only)
 src/**
-out/**/*.map
-out/**/*.test.js
-out/**/*.spec.js
-__mocks__/**
-jest.config.js
-node_modules/*
-!node_modules/@vscode
-node_modules/@vscode/*
-!node_modules/@vscode/webview-ui-toolkit
-node_modules/@vscode/webview-ui-toolkit/*
-!node_modules/@vscode/webview-ui-toolkit/dist
-!node_modules/@vscode/codicons
-node_modules/@vscode/codicons/*
-!node_modules/@vscode/codicons/dist
+
+# Vendor sync script (dev only)
+scripts/**
+
+# Tooling configs (exist at repo root)
 .gitignore
+.vscodeignore
+.editorconfig
+.eslintignore
+.eslintrc.cjs
+jest.config.js
 tsconfig.json
 tsconfig.test.json
 package-lock.json
 
-**/*.ts
-**/*.tsbuildinfo
+# Extra docs (Marketplace keeps README.md, CHANGELOG.md, LICENSE)
+ARCHITECTURE.md
+CONTRIBUTING.md
+SECURITY.md
+
+# Dependencies are not packaged; webview assets are in resources/vendor/
+node_modules/**

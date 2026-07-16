@@ -41,6 +41,29 @@ const PII_PATTERNS: readonly PiiPattern[] = [
     { name: 'GOOGLE_KEY', pattern: /AIza[a-zA-Z0-9_-]{35}/g, replacement: '[GOOGLE_KEY]' },
     { name: 'HUGGINGFACE_KEY', pattern: /hf_[a-zA-Z0-9]{30,}/g, replacement: '[HUGGINGFACE_KEY]' },
     { name: 'AWS_KEY', pattern: /AKIA[0-9A-Z]{16}/g, replacement: '[AWS_KEY]' },
+    // GitHub PATs / OAuth tokens (ghp_, gho_, ghu_, ghs_, ghr_).
+    { name: 'GITHUB_TOKEN', pattern: /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g, replacement: '[GITHUB_TOKEN]' },
+    // Azure storage / SAS style secrets.
+    {
+        name: 'AZURE_KEY',
+        pattern: /(?:AccountKey|SharedAccessKey|SharedAccessSignature)=([A-Za-z0-9+/%&=_-]{16,})/gi,
+        replacement: (match: string): string => {
+            const eq = match.indexOf('=');
+            return eq >= 0 ? `${match.slice(0, eq + 1)}[AZURE_KEY]` : '[AZURE_KEY]';
+        }
+    },
+    // JWT (header.payload.signature), often appears without a key= prefix.
+    {
+        name: 'JWT',
+        pattern: /\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,
+        replacement: '[JWT]'
+    },
+    // PEM private keys (multiline).
+    {
+        name: 'PEM_PRIVATE_KEY',
+        pattern: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----/g,
+        replacement: '[PEM_PRIVATE_KEY]'
+    },
 
     // Credentials embedded in a URL (user:pass@host) — redact only the credentials,
     // preserving the rest of the URL so documentation links stay useful.

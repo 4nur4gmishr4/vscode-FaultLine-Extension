@@ -13,13 +13,13 @@ export type { AudioOptions };
 
 /**
  * Cross-platform audio player that supports Windows, macOS, Linux, and WSL.
- * Manages a queue of audio files and plays them sequentially.
- * 
+ * Drop-on-busy: if a sound is already playing, additional play() calls reject.
+ *
  * @example
  * ```typescript
  * const player = new AudioPlayer(logger);
  * await player.play('/path/to/sound.mp3', { volume: 80 });
- * player.stop(); // Stop current playback and clear queue
+ * player.stop(); // Stop current playback
  * player.dispose(); // Clean up resources
  * ```
  */
@@ -27,12 +27,7 @@ export class AudioPlayer {
     private playing = false;
     private currentChild: ChildProcess | null = null;
     private warnedMissingPlayer = false;
-    private queue: Array<{
-        filePath: string;
-        options: AudioOptions;
-        resolve: () => void;
-        reject: (err: Error) => void;
-    }> = [];
+    private disposed = false;
 
     /**
      * Creates a new AudioPlayer instance.
@@ -42,19 +37,22 @@ export class AudioPlayer {
 
     /**
      * Plays an audio file with the specified volume.
-     * If audio is currently playing, the file is queued for sequential playback.
-     * 
+     * If audio is currently playing, the call is rejected (not queued).
+     *
      * @param filePath - Absolute or relative path to the audio file
      * @param options - Audio playback options including volume (0-100)
      * @returns Promise that resolves when playback completes
-     * @throws {Error} If file path is empty, file not found, or queue is full
-     * 
+     * @throws {Error} If file path is empty, file not found, or already playing
+     *
      * @example
      * ```typescript
      * await player.play('/sounds/success.mp3', { volume: 75 });
      * ```
      */
     public async play(filePath: string, options: AudioOptions): Promise<void> {
+        if (this.disposed) {
+            return Promise.reject(new Error('Audio player disposed.'));
+        }
         if (!filePath) {
             const msg = 'Audio play failed: No file path provided.';
             this.logger.error(msg);
@@ -99,10 +97,6 @@ export class AudioPlayer {
             } else {
                 resolve();
             }
-            const next = this.queue.shift();
-            if (next) {
-                this.playInternal(next.filePath, next.options, next.resolve, next.reject);
-            }
         };
 
         try {
@@ -113,29 +107,18 @@ export class AudioPlayer {
             const error = e instanceof Error ? e : new Error(String(e));
             this.handleError(error);
             reject(error);
-            const next = this.queue.shift();
-            if (next) {
-                this.playInternal(next.filePath, next.options, next.resolve, next.reject);
-            }
         }
     }
 
     /**
-     * Stops the currently playing audio and clears the queue.
-     * All queued sounds will be rejected with an error.
-     * 
+     * Stops the currently playing audio, if any.
+     *
      * @example
      * ```typescript
      * player.stop(); // Immediately stops playback
      * ```
      */
     public stop(): void {
-        const oldQueue = this.queue;
-        this.queue = [];
-        for (const item of oldQueue) {
-            item.reject(new Error('Audio playback stopped.'));
-        }
-        
         if (this.currentChild) {
             try {
                 this.currentChild.kill();
@@ -149,9 +132,13 @@ export class AudioPlayer {
 
     /**
      * Disposes of the audio player and releases all resources.
-     * Stops any playing audio and clears the queue.
+     * Stops any playing audio.
      */
     public dispose(): void {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
         this.stop();
     }
 
@@ -224,7 +211,8 @@ WScript.Echo "FAULTLINE_OK"
 `;
         
         const vbsPath = path.join(os.tmpdir(), `faultline_play_${Date.now()}_${Math.floor(Math.random() * 1000)}.vbs`);
-        fs.writeFileSync(vbsPath, scriptContent);
+        // Small temp script only — sync write keeps ChildProcess return semantics simple.
+        fs.writeFileSync(vbsPath, scriptContent, 'utf8');
 
         this.logger.debug(`Spawning cscript.exe (vol=${vol}, file=${filePath})`);
 
@@ -233,7 +221,6 @@ WScript.Echo "FAULTLINE_OK"
             ['//nologo', vbsPath],
             { windowsHide: true, maxBuffer: 1024 * 1024 },
             (err, stdout, stderr) => {
-                // Clean up temp file
                 try {
                     if (fs.existsSync(vbsPath)) {
                         fs.unlinkSync(vbsPath);

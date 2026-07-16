@@ -146,7 +146,7 @@ class OpenRouterProvider implements AiProvider {
                 ...COMMON_HEADERS,
                 'Authorization': `Bearer ${request.apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://github.com/4nur4gmishr4/vscode-faultline-Extension',
+                'HTTP-Referer': 'https://github.com/4nur4gmishr4/vscode-FaultLine-Extension',
                 'X-Title': 'FaultLine VS Code Extension'
             },
             body: JSON.stringify({

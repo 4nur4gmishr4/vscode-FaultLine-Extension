@@ -18,4 +18,34 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
+      - run: npm run vendor:sync
+      - run: npm run lint
+      - run: npm test -- --coverage
       - run: npm run compile
+      - name: Package smoke (ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          npx @vscode/vsce package -o /tmp/faultline-ci.vsix
+          unzip -l /tmp/faultline-ci.vsix | tee /tmp/vsix-list.txt
+          if grep -E 'extension/src/' /tmp/vsix-list.txt; then
+            echo "::error::extension/src packaged into VSIX"
+            exit 1
+          fi
+          if grep -E 'extension/coverage/' /tmp/vsix-list.txt; then
+            echo "::error::coverage packaged into VSIX"
+            exit 1
+          fi
+          if grep -E 'extension/node_modules/' /tmp/vsix-list.txt; then
+            echo "::error::node_modules packaged into VSIX (use resources/vendor)"
+            exit 1
+          fi
+          if ! grep -E 'resources/vendor/webview-ui-toolkit/dist/toolkit.min.js' /tmp/vsix-list.txt; then
+            echo "::error::missing vendor toolkit asset"
+            exit 1
+          fi
+          if ! grep -E 'resources/vendor/codicons/dist/codicon.css' /tmp/vsix-list.txt; then
+            echo "::error::missing vendor codicon asset"
+            exit 1
+          fi
+          echo "VSIX package smoke OK"

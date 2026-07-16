@@ -3,6 +3,7 @@ import { FaultLineRuntime } from '../../application/runtime/faultline';
 import { WelcomePanel } from '../ui/welcome';
 import { SettingsPanel } from '../ui/settingsPanel';
 import { FailureEvent } from '../../domain/types/index';
+import { t } from '../../shared/utils/i18n';
 
 export function registerUICommands(ext: FaultLineRuntime, extensionUri: vscode.Uri, disposables: vscode.Disposable[]): void {
     disposables.push(
@@ -26,7 +27,7 @@ export function registerUICommands(ext: FaultLineRuntime, extensionUri: vscode.U
                 if (last) {
                     ext.errorExplanation.showFailureExplanation(last);
                 } else {
-                    void vscode.window.showInformationMessage('FaultLine: No recent errors to explain.');
+                    void vscode.window.showInformationMessage(t('noRecentErrors'));
                 }
             }
         })

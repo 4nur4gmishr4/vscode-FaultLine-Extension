@@ -39,11 +39,15 @@ export class TaskDetector {
                     const label = e.execution.task.name;
                     const code = e.exitCode;
 
-                    // Check branch patterns if configured
+                    // Branch filter: fail closed if patterns set but branch unknown (no git / timeout).
                     if (cfg.branchPatterns.length > 0) {
                         const currentBranch = await getCurrentGitBranch();
-                        if (currentBranch && !matchesBranchPattern(currentBranch, cfg.branchPatterns)) {
-                            this.logger.debug(`Task skipped due to branch pattern mismatch: ${currentBranch}`);
+                        if (!currentBranch || !matchesBranchPattern(currentBranch, cfg.branchPatterns)) {
+                            this.logger.debug(
+                                currentBranch
+                                    ? `Task skipped due to branch pattern mismatch: ${currentBranch}`
+                                    : 'Task skipped: branch patterns set but current branch unavailable'
+                            );
                             return;
                         }
                     }

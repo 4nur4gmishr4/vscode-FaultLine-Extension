@@ -9,7 +9,8 @@ describe('AudioPlayer VBScript Path Escaper', () => {
     });
 
     it('escapes VBScript string properly', () => {
-        const escaped = (player as any).escapeForVbsString('C:\\test"file.mp3');
+        const escaped = (player as unknown as { escapeForVbsString: (s: string) => string })
+            .escapeForVbsString('C:\\test"file.mp3');
         expect(escaped).toBe('C:\\test""file.mp3');
     });
 });

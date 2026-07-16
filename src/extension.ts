@@ -30,7 +30,11 @@ export function activate(ctx: vscode.ExtensionContext): void {
                 runtime.logger.setLevel(newConfig.core.logLevel);
                 setLanguage(newConfig.core.language);
                 runtime.statusBar.refresh();
-                runtime.registerDetectors();
+                // Detectors read config via live configFn(); re-registering would drop
+                // in-flight task start maps. Only rebind if wiring must change.
+                if (runtime.configManager.affectsDetectors(event)) {
+                    runtime.registerDetectors();
+                }
                 runtime.logger.debug('Configuration reloaded.');
             }
         }),
@@ -42,6 +46,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
 
 /**
  * Deactivates the FaultLine extension.
+ * Runtime is also registered on `ctx.subscriptions`; dispose is idempotent.
  */
 export function deactivate(): void {
     if (runtime) {

@@ -1,62 +1,88 @@
 import * as vscode from 'vscode';
 import { FaultLineRuntime } from '../../application/runtime/faultline';
+import { listProviders } from '../../infrastructure/services/aiProviders';
+import { t } from '../../shared/utils/i18n';
 
 export function registerStateCommands(ext: FaultLineRuntime, disposables: vscode.Disposable[]): void {
     disposables.push(
         vscode.commands.registerCommand('faultline.toggle', async () => {
             const next = !ext.configManager.readConfig().core.enabled;
             await ext.configManager.updateEnabled(next);
-            void vscode.window.showInformationMessage(`FaultLine ${next ? 'enabled' : 'disabled'}.`);
+            void vscode.window.showInformationMessage(next ? t('toggledOn') : t('toggledOff'));
             ext.statusBar.refresh();
         }),
 
         vscode.commands.registerCommand('faultline.toggleSounds', async () => {
             const next = !ext.configManager.readConfig().audio.soundsEnabled;
             await ext.configManager.updateSoundsEnabled(next);
-            void vscode.window.showInformationMessage(`FaultLine sounds ${next ? 'ON' : 'OFF'}.`);
+            void vscode.window.showInformationMessage(next ? t('soundsOn') : t('soundsOff'));
             ext.statusBar.refresh();
         }),
 
         vscode.commands.registerCommand('faultline.toggleWorkspace', async () => {
             const next = !ext.configManager.readConfig().core.enabled;
             await ext.configManager.updateEnabled(next, vscode.ConfigurationTarget.Workspace);
-            void vscode.window.showInformationMessage(`FaultLine ${next ? 'enabled' : 'disabled'} for this workspace.`);
+            void vscode.window.showInformationMessage(
+                next ? t('toggledOnWorkspace') : t('toggledOffWorkspace')
+            );
             ext.statusBar.refresh();
         }),
 
         vscode.commands.registerCommand('faultline.snooze', () => {
             const minutes = ext.configManager.readConfig().core.snoozeMinutes;
             ext.scheduler.snooze(minutes);
-            void vscode.window.showInformationMessage(`FaultLine snoozed for ${minutes} minutes.`);
+            void vscode.window.showInformationMessage(t('snoozed', { minutes }));
         }),
 
         vscode.commands.registerCommand('faultline.resetSettings', async () => {
             const confirm = await vscode.window.showWarningMessage(
-                'Are you sure you want to reset all FaultLine settings to default?',
+                t('resetSettingsConfirm'),
                 { modal: true },
                 'Reset'
             );
             if (confirm === 'Reset') {
                 await ext.configManager.resetAllSettings();
                 ext.statusBar.refresh();
-                void vscode.window.showInformationMessage('FaultLine settings have been reset.');
+                void vscode.window.showInformationMessage(t('settingsReset'));
             }
         }),
 
         vscode.commands.registerCommand('faultline.factoryReset', async () => {
             const confirm = await vscode.window.showWarningMessage(
-                'This will reset all settings AND clear your failure history. Proceed?',
+                t('factoryResetConfirm'),
                 { modal: true },
                 'Factory Reset'
             );
             if (confirm === 'Factory Reset') {
                 await ext.configManager.resetAllSettings();
+                await clearStoredSecrets(ext);
                 ext.history.clear();
+                await ext.stateStore.clear();
+                ext.scheduler.clearSnooze();
                 ext.statusBar.resetCounter();
-                await ext.stateStore.updateLastVersion('');
                 ext.statusBar.refresh();
-                void vscode.window.showInformationMessage('FaultLine has been factory reset.');
+                void vscode.window.showInformationMessage(t('factoryResetDone'));
             }
         })
     );
+}
+
+/** Providers that may have keys in SecretStorage (AI registry + legacy integrations). */
+const EXTRA_SECRET_PROVIDERS = [
+    'jira',
+    'teamsync',
+    'github',
+    'pagerduty',
+    'sentry',
+    'projectmanagement'
+] as const;
+
+async function clearStoredSecrets(ext: FaultLineRuntime): Promise<void> {
+    const providers = new Set<string>([
+        ...listProviders().map((p) => p.id),
+        ...EXTRA_SECRET_PROVIDERS
+    ]);
+    for (const provider of providers) {
+        await ext.secretManager.deleteApiKey(provider);
+    }
 }

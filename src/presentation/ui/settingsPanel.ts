@@ -2,7 +2,33 @@ import * as vscode from 'vscode';
 import { ConfigManager } from '../../shared/config/configManager';
 import { SecretManager } from '../../shared/config/secretManager';
 import { Logger } from '../../shared/utils/logger';
-import { listProviders, getProvider } from '../../infrastructure/services/aiProviders';
+import { listProviders, getProvider, validateProviderKey } from '../../infrastructure/services/aiProviders';
+
+/** Config keys the Settings webview is allowed to write. Exported for unit tests. */
+export const ALLOWED_SETTINGS_KEYS = new Set([
+    'enabled',
+    'volume',
+    'soundPack',
+    'successSound',
+    'successEnabled',
+    'aiProvider',
+    'ai.model',
+    'aiSummary.enabled'
+]);
+
+/** Strip non-allowlisted keys from a settings webview config payload. */
+export function filterAllowedConfig(config?: Record<string, unknown>): Record<string, unknown> {
+    if (!config) {
+        return {};
+    }
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(config)) {
+        if (ALLOWED_SETTINGS_KEYS.has(key)) {
+            out[key] = value;
+        }
+    }
+    return out;
+}
 
 /**
  * Manages the custom FaultLine Settings webview.
@@ -18,6 +44,8 @@ export class SettingsPanel {
     private readonly secretManager: SecretManager;
     private readonly logger: Logger;
     private disposables: vscode.Disposable[] = [];
+    private disposed = false;
+    private scrollTimer: ReturnType<typeof setTimeout> | null = null;
     
     private isDirty = false;
     private pendingConfig: Record<string, unknown> = {};
@@ -38,7 +66,7 @@ export class SettingsPanel {
 
         this.update();
 
-        this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+        this.panel.onDidDispose(() => { void this.dispose(); }, null, this.disposables);
         
         // Unsaved changes protection
         this.panel.webview.onDidReceiveMessage(
@@ -46,7 +74,10 @@ export class SettingsPanel {
                 switch (message.command) {
                     case 'changed':
                         this.isDirty = true;
-                        this.pendingConfig = { ...this.pendingConfig, ...message.config };
+                        this.pendingConfig = {
+                            ...this.pendingConfig,
+                            ...filterAllowedConfig(message.config)
+                        };
                         if (message.secrets) {
                             this.pendingSecrets = { ...this.pendingSecrets, ...message.secrets };
                         }
@@ -56,40 +87,59 @@ export class SettingsPanel {
                         return;
                     case 'saveApiKey':
                         if (message.provider && message.key) {
-                            await this.secretManager.storeApiKey(message.provider, message.key);
-                            const config = vscode.workspace.getConfiguration('faultline');
-                            await config.update('aiProvider', undefined, vscode.ConfigurationTarget.Workspace);
-                            await config.update('aiProvider', message.provider, vscode.ConfigurationTarget.Global);
-                            void vscode.window.showInformationMessage(`FaultLine: API key and AI Provider saved securely.`);
-                            
-                            this.isDirty = false;
-                            this.pendingConfig = {};
-                            this.pendingSecrets = {};
-                            this.update();
+                            try {
+                                if (!getProvider(message.provider)) {
+                                    throw new Error(`Unknown AI provider: ${message.provider}`);
+                                }
+                                validateProviderKey(message.provider, message.key);
+                                await this.secretManager.storeApiKey(message.provider, message.key);
+                                const config = vscode.workspace.getConfiguration('faultline');
+                                await config.update('aiProvider', undefined, vscode.ConfigurationTarget.Workspace);
+                                await config.update('aiProvider', message.provider, vscode.ConfigurationTarget.Global);
+                                void vscode.window.showInformationMessage(`FaultLine: API key and AI Provider saved securely.`);
+                                
+                                this.isDirty = false;
+                                this.pendingConfig = {};
+                                this.pendingSecrets = {};
+                                this.update();
+                            } catch (err) {
+                                const msg = err instanceof Error ? err.message : String(err);
+                                void vscode.window.showErrorMessage(`FaultLine: ${msg}`);
+                            }
                         }
                         return;
                     
                     case 'fetchModels':
                         if (message.provider) {
-                            let keyToUse: string | undefined | null = message.key;
-                            if (!keyToUse) {
-                                keyToUse = await this.secretManager.getApiKey(message.provider);
-                            }
-                            if (!keyToUse) {
-                                void SettingsPanel.currentPanel?.panel.webview.postMessage({ command: 'modelsFetched', error: 'No API key provided or found in storage.' });
-                                return;
-                            }
-                            const providerObj = getProvider(message.provider);
-                            if (providerObj) {
-                                let models: {id: string, name: string}[] = [];
+                            try {
+                                let keyToUse: string | undefined | null = message.key;
+                                if (!keyToUse) {
+                                    keyToUse = await this.secretManager.getApiKey(message.provider);
+                                }
+                                if (!keyToUse) {
+                                    void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                                        command: 'modelsFetched',
+                                        error: 'No API key provided or found in storage.'
+                                    });
+                                    return;
+                                }
+                                const providerObj = getProvider(message.provider);
+                                if (!providerObj) {
+                                    void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                                        command: 'modelsFetched',
+                                        error: 'Unknown AI provider.'
+                                    });
+                                    return;
+                                }
+                                let models: { id: string; name: string }[] = [];
                                 if (providerObj.fetchModels) {
                                     models = await providerObj.fetchModels(keyToUse);
                                 }
                                 if (!models || models.length === 0) {
-                                    models = providerObj.info.models.map(m => ({ id: m, name: m }));
+                                    models = providerObj.info.models.map((m) => ({ id: m, name: m }));
                                 }
-                                
-                                if (models && models.length > 0) {
+
+                                if (models.length > 0) {
                                     const scoreModel = (name: string) => {
                                         const n = name.toLowerCase();
                                         if (n.includes('llama-3.3') || n.includes('llama 3.3')) return 100;
@@ -111,8 +161,18 @@ export class SettingsPanel {
                                         return a.name.localeCompare(b.name);
                                     });
                                 }
-                                
-                                void SettingsPanel.currentPanel?.panel.webview.postMessage({ command: 'modelsFetched', models });
+
+                                void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                                    command: 'modelsFetched',
+                                    models
+                                });
+                            } catch (err) {
+                                const msg = err instanceof Error ? err.message : String(err);
+                                this.logger.warn(`fetchModels failed: ${msg}`);
+                                void SettingsPanel.currentPanel?.panel.webview.postMessage({
+                                    command: 'modelsFetched',
+                                    error: 'Failed to fetch models. Using defaults if available.'
+                                });
                             }
                         }
                         return;
@@ -124,6 +184,12 @@ export class SettingsPanel {
                         this.pendingConfig = {};
                         this.pendingSecrets = {};
                         this.update();
+                        return;
+                    case 'openAdvancedSettings':
+                        void vscode.commands.executeCommand(
+                            'workbench.action.openSettings',
+                            '@ext:4nur4gmishr4.fahh'
+                        );
                         return;
                 }
             },
@@ -156,15 +222,23 @@ export class SettingsPanel {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources'), vscode.Uri.joinPath(extensionUri, 'node_modules')]
+                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
             }
         );
 
         SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri, configManager, secretManager, logger);
         if (targetSection) {
             // Give the webview a moment to load before sending scroll message
-            setTimeout(() => {
-                void SettingsPanel.currentPanel?.panel.webview.postMessage({ command: 'scrollTo', section: targetSection });
+            SettingsPanel.currentPanel.scrollTimer = setTimeout(() => {
+                if (SettingsPanel.currentPanel && !SettingsPanel.currentPanel.disposed) {
+                    void SettingsPanel.currentPanel.panel.webview.postMessage({
+                        command: 'scrollTo',
+                        section: targetSection
+                    });
+                }
+                if (SettingsPanel.currentPanel) {
+                    SettingsPanel.currentPanel.scrollTimer = null;
+                }
             }, 500);
         }
     }
@@ -172,18 +246,25 @@ export class SettingsPanel {
     private async applyChanges(): Promise<void> {
         try {
             const config = vscode.workspace.getConfiguration('faultline');
-            
-            // Save standard settings
-            for (const [key, value] of Object.entries(this.pendingConfig)) {
+            const safeConfig = filterAllowedConfig(this.pendingConfig);
+
+            // Save standard settings (allowlisted keys only)
+            for (const [key, value] of Object.entries(safeConfig)) {
                 await config.update(key, undefined, vscode.ConfigurationTarget.Workspace);
                 await config.update(key, value, vscode.ConfigurationTarget.Global);
             }
 
-            // Save secrets
+            // Save secrets (known providers + format validation)
             for (const [provider, key] of Object.entries(this.pendingSecrets)) {
-                if (key.trim()) {
-                    await this.secretManager.storeApiKey(provider, key.trim());
+                if (!key.trim()) {
+                    continue;
                 }
+                if (!getProvider(provider)) {
+                    this.logger.warn(`Skipped unknown secret provider: ${provider}`);
+                    continue;
+                }
+                validateProviderKey(provider, key.trim());
+                await this.secretManager.storeApiKey(provider, key.trim());
             }
 
             this.isDirty = false;
@@ -205,8 +286,8 @@ export class SettingsPanel {
     private getHtmlForWebview(): string {
         const webview = this.panel.webview;
         const config = this.configManager.readConfig();
-        const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit', 'dist', 'toolkit.min.js'));
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'));
+        const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'vendor', 'webview-ui-toolkit', 'dist', 'toolkit.min.js'));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'vendor', 'codicons', 'dist', 'codicon.css'));
         const nonce = this.getNonce();
         
         const providers = listProviders();
@@ -216,7 +297,7 @@ export class SettingsPanel {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
     <link href="${codiconsUri.toString()}" rel="stylesheet" />
     <title>FaultLine Settings</title>
     <style nonce="${nonce}">
@@ -287,6 +368,14 @@ export class SettingsPanel {
     </div>
 
     <div class="content">
+        <div class="setting-item" style="margin-bottom: 16px;">
+            <div class="setting-description">
+                Webhooks, quiet hours, sources, Jira, and other advanced options live in VS Code Settings.
+            </div>
+            <vscode-button id="openAdvancedBtn" appearance="secondary" style="margin-top: 8px;">
+                Open all FaultLine settings
+            </vscode-button>
+        </div>
         <div id="section-core" class="section">
             <h2>Core Engine</h2>
             <div class="setting-item">
@@ -356,7 +445,7 @@ export class SettingsPanel {
                 <div class="setting-description">Select a model for the provider. Fetch to see available free-tier models.</div>
                 <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
                     <vscode-dropdown id="aiModel" style="flex: 1;">
-                        <vscode-option value="${config.ai.model}" selected>${config.ai.model}</vscode-option>
+                        <vscode-option value="${this.escapeHtml(config.ai.model)}" selected>${this.escapeHtml(config.ai.model)}</vscode-option>
                     </vscode-dropdown>
                     <vscode-button id="fetchModelsBtn" appearance="secondary">Fetch Models</vscode-button>
                 </div>
@@ -438,6 +527,12 @@ export class SettingsPanel {
         document.getElementById('testSuccessSoundBtn').addEventListener('click', () => {
             vscode.postMessage({ command: 'testSound', sound: document.getElementById('successSound').value, volume: document.getElementById('volume').value });
         });
+        const openAdvancedBtn = document.getElementById('openAdvancedBtn');
+        if (openAdvancedBtn) {
+            openAdvancedBtn.addEventListener('click', () => {
+                vscode.postMessage({ command: 'openAdvancedSettings' });
+            });
+        }
 
 
         document.getElementById('apiKey').addEventListener('input', notifyChange);
@@ -535,6 +630,16 @@ export class SettingsPanel {
     }
 
     public async dispose(): Promise<void> {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
+
+        if (this.scrollTimer !== null) {
+            clearTimeout(this.scrollTimer);
+            this.scrollTimer = null;
+        }
+
         if (this.isDirty) {
             const action = await vscode.window.showWarningMessage(
                 'FaultLine: You have unsaved changes. Do you want to apply them before closing?',

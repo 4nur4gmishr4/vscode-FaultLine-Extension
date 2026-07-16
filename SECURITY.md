@@ -2,22 +2,58 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions)
 [![License: MIT](https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues)
-[![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers)
 
-Security and data privacy are paramount in FaultLine. The extension monitors your local development environment and processes output logs, making secure design choices critical.
+Security and data privacy are paramount in FaultLine. The extension monitors the local development environment and may process terminal output, so secure defaults and egress controls matter.
 
-## Data Privacy and Logging
+## Data privacy and logging
 
-- **Local Execution**: All core detection mechanisms (terminal hooks, task monitors, and diagnostic scanners) operate entirely locally within your VS Code environment. 
-- **Secret Management**: All sensitive configuration variables, including API keys for AI providers and webhook endpoints, are securely stored in the native VS Code `SecretStorage` system. They are never written to plaintext files or the standard `settings.json`.
+- **Local execution**: Detection (terminal, tasks, diagnostics) runs in the VS Code host.
+- **Secret management**: AI and integration API keys use VS Code **SecretStorage**. They are not written to workspace `settings.json` as plain secrets. Non-secret settings (e.g. Jira email/URL) may appear in settings.
+- **Factory Reset**: Clears settings, failure history/state, and deletes known SecretStorage keys for AI providers and legacy integrations.
+- **Logs**: AI model text is not written at `info` level; summaries log length at `debug` only when enabled.
 
-## Artificial Intelligence and External Requests
+## Artificial intelligence and external requests
 
-When the AI Error Explanation feature is utilized, FaultLine transmits terminal output to the configured AI provider. 
-- The extension employs a local redaction algorithm to sanitize Personally Identifiable Information (PII) such as email addresses, local file paths, and potential authentication tokens before transmitting data to third-party endpoints.
-- Webhook functionality is protected against Server-Side Request Forgery (SSRF) by restricting outbound requests to local network IP addresses.
+When AI Error Explanation / summaries / chat are used, FaultLine may send failure context (command label and terminal output when available) to the selected provider (Copilot LM API or HTTPS APIs such as OpenRouter, OpenAI, etc.).
 
-## Reporting a Vulnerability
+- Auto-open on failure (`faultline.errorExplanation.autoShow`) defaults to **off**.
+- Automatic Jira create (`faultline.jiraEnabled`) defaults to **off**.
+- AI summaries (`faultline.aiSummary.enabled`) default to **off**.
+
+### PII redaction
+
+Before outbound AI calls, text is passed through a local redaction pass that targets, among other patterns:
+
+- Vendor API keys (OpenAI, Anthropic, OpenRouter, Groq, Google, Hugging Face, AWS access key IDs)
+- GitHub tokens (`ghp_`, `gho_`, …)
+- JWTs, PEM private keys, Azure AccountKey / SAS-style secrets
+- Emails, URL embedded credentials, and common `password`/`token`/`api_key` assignments
+
+Redaction is **heuristic** and may miss novel secret formats. Do not rely on it as the only control for highly sensitive environments; disable AI features or avoid capturing secrets in terminal output when needed.
+
+### Webhooks and SSRF protections
+
+- Webhook URLs must be **HTTPS** (HTTP is rejected).
+- Without an allowlist, private/loopback/link-local hosts are blocked (IP literals via `net.isIP`; hostnames are never treated as IPv6 ULA by string prefix).
+- Before each POST (including retries), FaultLine resolves DNS and blocks addresses that fall in private ranges. Failures fail closed.
+- Successful resolutions **pin** the HTTPS connection to the resolved public IP while keeping the original hostname for TLS SNI (reduces DNS rebinding risk between check and connect).
+- `faultline.webhookAllowedDomains` is an exact host allowlist; it can also opt in to private hosts for LAN webhooks.
+- Jira integration is opt-in (`faultline.jiraEnabled`), **HTTPS only**, restricted to `*.atlassian.net` / `*.jira.com` hosts (request URL from `origin` only), rate-limited, and uses SecretStorage for the API token.
+
+### Webview and settings integrity
+
+- Configuration updates from the Settings UI are restricted to an allowlist of known keys.
+- API keys are format-validated for the selected provider before storage.
+- Error Analysis messages from the webview are schema-validated and size-limited before any AI request.
+- Webview CSP uses nonces; assets load only from packaged `resources/` (vendored toolkit/codicons under `resources/vendor/`).
+
+## CI security pipelines
+
+- **CodeQL** (`security.yml`) on push/PR and weekly schedule.
+- **TruffleHog** secret scan with a **pinned** action version (not `@main`).
+- **Dependency review** on pull requests.
+- **Release** never packages without lint + unit tests + `vendor:sync`.
+
+## Reporting a vulnerability
 
 If you discover a security vulnerability within FaultLine, please do not disclose it publicly on the issue tracker. Instead, reach out directly to the developer, Anurag Mishra (4nur4gmishr4), via appropriate channels or standard repository security advisories.

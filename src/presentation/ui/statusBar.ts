@@ -32,6 +32,8 @@ export class StatusBarManager {
     private item: vscode.StatusBarItem | null = null;
     private soundsItem: vscode.StatusBarItem | null = null;
     private flashing = false;
+    private flashTimer: ReturnType<typeof setTimeout> | null = null;
+    private disposed = false;
 
     /**
      * Creates a new StatusBarManager instance.
@@ -59,6 +61,15 @@ export class StatusBarManager {
      * ```
      */
     public dispose(): void {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
+        if (this.flashTimer !== null) {
+            clearTimeout(this.flashTimer);
+            this.flashTimer = null;
+        }
+        this.flashing = false;
         this.item?.dispose();
         this.item = null;
         this.soundsItem?.dispose();
@@ -177,6 +188,9 @@ export class StatusBarManager {
      * ```
      */
     public flash(): void {
+        if (this.disposed) {
+            return;
+        }
         const cfg = this.config().ui;
         if (!cfg.flashStatusBar || !this.item) {
             return;
@@ -187,7 +201,8 @@ export class StatusBarManager {
         this.flashing = true;
         const original = this.item.backgroundColor;
         this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-        setTimeout(() => {
+        this.flashTimer = setTimeout(() => {
+            this.flashTimer = null;
             if (this.item) {
                 this.item.backgroundColor = original;
             }

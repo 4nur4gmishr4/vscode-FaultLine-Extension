@@ -96,12 +96,20 @@ export class SoundResolver {
         }
 
         // Error sound resolution
-        // Priority 1: Global sound path
+        // Priority 1: Random from custom folder (when configured)
+        if (cfg.soundFolder) {
+            const fromFolder = await this.pickRandomFromFolder(cfg.soundFolder);
+            if (fromFolder) {
+                return fromFolder;
+            }
+        }
+
+        // Priority 2: Global sound path
         if (cfg.soundPath && await this.fileExists(cfg.soundPath)) {
             return cfg.soundPath;
         }
 
-        // Priority 2: Sound pack selection (from default error pack)
+        // Priority 3: Sound pack selection (from default error pack)
         if (cfg.soundPack) {
             const errorPackPath = path.join(this.packDir, 'default', path.basename(cfg.soundPack));
             if (await this.fileExists(errorPackPath)) {
@@ -109,7 +117,7 @@ export class SoundResolver {
             }
         }
 
-        // Priority 3: Default error sound
+        // Priority 4: Default error sound
         if (await this.fileExists(this.defaultSoundPath)) {
             return this.defaultSoundPath;
         }
@@ -208,6 +216,18 @@ export class SoundResolver {
             return null;
         }
         const files = await this.listAudioFiles(packPath);
+        if (files.length === 0) {
+            return null;
+        }
+        return files[Math.floor(Math.random() * files.length)];
+    }
+
+    /** Random audio file from a user-configured absolute folder path. */
+    private async pickRandomFromFolder(folderPath: string): Promise<string | null> {
+        if (!(await this.fileExists(folderPath))) {
+            return null;
+        }
+        const files = await this.listAudioFiles(folderPath);
         if (files.length === 0) {
             return null;
         }

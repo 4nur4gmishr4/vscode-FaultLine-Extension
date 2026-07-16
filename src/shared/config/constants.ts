@@ -12,7 +12,7 @@ export const EXTENSION = {
     /** Display name */
     NAME: 'FaultLine',
     /** Current version (kept in sync with package.json `version` field). */
-    VERSION: '2.4.0',
+    VERSION: '3.5.0',
     /** Extension publisher */
     PUBLISHER: '4nur4gmishr4'
 } as const;
@@ -37,6 +37,8 @@ export const CONFIG = {
         SHOW_NOTIFICATION: 'showNotification',
         NOTIFICATION_LEVEL: 'notificationLevel',
         SOURCES: 'sources',
+        COOLDOWN_MS: 'cooldownMs',
+        COOLDOWN_PER_SOURCE: 'cooldownPerSource',
         MAX_PER_MINUTE: 'maxPerMinute',
         IGNORE_PATTERNS: 'ignorePatterns',
         SHOW_STATUS_BAR: 'showStatusBar',
@@ -49,7 +51,6 @@ export const CONFIG = {
         MUTE_WHEN_FOCUSED: 'muteWhenFocused',
         SNOOZE_MINUTES: 'snoozeMinutes',
         DIAGNOSTICS_THRESHOLD: 'diagnosticsThreshold',
-        LONG_TASK_THRESHOLD_MS: 'longTaskThresholdMs',
         LOG_LEVEL: 'logLevel',
         HISTORY_MAX: 'historyMax',
         WEBHOOK_URL: 'webhookUrl',
@@ -57,10 +58,10 @@ export const CONFIG = {
         AI_SUMMARY_ENABLED: 'aiSummary.enabled',
         AI_PROVIDER: 'aiProvider',
         MODEL: 'ai.model',
-        DAILY_SUMMARY: 'dailySummary',
         ERROR_EXPLANATION_ENABLED: 'errorExplanation.enabled',
         ERROR_EXPLANATION_AUTO_SHOW: 'errorExplanation.autoShow',
         BRANCH_PATTERNS: 'branchPatterns',
+        JIRA_ENABLED: 'jiraEnabled',
         JIRA_URL: 'jiraUrl',
         JIRA_PROJECT: 'jiraProject',
         JIRA_API_KEY: 'jiraApiKey',
@@ -109,7 +110,12 @@ export const DEFAULTS = {
     
     /** Default sources to monitor */
     SOURCES: ['task', 'shell', 'terminal'] as const,
-    
+
+    /** Default cooldown between sounds (ms) */
+    COOLDOWN_MS: 2000,
+
+    /** Default: shared cooldown across sources */
+    COOLDOWN_PER_SOURCE: false,
     
     /** Default max sounds per minute (0 = unlimited) */
     MAX_PER_MINUTE: 0,
@@ -126,14 +132,14 @@ export const DEFAULTS = {
     /** Default diagnostics threshold */
     DIAGNOSTICS_THRESHOLD: 1,
     
-    /** Default long task threshold in milliseconds (1 minute) */
-    LONG_TASK_THRESHOLD_MS: 60000,
-    
     /** Default log level */
     LOG_LEVEL: 'warn' as const,
     
     /** Default maximum history entries */
     HISTORY_MAX: 50,
+
+    /** Default: show daily fail count on status bar */
+    STATUS_BAR_COUNTER: true,
     
     /** Default AI provider */
     AI_PROVIDER: 'copilot',
@@ -144,6 +150,9 @@ export const DEFAULTS = {
     /** Default branch patterns (empty = all branches) */
     BRANCH_PATTERNS: [],
     
+    /** Default: Jira ticket creation off (opt-in) */
+    JIRA_ENABLED: false,
+
     /** Default Jira URL */
     JIRA_URL: '',
     
@@ -175,7 +184,12 @@ export const VALIDATION = {
         MIN: 0,
         MAX: 100,
     },
-    
+
+    /** Cooldown range (ms) — matches package.json */
+    COOLDOWN: {
+        MIN: 0,
+        MAX: 60000
+    },
     
     /** Max per minute range */
     MAX_PER_MINUTE: {
@@ -195,16 +209,18 @@ export const VALIDATION = {
         MAX: 100
     },
     
-    /** Long task threshold range (milliseconds) */
-    LONG_TASK_THRESHOLD: {
-        MIN: 1000,
-        MAX: 3600000 // 1 hour
-    },
-    
     /** History size range */
     HISTORY: {
         MIN: 10,
         MAX: 500
+    },
+
+    /** AI / webview payload caps (characters) */
+    AI_PAYLOAD: {
+        LABEL: 2_000,
+        OUTPUT: 10_000,
+        CHAT_HISTORY: 20_000,
+        CHAT_TEXT: 4_000
     }
 } as const;
 
@@ -217,7 +233,7 @@ export const VALIDATION = {
  */
 export const RESOURCES = {
     /** Logo image path */
-    LOGO: 'resources/faultline-logo.jpeg',
+    LOGO: 'resources/faultline-logo.png',
 
     /** Sound packs directory */
     PACKS_DIR: 'resources/packs',

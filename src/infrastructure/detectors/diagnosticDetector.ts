@@ -67,6 +67,7 @@ export class DiagnosticDetector {
             clearInterval(diagCleanupInterval);
             if (this.diagTimeout) {
                 clearTimeout(this.diagTimeout);
+                this.diagTimeout = null;
             }
         }});
     }

@@ -1,7 +1,45 @@
 import * as vscode from 'vscode';
 import { Logger } from '../../shared/utils/logger';
 import { AIService } from '../../infrastructure/services/aiService';
-import type { FailureEvent } from '../../domain/types/index';
+import type { FailureEvent, FailureSource } from '../../domain/types/index';
+
+const MAX_FAILURE_LABEL = 2_000;
+const MAX_FAILURE_OUTPUT = 10_000;
+const MAX_CHAT_HISTORY = 20_000;
+const MAX_CHAT_TEXT = 4_000;
+const MAX_CLIPBOARD = 20_000;
+
+const FAILURE_SOURCES = new Set<string>([
+    'task', 'shell', 'terminal', 'diagnostics'
+]);
+
+/** Exported for unit tests — clamp untrusted webview/AI strings. */
+export function clampStr(value: unknown, max: number): string {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    return value.length > max ? value.slice(0, max) : value;
+}
+
+/** Exported for unit tests — schema-check failure payloads from the webview. */
+export function parseFailureEvent(raw: unknown): FailureEvent | null {
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+    const o = raw as Record<string, unknown>;
+    const source = typeof o.source === 'string' && FAILURE_SOURCES.has(o.source)
+        ? (o.source as FailureSource)
+        : 'shell';
+    const label = clampStr(o.label, MAX_FAILURE_LABEL) || 'Unknown failure';
+    const outputRaw = o.output;
+    const output = outputRaw === undefined || outputRaw === null
+        ? undefined
+        : clampStr(outputRaw, MAX_FAILURE_OUTPUT) || undefined;
+    const timestamp = typeof o.timestamp === 'number' && Number.isFinite(o.timestamp)
+        ? o.timestamp
+        : Date.now();
+    return { source, label, output, timestamp };
+}
 
 /**
  * Manages the error explanation webview panel.
@@ -14,6 +52,7 @@ export class ErrorExplanationManager {
     private panel: vscode.WebviewPanel | undefined;
     private disposables: vscode.Disposable[] = [];
     private pendingFailures: FailureEvent[] = [];
+    private disposed = false;
 
     constructor(
         private readonly logger: Logger,
@@ -22,12 +61,20 @@ export class ErrorExplanationManager {
     ) {}
 
     public showFailureExplanation(failure: FailureEvent): void {
+        if (this.disposed) {
+            return;
+        }
+        const safe = parseFailureEvent(failure) ?? {
+            source: 'shell' as const,
+            label: 'Unknown failure',
+            timestamp: Date.now()
+        };
         if (!this.panel) {
-            this.pendingFailures.push(failure);
+            this.pendingFailures.push(safe);
             this.createPanel();
         } else {
             this.panel.reveal();
-            this.sendFailureToWebview(failure);
+            this.sendFailureToWebview(safe);
         }
     }
 
@@ -39,7 +86,9 @@ export class ErrorExplanationManager {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'resources')]
+                localResourceRoots: [
+                    vscode.Uri.joinPath(this.extensionUri, 'resources')
+                ]
             }
         );
 
@@ -57,24 +106,42 @@ export class ErrorExplanationManager {
         if (!this.panel) return;
 
         this.panel.webview.onDidReceiveMessage(
-            async (message: { command: string; failure: FailureEvent; errorText: string; history?: string; text?: string }) => {
-                switch (message.command) {
-                    case 'explainError':
-                        await this.explainError(message.failure);
+            async (message: unknown) => {
+                if (!message || typeof message !== 'object') {
+                    return;
+                }
+                const msg = message as Record<string, unknown>;
+                const command = typeof msg.command === 'string' ? msg.command : '';
+                switch (command) {
+                    case 'explainError': {
+                        const failure = parseFailureEvent(msg.failure);
+                        if (failure) {
+                            await this.explainError(failure);
+                        }
                         return;
+                    }
                     case 'chatMessage':
-                        await this.handleChatMessage(message.history || '', message.text || '');
+                        await this.handleChatMessage(
+                            clampStr(msg.history, MAX_CHAT_HISTORY),
+                            clampStr(msg.text, MAX_CHAT_TEXT)
+                        );
                         return;
                     case 'ready':
                         this.pendingFailures.forEach(f => this.sendFailureToWebview(f));
                         this.pendingFailures = [];
                         return;
-                    case 'copyError':
-                        await vscode.env.clipboard.writeText(message.errorText);
-                        void vscode.window.showInformationMessage('Error copied to clipboard');
+                    case 'copyError': {
+                        const text = clampStr(msg.errorText, MAX_CLIPBOARD);
+                        if (text) {
+                            await vscode.env.clipboard.writeText(text);
+                            void vscode.window.showInformationMessage('Error copied to clipboard');
+                        }
                         return;
+                    }
                     case 'showWelcome':
                         void vscode.commands.executeCommand('faultline.showWelcome');
+                        return;
+                    default:
                         return;
                 }
             },
@@ -93,11 +160,15 @@ export class ErrorExplanationManager {
     }
 
     private async explainError(failure: FailureEvent): Promise<void> {
-        if (!this.panel) return;
+        if (!this.panel || this.disposed) return;
 
         try {
             void this.panel.webview.postMessage({ command: 'explanationLoading' });
-            const promptText = failure.output ? `Command: ${failure.label}\n\nTerminal Output:\n${failure.output}` : failure.label;
+            const label = clampStr(failure.label, MAX_FAILURE_LABEL);
+            const output = failure.output ? clampStr(failure.output, MAX_FAILURE_OUTPUT) : '';
+            const promptText = output
+                ? `Command: ${label}\n\nTerminal Output:\n${output}`
+                : label;
             const explanation = await this.aiService.getAiExplanation(promptText);
             
             if (this.panel) {
@@ -125,9 +196,12 @@ export class ErrorExplanationManager {
     }
 
     private async handleChatMessage(historyText: string, newText: string): Promise<void> {
-        if (!this.panel) return;
+        if (!this.panel || this.disposed) return;
+        if (!newText.trim()) return;
         try {
-            const prompt = historyText + `\n\nUser: ${newText}\n(Context: Answer this follow-up question strictly in the context of the terminal error and debugging session above. You are a coding assistant.)\n\nAI:`;
+            const history = clampStr(historyText, MAX_CHAT_HISTORY);
+            const text = clampStr(newText, MAX_CHAT_TEXT);
+            const prompt = history + `\n\nUser: ${text}\n(Context: Answer this follow-up question strictly in the context of the terminal error and debugging session above. You are a coding assistant.)\n\nAI:`;
             const reply = await this.aiService.getAiChat(prompt);
             if (this.panel) {
                 if (reply) {
@@ -154,8 +228,8 @@ export class ErrorExplanationManager {
 
     private getWebviewContent(webview: vscode.Webview): string {
         const nonce = this.getNonce();
-        const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit', 'dist', 'toolkit.min.js')).toString();
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css')).toString();
+        const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'vendor', 'webview-ui-toolkit', 'dist', 'toolkit.min.js')).toString();
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'vendor', 'codicons', 'dist', 'codicon.css')).toString();
 
         return `<!DOCTYPE html>
 <html lang="en">
@@ -485,7 +559,13 @@ export class ErrorExplanationManager {
     }
 
     public dispose(): void {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
+        this.pendingFailures = [];
         this.panel?.dispose();
+        this.panel = undefined;
         this.disposables.forEach(d => { d.dispose(); });
         this.disposables = [];
     }

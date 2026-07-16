@@ -8,9 +8,7 @@ export type FailureSource =
     | 'task'
     | 'shell'
     | 'terminal'
-    | 'diagnostics'
-    | 'build'
-    | 'longTask';
+    | 'diagnostics';
 
 export type NotificationLevel = 'info' | 'warning' | 'error' | 'none';
 
@@ -32,10 +30,11 @@ export interface AudioConfig {
 
 export interface DetectionConfig {
     sources: ReadonlySet<FailureSource>;
+    cooldownMs: number;
+    cooldownPerSource: boolean;
     maxPerMinute: number;
     ignorePatterns: RegExp[];
     diagnosticsThreshold: number;
-    longTaskThresholdMs: number;
     branchPatterns: string[];
     quietHours: QuietHours;
     muteWhenFocused: boolean;
@@ -45,6 +44,7 @@ export interface WebhookConfig {
     url: string;
     allowedDomains: ReadonlyArray<string>;
     format: 'default' | 'slack' | 'discord';
+    jiraEnabled: boolean;
     jiraUrl: string;
     jiraProject: string;
     jiraEmail: string;

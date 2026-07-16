@@ -8,39 +8,21 @@ const PER_MINUTE_WINDOW_MS = 60000; // 1 minute
 
 /**
  * Manages rate limiting, cooldowns, quiet hours, and snooze functionality for the extension.
- * Manages rate limiting, quiet hours, and snooze functionality for the extension.
- * 
- * The Scheduler determines whether audio playback should be muted based on various conditions:
- * - Snooze: Temporary muting for a specified duration
- * - Quiet hours: Time-based muting (e.g., 22:00-08:00)
- * - Window focus: Mute when VS Code window is focused
- * - Rate limiting: Max failures per minute
- * 
- * @example
- * ```typescript
- * const scheduler = new Scheduler(() => configManager.readConfig(), logger);
- * 
- * // Check if sound should be muted
- * if (!scheduler.isMuted('task')) {
- *     audioPlayer.play(soundPath);
- *     scheduler.record('task');
- * }
- * 
- * // Snooze for 30 minutes
- * scheduler.snooze(30);
- * 
- * // Clean up when done
- * scheduler.dispose();
- * ```
+ *
+ * Full-event mute (disabled / snooze / quiet hours / mute-when-focused) vs sound-only
+ * throttling (cooldown / maxPerMinute).
  */
 export class Scheduler {
     private snoozeEndAt: number = 0;
     private perMinuteWindow: number[] = [];
+    private lastGlobalPlayAt = 0;
+    private readonly lastPlayBySource = new Map<FailureSource, number>();
     private cleanupTimer: NodeJS.Timeout | null = null;
+    private disposed = false;
 
     /**
      * Creates a new Scheduler instance.
-     * 
+     *
      * @param config - Function that returns the current extension configuration
      * @param logger - Logger instance for debug and info messages
      */
@@ -52,11 +34,12 @@ export class Scheduler {
 
     /**
      * Dispose of the scheduler and clean up resources.
-     * 
-     * This method should be called when the extension is deactivated to prevent
-     * memory leaks from the cleanup timer.
      */
     public dispose(): void {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
         if (this.cleanupTimer) {
             clearInterval(this.cleanupTimer);
             this.cleanupTimer = null;
@@ -64,26 +47,8 @@ export class Scheduler {
     }
 
     /**
-     * Check if audio playback should be muted for a given failure source.
-     * 
-     * This method evaluates multiple muting conditions in order:
-     * 1. Extension disabled
-     * 2. Snooze active
-     * 3. Quiet hours active
-     * 4. Window focused (if muteWhenFocused enabled)
-     * 5. Max per minute limit reached
-     * 
-     * @param source - The failure source to check (task, terminal, diagnostics, etc.)
-     * @returns True if audio should be muted, false if it should play
-     * 
-     * @example
-     * ```typescript
-     * if (!scheduler.isMuted('task')) {
-     *     // Play sound
-     *     audioPlayer.play(soundPath);
-     *     scheduler.record('task');
-     * }
-     * ```
+     * Full-event mute: disabled, snooze, quiet hours, mute-when-focused.
+     * Cooldown / maxPerMinute gate sounds only — see isSoundRateLimited.
      */
     public isMuted(source: FailureSource): boolean {
         const config = this.config();
@@ -114,10 +79,29 @@ export class Scheduler {
             return true;
         }
 
-        // Max per minute
+        return false;
+    }
+
+    /**
+     * Sound-only rate limiting: cooldownMs (+ optional per-source) and maxPerMinute.
+     */
+    public isSoundRateLimited(source: FailureSource): boolean {
+        const cfg = this.config().detection;
+        const now = Date.now();
+
+        if (cfg.cooldownMs > 0) {
+            const last = cfg.cooldownPerSource
+                ? (this.lastPlayBySource.get(source) ?? 0)
+                : this.lastGlobalPlayAt;
+            if (now - last < cfg.cooldownMs) {
+                this.logger.debug(`Sound rate-limited by cooldown: ${source}`);
+                return true;
+            }
+        }
+
         this.cleanPerMinuteWindow();
         if (cfg.maxPerMinute > 0 && this.perMinuteWindow.length >= cfg.maxPerMinute) {
-            this.logger.debug(`Muted by max-per-minute: ${source}`);
+            this.logger.debug(`Sound rate-limited by max-per-minute: ${source}`);
             return true;
         }
 
@@ -125,44 +109,17 @@ export class Scheduler {
     }
 
     /**
-     * Record a failure event for rate limiting tracking.
-     * 
-     * This method should be called after playing a sound to update the scheduler's
-     * internal state for rate limiting (max per minute).
-     * 
-     * @param source - The failure source that triggered the sound
-     * 
-     * @example
-     * ```typescript
-     * if (!scheduler.isMuted('task')) {
-     *     audioPlayer.play(soundPath);
-     *     scheduler.record('task'); // Record the event
-     * }
-     * ```
+     * Record a sound play for cooldown / max-per-minute tracking.
      */
-    public record(_source: FailureSource): void {
+    public record(source: FailureSource): void {
         const now = Date.now();
         this.perMinuteWindow.push(now);
+        this.lastGlobalPlayAt = now;
+        this.lastPlayBySource.set(source, now);
     }
 
     /**
      * Snooze audio playback for a specified number of minutes.
-     * 
-     * While snoozed, all audio playback will be muted regardless of other settings.
-     * The snooze can be cleared early using `clearSnooze()`.
-     * 
-     * @param minutes - Number of minutes to snooze (must be positive)
-     * 
-     * @example
-     * ```typescript
-     * // Snooze for 30 minutes
-     * scheduler.snooze(30);
-     * 
-     * // Check if currently snoozing
-     * if (scheduler.isSnoozing()) {
-     *     console.log('Audio is snoozed');
-     * }
-     * ```
      */
     public snooze(minutes: number): void {
         const MILLISECONDS_PER_MINUTE = 60000;
@@ -172,15 +129,6 @@ export class Scheduler {
 
     /**
      * Check if the scheduler is currently in snooze mode.
-     * 
-     * @returns True if snooze is active, false otherwise
-     * 
-     * @example
-     * ```typescript
-     * if (scheduler.isSnoozing()) {
-     *     statusBar.updateText('Snoozed');
-     * }
-     * ```
      */
     public isSnoozing(): boolean {
         return Date.now() < this.snoozeEndAt;
@@ -188,16 +136,6 @@ export class Scheduler {
 
     /**
      * Clear the active snooze and resume normal audio playback.
-     * 
-     * This method immediately ends the snooze period, allowing audio to play
-     * again (subject to other muting conditions).
-     * 
-     * @example
-     * ```typescript
-     * // Clear snooze early
-     * scheduler.clearSnooze();
-     * console.log('Snooze cleared');
-     * ```
      */
     public clearSnooze(): void {
         this.snoozeEndAt = 0;
@@ -205,14 +143,6 @@ export class Scheduler {
 
     /**
      * Check if the current time falls within the configured quiet hours window.
-     * 
-     * Quiet hours can span midnight (e.g., 22:00-08:00). The start time is inclusive,
-     * and the end time is exclusive.
-     * 
-     * @param from - Start time in HH:mm format (e.g., "22:00")
-     * @param to - End time in HH:mm format (e.g., "08:00")
-     * @returns True if current time is within quiet hours, false otherwise
-     * @private
      */
     private isInQuietHours(from: string, to: string): boolean {
         const fromMin = parseHHmm(from);
@@ -228,7 +158,7 @@ export class Scheduler {
             return false;
         }
         if (fromMin < toMin) {
-            // Same-day window: include start, exclude end (e.g. 22:00 — 08:00 means active at 22:00 but not at 08:00)
+            // Same-day window: include start, exclude end
             return current >= fromMin && current < toMin;
         }
         // Crosses midnight
@@ -237,11 +167,6 @@ export class Scheduler {
 
     /**
      * Remove expired entries from the per-minute tracking window.
-     * 
-     * This method is called periodically by the cleanup timer and before
-     * checking the max-per-minute limit to ensure accurate rate limiting.
-     * 
-     * @private
      */
     private cleanPerMinuteWindow(): void {
         const cutoff = Date.now() - PER_MINUTE_WINDOW_MS;
@@ -251,16 +176,6 @@ export class Scheduler {
 
 /**
  * Parse a time string in HH:mm format to minutes since midnight.
- * 
- * @param value - Time string in HH:mm format (e.g., "22:00", "08:30")
- * @returns Minutes since midnight (0-1439), or null if invalid format
- * 
- * @example
- * ```typescript
- * parseHHmm("22:00") // Returns 1320 (22 * 60)
- * parseHHmm("08:30") // Returns 510 (8 * 60 + 30)
- * parseHHmm("invalid") // Returns null
- * ```
  */
 function parseHHmm(value: string): number | null {
     const match = /^(\d{1,2}):(\d{2})$/.exec(value);

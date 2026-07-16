@@ -3,6 +3,7 @@ import { Logger } from '../../shared/utils/logger';
 import { ConfigManager } from '../../shared/config/configManager';
 import { SecretManager } from '../../shared/config/secretManager';
 import { chatWithTimeout, getProvider } from './aiProviders';
+import { sanitizePII } from '../security/pii';
 
 /**
  * Service for AI-generated summaries and explanations.
@@ -17,7 +18,7 @@ export class AIService {
     public async getAiSummary(label: string): Promise<string | null> {
         try {
             const cfg = this.configManager.readConfig().ai;
-            if (!cfg.summaryEnabled && !cfg.errorExplanationEnabled) {
+            if (!cfg.summaryEnabled) {
                 return null;
             }
             const prompt = `Summarize this build/shell failure in one short sentence: ${label}`;
@@ -64,10 +65,8 @@ export class AIService {
 
     private async callProvider(providerId: string, prompt: string, maxTokens: number): Promise<string | null> {
         const normalized = (providerId || '').toLowerCase();
-
-        if (normalized === 'copilot') {
-            return await this.callCopilot(prompt);
-        }
+        // Defense in depth: never send unsanitized text to any provider (summary/explain/chat).
+        const safePrompt = sanitizePII(prompt);
 
         const provider = getProvider(normalized);
         if (!provider) {
@@ -75,53 +74,24 @@ export class AIService {
             return null;
         }
 
-        const apiKey = await this.secretManager.getApiKey(normalized);
-        if (!apiKey) {
-            this.logger.debug(`No API key configured for provider "${normalized}". Skipping AI call.`);
-            return null;
+        let apiKey = '';
+        // Builtin providers (e.g. Copilot) declare keyFormat: null — no SecretStorage key.
+        if (provider.info.keyFormat !== null) {
+            const key = await this.secretManager.getApiKey(normalized);
+            if (!key) {
+                this.logger.debug(`No API key configured for provider "${normalized}". Skipping AI call.`);
+                return null;
+            }
+            apiKey = key;
         }
 
         const model = this.resolveModel() ?? provider.info.defaultModel;
-        return await chatWithTimeout(provider, { prompt, maxTokens, apiKey, model });
-    }
-
-    private async callCopilot(prompt: string): Promise<string | null> {
-        try {
-            interface CopilotModel {
-                sendRequest(messages: unknown[], options: object, token: vscode.CancellationToken): Promise<{ text: AsyncIterable<string> }>;
-            }
-            interface VscodeCopilotApi {
-                lm?: { selectChatModels?: (opts: object) => Promise<CopilotModel[]> };
-                LanguageModelChatMessage?: { User: (p: string) => unknown };
-            }
-
-            const vscodeApi = vscode as unknown as VscodeCopilotApi;
-            const models = await vscodeApi.lm?.selectChatModels?.({});
-            if (!models || models.length === 0) {
-                return null;
-            }
-            const model = models[0];
-            const UserMessage = vscodeApi.LanguageModelChatMessage?.User;
-            if (!UserMessage) {
-                return null;
-            }
-            const strictPrompt = `[SYSTEM: You are FaultLine, a dedicated VS Code debugging assistant. You must answer the following user query about the terminal error session. Always assist the user.]\n\n${prompt}`;
-            const messages = [UserMessage(strictPrompt)];
-            const tokenSource = new vscode.CancellationTokenSource();
-            try {
-                const response = await model.sendRequest(messages, {}, tokenSource.token);
-                let text = '';
-                for await (const chunk of response.text) {
-                    text += chunk;
-                }
-                return text.trim() || null;
-            } finally {
-                tokenSource.dispose();
-            }
-        } catch (err) {
-            this.logger.debug(`Copilot call unavailable: ${err instanceof Error ? err.message : String(err)}`);
-            return null;
-        }
+        return await chatWithTimeout(provider, {
+            prompt: safePrompt,
+            maxTokens,
+            apiKey,
+            model
+        });
     }
 
     private resolveModel(): string | undefined {

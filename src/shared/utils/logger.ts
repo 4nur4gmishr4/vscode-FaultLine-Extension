@@ -29,6 +29,7 @@ const LEVEL_RANK: Record<LogLevel, number> = {
 export class Logger {
     private readonly channel: vscode.OutputChannel;
     private level: LogLevel = 'warn';
+    private disposed = false;
 
     /**
      * Creates a new Logger instance.
@@ -62,6 +63,10 @@ export class Logger {
      * Disposes of the output channel and releases resources.
      */
     public dispose(): void {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
         this.channel.dispose();
     }
 

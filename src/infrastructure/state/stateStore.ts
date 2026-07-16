@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
-import { HistoryEntry } from '../../domain/types/index';
 
 /**
  * State keys used by the extension.
+ * History is owned by HistoryManager (`faultline.history`) — not StateStore.
  */
 export const STATE_KEYS = {
-    HISTORY: 'faultline.history',
     DAILY_FAIL_COUNT: 'faultline.dailyFailCount',
     DAILY_FAIL_DATE: 'faultline.dailyFailDate',
     LAST_VERSION: 'lastVersion',
@@ -21,25 +20,10 @@ function today(): string {
 }
 
 /**
- * Manages persistent state for the extension.
+ * Manages persistent state for the extension (daily counter, version, migrations).
  */
 export class StateStore {
-    private historyCache: HistoryEntry[] | null = null;
-
     constructor(private readonly globalState: vscode.Memento) {}
-
-    public getHistory(): HistoryEntry[] {
-        if (!this.historyCache) {
-            this.historyCache = this.globalState.get<HistoryEntry[]>(STATE_KEYS.HISTORY, []);
-        }
-        return this.historyCache;
-    }
-
-    public async updateHistory(history: HistoryEntry[], maxEntries: number = 100): Promise<void> {
-        const trimmedHistory = history.length > maxEntries ? history.slice(0, maxEntries) : history;
-        this.historyCache = trimmedHistory;
-        await this.globalState.update(STATE_KEYS.HISTORY, trimmedHistory);
-    }
 
     /** Current failure count for today; returns 0 if the stored count is from a previous day. */
     public getDailyFailCount(): number {
@@ -80,7 +64,7 @@ export class StateStore {
     }
 
     /**
-     * Clear all state data.
+     * Clear all state data owned by StateStore (not history — HistoryManager.clear()).
      */
     public async clear(): Promise<void> {
         const keys = Object.values(STATE_KEYS);

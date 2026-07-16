@@ -9,7 +9,11 @@ describe('Scheduler', () => {
 
     beforeEach(() => {
         mockLogger = new Logger('test');
-        configFn = () => ({ core: { enabled: true }, detection: { quietHours: { enabled: false } } } as any);
+        configFn = () =>
+            ({
+                core: { enabled: true },
+                detection: { quietHours: { enabled: false }, muteWhenFocused: false }
+            }) as FaultLineConfig;
         scheduler = new Scheduler(configFn, mockLogger);
     });
 

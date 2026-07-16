@@ -24,6 +24,7 @@ export class WelcomePanel {
     public static currentPanel: WelcomePanel | undefined;
     private readonly _panel: vscode.WebviewPanel;
     private _disposables: vscode.Disposable[] = [];
+    private disposed = false;
 
     /**
      * Creates or reveals the welcome panel.
@@ -118,6 +119,10 @@ export class WelcomePanel {
      * @returns void
      */
     public dispose(): void {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
         WelcomePanel.currentPanel = undefined;
         this._panel.dispose();
         while (this._disposables.length) {
@@ -137,9 +142,9 @@ export class WelcomePanel {
      * @returns The complete HTML string for the webview
      */
     private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'faultline-logo.jpeg')).toString();
+        const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'faultline-logo.png')).toString();
         const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'packs', 'default', 'faultline.mp3'));
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'resources', 'vendor', 'codicons', 'dist', 'codicon.css'));
         const nonce = generateNonce();
 
         return `<!DOCTYPE html>

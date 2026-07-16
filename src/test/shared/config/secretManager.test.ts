@@ -1,7 +1,7 @@
 import { SecretManager } from '../../../shared/config/secretManager';
 
 describe('SecretManager', () => {
-    let mockSecrets: any;
+    let mockSecrets: { get: jest.Mock; store: jest.Mock; delete: jest.Mock };
     let manager: SecretManager;
 
     beforeEach(() => {
@@ -10,7 +10,7 @@ describe('SecretManager', () => {
             store: jest.fn(),
             delete: jest.fn()
         };
-        manager = new SecretManager(mockSecrets);
+        manager = new SecretManager(mockSecrets as never);
     });
 
     it('stores api key', async () => {

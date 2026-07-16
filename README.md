@@ -5,47 +5,77 @@
 [![Issues](https://img.shields.io/github/issues/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues)
 [![Stars](https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=flat-square)](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers)
 
-FaultLine is an **AI-powered debugger, explainer, and solver assistant** for developers. It automatically intercepts failing terminal commands, build tasks, and shell errors in your workspace. When an error occurs, FaultLine provides instant AI-driven analysis, actionable solutions, and a fully interactive chat interface to resolve your coding issues seamlessly.
+**Version 3.5.0** — AI-powered debugger / explainer for VS Code, with optional audio on failures and successes.
 
-Secondarily, FaultLine provides **intelligent background audio notifications** for success and errors, allowing you to maintain focus on your code without having to constantly monitor terminal outputs or task execution windows.
+FaultLine intercepts failing terminal commands, build tasks, and (optionally) diagnostics. It can open an interactive AI analysis chat, play sounds, post HTTPS webhooks, and (opt-in) create Jira issues.
 
 Developed by Anurag Mishra (4nur4gmishr4).
 
 ## Features
 
-- **Interactive AI Debugging Chat**: When an error occurs, click the "AI Analysis" button to open a sleek chat interface. FaultLine automatically sends the exact failing command and the full terminal output log to the AI. You can then chat iteratively with the AI to debug the issue without leaving VS Code.
-- **Multiple AI Providers**: Native support for a wide array of AI services including GitHub Copilot (zero-configuration via VS Code LM API), OpenRouter, Groq, Google Gemini, Hugging Face, OpenAI, Anthropic, Mistral, Together AI, and Cohere.
-- **Zero-Latency Audio Feedback**: FaultLine automatically attaches to your integrated VS Code terminals and build tasks. If a process exits with a non-zero code, it triggers an instant audio notification. A success notification triggers on a 0 exit code.
-- **Custom Sound Packs**: The extension includes multiple default audio files (including "System Crash", "Impact Strike", and standard chimes), but you can configure it to play any local MP3 or WAV file on your system.
-- **Advanced Configuration**: Customize cooldown periods, set a maximum number of alerts per minute, or enable "Mute When Focused" to only play sounds when VS Code is in the background.
-- **Webhook Integrations**: Automatically forward error logs and AI summaries to external platforms like Discord or Slack via customizable webhooks.
+- **Interactive AI Debugging Chat**: Analyze the last failure with redacted command/output context; follow-up chat in a VS Code webview.
+- **Multiple AI Providers**: GitHub Copilot (VS Code LM API, no key), OpenRouter, Groq, Gemini, Hugging Face, OpenAI, Anthropic, Mistral, Together AI, Cohere.
+- **Reliable Terminal & Task Detection**: Terminal Shell Execution APIs, task process monitoring, optional diagnostics.
+- **Audio Feedback with Controls**: Cooldown, max-per-minute, quiet hours, snooze, mute-when-focused, ignore patterns, custom packs/folders.
+- **Status Bar**: Enable/sounds state and daily failure counter.
+- **Secure Integrations**: SecretStorage for keys; HTTPS webhooks with SSRF + DNS private-IP re-check; opt-in Jira (HTTPS Atlassian hosts only).
+- **Privacy-minded defaults**: Auto-open AI analysis **off**; Jira create **off**; PII redaction before AI egress.
+
+### What’s new in 3.5.0
+
+- Hardened shell detection, webhook SSRF (+ DNS re-check **and IP pin** on connect), PII, factory reset.
+- Privacy defaults: AI auto-open and Jira create are **opt-in**.
+- Slim VSIX: webview assets under `resources/vendor/` (no `node_modules` packaged).
+- CI: lint, tests with coverage, compile, package smoke; release gated on the same.
+- Branch filters fail closed when git branch is unknown.
+- i18n wired for core command feedback; broad automated tests (incl. activate smoke).
 
 ## Installation
 
-1. Install the extension from the VS Code Marketplace.
-2. Open the Settings Panel by executing `FaultLine: Open Configuration` from the Command Palette.
-3. Choose your preferred AI Provider and enter an API key (or leave it on `copilot` to use your existing GitHub Copilot subscription automatically).
-4. Test your audio output using the "Play" buttons in the configuration panel.
+1. Install from the VS Code Marketplace (or Install from VSIX).
+2. Command Palette → **FaultLine: Open Configuration**.
+3. Choose AI provider (default **Copilot**) and save a key if needed.
+4. Test sounds from the settings panel.
+5. Optionally set `faultline.errorExplanation.autoShow` to `true` for automatic AI panel on failure.
 
 ## Commands
 
-- `FaultLine: Open Configuration` - Opens the primary settings webview.
-- `FaultLine: Analyze Last Failure` - Opens the AI chat and analysis interface for the most recent error.
-- `FaultLine: Toggle Enable / Disable` - Quickly turn the extension on or off.
-- `FaultLine: Show Welcome Screen` - Opens the getting started walkthrough.
-- `FaultLine: Snooze` - Temporarily disable audio notifications for a set duration.
+| Command | Purpose |
+|---------|---------|
+| FaultLine: Open Configuration | Settings webview |
+| FaultLine: Analyze Last Failure | AI chat for last failure |
+| FaultLine: Toggle Enable / Disable | Master switch |
+| FaultLine: Show Welcome Screen | Welcome / first-run |
+| FaultLine: Snooze | Temporary mute |
+| FaultLine: Factory Reset | Settings + history + SecretStorage keys |
+| FaultLine: Show Output Log | Output channel |
 
-## Configuration Options
+## Configuration (high level)
 
-FaultLine provides a rich graphical interface for managing settings. You can also modify your `settings.json` file directly:
+- `faultline.aiProvider` / `faultline.ai.model` / `faultline.aiSummary.enabled`
+- `faultline.errorExplanation.enabled` / `faultline.errorExplanation.autoShow` (**default false**)
+- `faultline.volume` / `faultline.soundPack` / `faultline.successSound` / `faultline.soundFolder`
+- `faultline.cooldownMs` / `faultline.cooldownPerSource` / `faultline.maxPerMinute`
+- `faultline.ignorePatterns` / `faultline.branchPatterns` (fail closed if git branch unknown)
+- `faultline.notificationLevel` / mute / quiet hours / snooze
+- `faultline.webhookUrl` (**https only**) / `faultline.webhookAllowedDomains`
+- `faultline.jiraEnabled` (**default false**) / `jiraUrl` / `jiraProject` / `jiraEmail` + SecretStorage token
 
-- `faultline.aiProvider`: Choose between 10+ AI providers for your debugger chat.
-- `faultline.errorExplanation.enabled`: Enable the AI analysis and chat capabilities.
-- `faultline.audio.volume`: Master volume level (0-100).
-- `faultline.audio.soundPack`: Select the default sound to play on failure.
-- `faultline.audio.successSound`: Select the default sound to play on success.
-- `faultline.detection.muteWhenFocused`: Prevents sound playback if the VS Code window is currently active.
+Advanced options: VS Code Settings → search `@ext:4nur4gmishr4.fahh`, or **Open all FaultLine settings** in the configuration panel.
+
+## Develop & package
+
+```bash
+npm ci
+npm run vendor:sync
+npm run lint
+npm test -- --coverage
+npm run compile
+npm run package:prod
+```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md), [ARCHITECTURE.md](./ARCHITECTURE.md), and [SECURITY.md](./SECURITY.md).
 
 ## License
 
-This project is licensed under the MIT License. Developed by Anurag Mishra (4nur4gmishr4).
+MIT. Developed by Anurag Mishra (4nur4gmishr4).
