@@ -131,8 +131,11 @@ export class TerminalDetector {
         const code = e.exitCode;
         const buffer = this.buffers.get(e.execution);
         if (buffer) {
-            // End can fire before the last read() chunks are delivered; await drain.
-            await buffer.done;
+            // End can fire before the last read() chunks are delivered; await drain with a safety timeout.
+            await Promise.race([
+                buffer.done,
+                new Promise<void>((resolve) => setTimeout(resolve, 1500))
+            ]);
         }
 
         if (code === undefined || code === 0) {

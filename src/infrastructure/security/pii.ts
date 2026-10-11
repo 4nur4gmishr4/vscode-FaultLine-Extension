@@ -93,13 +93,27 @@ export function containsPII(text: string): boolean {
     return getDetectedPIITypes(text).length > 0;
 }
 
+/** Pattern matching standard ANSI escape sequences. */
+// eslint-disable-next-line no-control-regex
+const ANSI_PATTERN = /\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g;
+
 /**
- * Sanitize a string by redacting PII.
+ * Strips ANSI escape codes (terminal colors, cursor moves) from a string.
+ * @param text - The text to clean
+ * @returns Clean plain text without escape sequences
+ */
+export function stripAnsi(text: string): string {
+    return text.replace(ANSI_PATTERN, '');
+}
+
+/**
+ * Sanitize a string by stripping ANSI escape sequences and redacting PII.
  * @param text - The text to sanitize
- * @returns The sanitized text with PII redacted
+ * @returns The sanitized text with PII redacted and ANSI sequences stripped
  */
 export function sanitizePII(text: string): string {
     let sanitized = text.length > MAX_SCAN_LENGTH ? text.slice(0, MAX_SCAN_LENGTH) : text;
+    sanitized = stripAnsi(sanitized);
     for (const { pattern, replacement } of PII_PATTERNS) {
         pattern.lastIndex = 0;
         sanitized = typeof replacement === 'function'

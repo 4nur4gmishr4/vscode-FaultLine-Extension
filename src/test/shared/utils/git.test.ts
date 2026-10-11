@@ -14,3 +14,12 @@ describe('matchesBranchPattern', () => {
         expect(matchesBranchPattern('hotfix/x', ['feature/*'])).toBe(false);
     });
 });
+
+describe('getCurrentGitBranch', () => {
+    it('returns null when no workspace folders are open', async () => {
+        const { getCurrentGitBranch, clearGitBranchCache } = await import('../../../shared/utils/git');
+        clearGitBranchCache();
+        const branch = await getCurrentGitBranch();
+        expect(branch).toBeNull();
+    });
+});

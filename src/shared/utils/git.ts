@@ -8,8 +8,25 @@ const execFile = promisify(execFileCb);
  * Git utility functions for branch detection and pattern matching.
  */
 
+interface CachedBranch {
+    name: string | null;
+    timestamp: number;
+    cwd: string;
+}
+
+let cachedBranch: CachedBranch | null = null;
+const CACHE_TTL_MS = 5000;
+
+/**
+ * Clear the git branch cache (useful for testing or workspace branch changes).
+ */
+export function clearGitBranchCache(): void {
+    cachedBranch = null;
+}
+
 /**
  * Get the current git branch name.
+ * Uses a 5-second TTL cache to prevent subprocess storming during rapid failure bursts.
  * @returns The current branch name, or null if not in a git repository
  */
 export async function getCurrentGitBranch(): Promise<string | null> {
@@ -18,10 +35,23 @@ export async function getCurrentGitBranch(): Promise<string | null> {
         return null;
     }
 
+    const cwd = workspaceFolders[0].uri.fsPath;
+    const now = Date.now();
+    if (cachedBranch && cachedBranch.cwd === cwd && (now - cachedBranch.timestamp < CACHE_TTL_MS)) {
+        return cachedBranch.name;
+    }
+
     try {
-        const { stdout } = await execFile('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: workspaceFolders[0].uri.fsPath, windowsHide: true, timeout: 2000 });
-        return stdout.trim();
+        const { stdout } = await execFile('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+            cwd,
+            windowsHide: true,
+            timeout: 2000
+        });
+        const name = stdout.trim();
+        cachedBranch = { name, timestamp: now, cwd };
+        return name;
     } catch {
+        cachedBranch = { name: null, timestamp: now, cwd };
         return null;
     }
 }
