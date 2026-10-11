@@ -31,17 +31,17 @@ describe('UI panels createOrShow safety', () => {
     });
 
     it('WhatsNewPanel.createOrShow creates webview and handles reveals', () => {
-        WhatsNewPanel.createOrShow(uri, '3.5.1');
+        WhatsNewPanel.createOrShow(uri, '3.5.2');
         expect(vscode.window.createWebviewPanel).toHaveBeenCalled();
         expect(WhatsNewPanel.currentPanel).toBeDefined();
-        WhatsNewPanel.createOrShow(uri, '3.5.1'); // reveal path
+        WhatsNewPanel.createOrShow(uri, '3.5.2'); // reveal path
     });
 
     it('WhatsNewPanel.createOrShow surfaces errors', () => {
         (vscode.window.createWebviewPanel as jest.Mock).mockImplementationOnce(() => {
             throw new Error('whats new fail');
         });
-        WhatsNewPanel.createOrShow(uri, '3.5.1');
+        WhatsNewPanel.createOrShow(uri, '3.5.2');
         expect(vscode.window.showErrorMessage).toHaveBeenCalled();
     });
 

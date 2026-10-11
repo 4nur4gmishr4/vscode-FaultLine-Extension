@@ -57,7 +57,7 @@ export function registerUICommands(
         runCommand('whatsNew', () => {
             const version =
                 (vscode.extensions.getExtension('4nur4gmishr4.fahh')?.packageJSON as { version?: string })?.version ??
-                '3.5.1';
+                '3.5.2';
             WhatsNewPanel.createOrShow(extensionUri, version);
         })
     );

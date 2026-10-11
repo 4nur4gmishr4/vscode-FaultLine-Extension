@@ -12,13 +12,13 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh"><img src="https://img.shields.io/badge/VS_Code-FaultLine-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="FaultLine for VS Code" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions"><img src="https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI" /></a>
-  <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.1"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge&label=Release" alt="Release" /></a>
+  <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.2"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge&label=Release" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge" alt="License" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers"><img src="https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge" alt="Stars" /></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.5.1-blue?style=flat-square" alt="3.5.1" />
+  <img src="https://img.shields.io/badge/version-3.5.2-blue?style=flat-square" alt="3.5.2" />
   <img src="https://img.shields.io/badge/id-4nur4gmishr4.fahh-informational?style=flat-square" alt="4nur4gmishr4.fahh" />
   <img src="https://img.shields.io/badge/VS_Code-%5E1.93-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
   <img src="https://img.shields.io/badge/Cursor-Compatible-FF6B6B?style=flat-square" alt="Cursor" />
@@ -96,7 +96,7 @@ Marketplace page: [FaultLine on Visual Studio Marketplace](https://marketplace.v
 
 ### GitHub Release (VSIX)
 
-1. Download `fahh-3.5.1.vsix` or `faultline.vsix` from [Releases](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases)  
+1. Download `fahh-3.5.2.vsix` or `faultline.vsix` from [Releases](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases)  
 2. Extensions view, menu, **Install from VSIX…**
 
 ### Compatible IDEs
@@ -185,7 +185,7 @@ Details: [SECURITY.md](./SECURITY.md)
 
 ---
 
-## What is new in 3.5.1
+## What is new in 3.5.2
 
 - **Cross-IDE compatibility**: Verified on VS Code, Cursor, Windsurf, Antigravity IDE, and VSCodium  
 - **What's New popup**: Clean update changelog shown on version upgrade  
@@ -306,7 +306,7 @@ Regenerate: `npm run docs:gifs`
 ---
 
 <p align="center">
-  <strong>FaultLine 3.5.1</strong><br/>
+  <strong>FaultLine 3.5.2</strong><br/>
   AI-powered debugger and fault explainer first. Notifier second.<br/>
   Works on VS Code, Cursor, Windsurf, Antigravity IDE & VSCodium.<br/>
   Made by Anurag Mishra for developers everywhere · MIT

@@ -10,6 +10,16 @@ Plain language first, technical detail second.
 
 ---
 
+## [3.5.2] Production Marketplace Release
+
+**Focus:** Production release alignment, synchronized documentation, and Marketplace packaging.
+
+- **Marketplace Synchronization**: Clean production VSIX packaging with zero unnecessary assets or build caches.
+- **Documentation Alignment**: Synchronized all versions and references across README, Architecture, Security, Contributing, and packaging manifests.
+- **Zero-Bug Verified**: Complete 174/174 unit and integration test verification across all supported operating systems.
+
+---
+
 ## [3.5.1] Zero-Bug Forensic Stability & Cross-Platform Hardening
 
 **Focus:** 100% stable runtime, 0-bug state across all operating systems (Windows / macOS / Linux), and bulletproof AI provider compatibility.

@@ -10,7 +10,7 @@ import { FaultLineRuntime } from '../../application/runtime/faultline';
 function mockContext() {
     const mem = new Map<string, unknown>();
     // Pretend we already ran this version so welcome panel is skipped.
-    mem.set('lastVersion', '3.5.1');
+    mem.set('lastVersion', '3.5.2');
     mem.set('apiKeyMigrationCompleted', true);
     return {
         secrets: {
@@ -30,7 +30,7 @@ function mockContext() {
         },
         extensionPath: '/fake/extension',
         extensionUri: vscode.Uri.file('/fake/extension'),
-        extension: { packageJSON: { version: '3.5.1' } },
+        extension: { packageJSON: { version: '3.5.2' } },
         subscriptions: [] as { dispose: () => void }[]
     };
 }

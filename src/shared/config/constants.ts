@@ -12,7 +12,7 @@ export const EXTENSION = {
     /** Display name */
     NAME: 'FaultLine',
     /** Current version (kept in sync with package.json `version` field). */
-    VERSION: '3.5.1',
+    VERSION: '3.5.2',
     /** Extension publisher */
     PUBLISHER: '4nur4gmishr4'
 } as const;

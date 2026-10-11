@@ -1,7 +1,7 @@
 # FaultLine Architecture
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.5.1-blue?style=for-the-badge" alt="3.5.1" />
+  <img src="https://img.shields.io/badge/version-3.5.2-blue?style=for-the-badge" alt="3.5.2" />
   <img src="https://img.shields.io/badge/layout-layered-informational?style=for-the-badge" alt="Layered" />
 </p>
 
@@ -213,5 +213,5 @@ Command: FaultLine: Show Welcome Screen
 ---
 
 <p align="center">
-  <sub>FaultLine Architecture · 3.5.1 · Anurag Mishra · MIT</sub>
+  <sub>FaultLine Architecture · 3.5.2 · Anurag Mishra · MIT</sub>
 </p>

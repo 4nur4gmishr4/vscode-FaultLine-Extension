@@ -11,7 +11,7 @@
 
 | Symptom | Fix |
 |---------|-----|
-| “command not found” | Extension failed to activate — reload; reinstall `fahh-3.5.1.vsix` |
+| “command not found” | Extension failed to activate — reload; reinstall `fahh-3.5.2.vsix` |
 | Commands listed but silent | Check Output log for `command … failed` |
 | Marketplace badge said “retired” | Cosmetics only (unpublished listing); install via GitHub VSIX |
 | Dual VS Code + Cursor | Install the VSIX into the editor you actually use |
@@ -19,7 +19,7 @@
 ## Install from VSIX
 
 ```text
-code --install-extension fahh-3.5.1.vsix --force
+code --install-extension fahh-3.5.2.vsix --force
 ```
 
-Then reload. Keep version **3.5.1** and id **`4nur4gmishr4.fahh`**.
+Then reload. Keep version **3.5.2** and id **`4nur4gmishr4.fahh`**.
