@@ -117,7 +117,7 @@ After DNS resolves only to public addresses:
 
 ## Supported versions
 
-Security fixes target the current release line (**3.5.0** and later).  
+Security fixes target the current release line (**3.5.1** and later).  
 Please upgrade before reporting.
 
 ## Safe testing tips

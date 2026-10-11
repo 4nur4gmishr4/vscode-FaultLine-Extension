@@ -6,7 +6,7 @@ Thanks for helping improve FaultLine.
 Built by **Anurag Mishra** for developers who ship.
 
 This guide is simple first, then technical.  
-**3.5.0** is the production line. Keep changes solid, tested, and clear for users.
+**3.5.1** is the production line. Keep changes solid, tested, and clear for users.
 
 ---
 
@@ -135,5 +135,5 @@ Only three GIFs. Rules: [docs/media/README.md](./docs/media/README.md)
 ---
 
 <p align="center">
-  <sub>FaultLine 3.5.0 · Anurag Mishra · MIT</sub>
+  <sub>FaultLine 3.5.1 · Anurag Mishra · MIT</sub>
 </p>

@@ -1,7 +1,7 @@
 # FaultLine Architecture
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.5.0-blue?style=for-the-badge" alt="3.5.0" />
+  <img src="https://img.shields.io/badge/version-3.5.1-blue?style=for-the-badge" alt="3.5.1" />
   <img src="https://img.shields.io/badge/layout-layered-informational?style=for-the-badge" alt="Layered" />
 </p>
 
@@ -166,6 +166,7 @@ jiraEnabled?
 | Settings | Core config and provider keys |
 | Error Analysis | Fault explainer and follow-up chat |
 | Welcome | First install greeting (optional) then setup UI |
+| What's New | Version upgrade overview and changelog viewer |
 
 ### Welcome / first install
 
@@ -188,7 +189,8 @@ Command: FaultLine: Show Welcome Screen
 |------|--------|
 | `npm run vendor:sync` | `resources/vendor/**` |
 | `npm run compile` | `out/extension.js` |
-| `vsce package` | Slim VSIX; no `src`, `coverage`, or `node_modules` tree |
+| `vsce package` | Slim VSIX for VS Code / Cursor |
+| `npm run package:openvsx` | Open VSX package for VSCodium / Gitpod |
 
 ## Testing
 
@@ -211,5 +213,5 @@ Command: FaultLine: Show Welcome Screen
 ---
 
 <p align="center">
-  <sub>FaultLine Architecture · 3.5.0 · Anurag Mishra · MIT</sub>
+  <sub>FaultLine Architecture · 3.5.1 · Anurag Mishra · MIT</sub>
 </p>
