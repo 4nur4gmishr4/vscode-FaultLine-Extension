@@ -472,10 +472,20 @@ export class WebhookService {
                 summary: `[FaultLine] ${source} failed: ${safeLabel}`.slice(0, 255),
                 description: {
                     type: 'doc', version: 1,
-                    content: [{
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: `Source: ${source}\nLabel: ${safeLabel}\nTimestamp: ${new Date().toISOString()}` }]
-                    }]
+                    content: [
+                        {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: `Source: ${source}` }]
+                        },
+                        {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: `Label: ${safeLabel}` }]
+                        },
+                        {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: `Timestamp: ${new Date().toISOString()}` }]
+                        }
+                    ]
                 },
                 issuetype: { name: 'Bug' }
             }

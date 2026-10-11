@@ -85,7 +85,7 @@ export class AIService {
             apiKey = key;
         }
 
-        const model = this.resolveModel() ?? provider.info.defaultModel;
+        const model = this.resolveModel(provider);
         return await chatWithTimeout(provider, {
             prompt: safePrompt,
             maxTokens,
@@ -94,8 +94,20 @@ export class AIService {
         });
     }
 
-    private resolveModel(): string | undefined {
-        const model = this.configManager.readConfig().ai.model;
-        return model && model.trim().length > 0 ? model.trim() : undefined;
+    private resolveModel(provider: { info: { defaultModel: string; models?: readonly string[] } }): string {
+        const configured = this.configManager.readConfig().ai.model?.trim();
+        if (!configured) {
+            return provider.info.defaultModel;
+        }
+        if (Array.isArray(provider.info.models) && provider.info.models.length > 0) {
+            if (provider.info.models.includes(configured)) {
+                return configured;
+            }
+            // If configured has a slash (e.g. meta-llama/...) but provider does not use slash models (e.g. openai, gemini)
+            if (configured.includes('/') && !provider.info.defaultModel.includes('/')) {
+                return provider.info.defaultModel;
+            }
+        }
+        return configured;
     }
 }

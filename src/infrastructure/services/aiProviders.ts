@@ -271,7 +271,8 @@ class GeminiProvider implements AiProvider {
     }
 
     async chat(request: AiChatRequest): Promise<string | null> {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(request.model)}:generateContent`;
+        const cleanModel = request.model.replace(/^models\//, '');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`;
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -366,7 +367,7 @@ class CopilotProvider implements AiProvider {
     async chat(request: AiChatRequest): Promise<string | null> {
         const models = await vscode.lm?.selectChatModels?.({});
         if (!models || models.length === 0) {
-            return null;
+            throw new Error('GitHub Copilot is not active or authenticated in VS Code. Configure OpenRouter or Groq in FaultLine Settings for free instant AI.');
         }
         const model = models[0];
         const messages = [vscode.LanguageModelChatMessage.User(request.prompt)];
