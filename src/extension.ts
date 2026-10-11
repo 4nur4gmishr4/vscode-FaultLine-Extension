@@ -160,7 +160,7 @@ async function maybeShowWelcomeOnInstall(
         }
     } else if (lastVersion !== version) {
         void vscode.window.showInformationMessage(
-            `FaultLine updated to v${version}! ⚡ Check out what's new.`,
+            `FaultLine updated to v${version}! Check out what's new.`,
             "What's New",
             'Configure'
         ).then(selection => {
