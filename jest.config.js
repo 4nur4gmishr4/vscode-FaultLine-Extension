@@ -20,6 +20,7 @@ module.exports = {
     '!src/presentation/ui/welcome.ts',
     '!src/presentation/ui/settingsPanel.ts',
     '!src/presentation/ui/errorExplanation.ts',
+    '!src/presentation/ui/whatsNew.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],

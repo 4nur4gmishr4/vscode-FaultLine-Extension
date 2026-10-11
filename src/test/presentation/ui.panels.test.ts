@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { WelcomePanel } from '../../presentation/ui/welcome';
 import { SettingsPanel } from '../../presentation/ui/settingsPanel';
+import { WhatsNewPanel } from '../../presentation/ui/whatsNew';
 import { ErrorExplanationManager } from '../../presentation/ui/errorExplanation';
 import { Logger } from '../../shared/utils/logger';
 
@@ -10,6 +11,7 @@ describe('UI panels createOrShow safety', () => {
     afterEach(() => {
         WelcomePanel.currentPanel?.dispose();
         SettingsPanel.currentPanel?.dispose();
+        WhatsNewPanel.currentPanel?.dispose();
         jest.clearAllMocks();
     });
 
@@ -25,6 +27,21 @@ describe('UI panels createOrShow safety', () => {
             throw new Error('panel fail');
         });
         WelcomePanel.createOrShow(uri, true);
+        expect(vscode.window.showErrorMessage).toHaveBeenCalled();
+    });
+
+    it('WhatsNewPanel.createOrShow creates webview and handles reveals', () => {
+        WhatsNewPanel.createOrShow(uri, '3.5.1');
+        expect(vscode.window.createWebviewPanel).toHaveBeenCalled();
+        expect(WhatsNewPanel.currentPanel).toBeDefined();
+        WhatsNewPanel.createOrShow(uri, '3.5.1'); // reveal path
+    });
+
+    it('WhatsNewPanel.createOrShow surfaces errors', () => {
+        (vscode.window.createWebviewPanel as jest.Mock).mockImplementationOnce(() => {
+            throw new Error('whats new fail');
+        });
+        WhatsNewPanel.createOrShow(uri, '3.5.1');
         expect(vscode.window.showErrorMessage).toHaveBeenCalled();
     });
 
