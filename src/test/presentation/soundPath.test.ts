@@ -10,6 +10,12 @@ describe('resolvePackSoundPath', () => {
         expect(resolved!.replace(/\\/g, '/')).toMatch(/resources\/packs\/default\/faultline\.mp3$/);
     });
 
+    it('resolves case-insensitively on platforms with case-sensitive filesystems', () => {
+        const resolved = resolvePackSoundPath(root, 'FAULTLINE.MP3');
+        expect(resolved).toBeTruthy();
+        expect(resolved!.replace(/\\/g, '/')).toMatch(/resources\/packs\/default\/faultline\.mp3$/);
+    });
+
     it('rejects path traversal and absolute paths', () => {
         expect(resolvePackSoundPath(root, '../secret.mp3')).toBeNull();
         expect(resolvePackSoundPath(root, 'default/faultline.mp3')).toBeNull();

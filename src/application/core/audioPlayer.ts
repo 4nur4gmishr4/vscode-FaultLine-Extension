@@ -232,7 +232,9 @@ WScript.Echo "FAULTLINE_OK"
                 if (err) {
                     const trimmedErr = (stderr || '').trim().slice(0, 500);
                     const trimmedOut = (stdout || '').trim().slice(0, 500);
-                    this.logger.error(`VBScript audio exited code=${err.code ?? '?'} stderr=${trimmedErr || '<empty>'} stdout=${trimmedOut || '<empty>'}`);
+                    this.logger.warn(`cscript.exe audio failed (code=${err.code ?? '?'}), trying PowerShell fallback: ${trimmedErr || trimmedOut}`);
+                    this.currentChild = this.playWindowsPowerShell(filePath, volume01, done);
+                    return;
                 } else if (!/FAULTLINE_OK/.test(stdout || '')) {
                     this.logger.warn(`VBScript audio finished without FAULTLINE_OK marker. stdout=${(stdout || '').trim().slice(0, 200)}`);
                 } else {
@@ -242,6 +244,48 @@ WScript.Echo "FAULTLINE_OK"
             }
         );
         return child;
+    }
+
+    private playWindowsPowerShell(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
+        const vol = Math.min(Math.max(volume01, 0), 1);
+        const safePath = filePath.replace(/'/g, "''");
+        const psScript = `
+$path = '${safePath}';
+try {
+    $player = New-Object System.Windows.Media.MediaPlayer;
+    $player.Open([System.Uri]$path);
+    $player.Volume = ${vol};
+    $player.Play();
+    Start-Sleep -Milliseconds 1200;
+} catch {
+    try {
+        $w = New-Object -ComObject WMPlayer.OCX.7;
+        $w.URL = $path;
+        $w.settings.volume = ${Math.round(vol * 100)};
+        $w.controls.play();
+        $timeout = 0;
+        while ($w.playState -ne 1 -and $w.playState -ne 8 -and $timeout -lt 30) {
+            Start-Sleep -Milliseconds 100;
+            $timeout++;
+        }
+    } catch {
+        exit 1;
+    }
+}
+`;
+        return execFile(
+            'powershell.exe',
+            ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psScript],
+            { windowsHide: true, maxBuffer: 1024 * 1024 },
+            (err) => {
+                if (err) {
+                    this.logger.error('PowerShell audio playback fallback failed', err);
+                } else {
+                    this.logger.debug('PowerShell audio playback succeeded.');
+                }
+                done(err);
+            }
+        );
     }
 
     private playLinux(filePath: string, volume01: number, done: (err?: Error | null) => void): ChildProcess {
@@ -280,7 +324,7 @@ WScript.Echo "FAULTLINE_OK"
             this.warnedMissingPlayer = true;
             const tool =
                 process.platform === 'darwin' ? 'afplay'
-                : process.platform === 'win32' ? 'powershell.exe'
+                : process.platform === 'win32' ? 'cscript.exe or powershell.exe'
                 : 'ffplay (install ffmpeg) or paplay/aplay';
             this.logger.error(`Required audio player not found: ${tool}`);
         } else {

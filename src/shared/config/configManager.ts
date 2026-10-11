@@ -139,10 +139,10 @@ export class ConfigManager {
             audio: {
                 soundsEnabled: cfg.get<boolean>(CONFIG.KEYS.SOUNDS_ENABLED, true),
                 soundPack: cfg.get<string>(CONFIG.KEYS.SOUND_PACK, DEFAULTS.SOUND_PACK),
-                soundPath: cfg.get<string>(CONFIG.KEYS.SOUND_PATH, '').trim(),
-                soundFolder: cfg.get<string>(CONFIG.KEYS.SOUND_FOLDER, '').trim(),
+                soundPath: cfg.get<string>(CONFIG.KEYS.SOUND_PATH, '').trim().replace(/^["']|["']$/g, ''),
+                soundFolder: cfg.get<string>(CONFIG.KEYS.SOUND_FOLDER, '').trim().replace(/^["']|["']$/g, ''),
                 successEnabled: cfg.get<boolean>(CONFIG.KEYS.SUCCESS_ENABLED, false),
-                successSound: cfg.get<string>(CONFIG.KEYS.SUCCESS_SOUND, '').trim(),
+                successSound: cfg.get<string>(CONFIG.KEYS.SUCCESS_SOUND, '').trim().replace(/^["']|["']$/g, ''),
                 volume: this.clamp(
                     cfg.get<number>(CONFIG.KEYS.VOLUME, DEFAULTS.VOLUME),
                     VALIDATION.VOLUME.MIN,

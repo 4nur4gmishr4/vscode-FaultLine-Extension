@@ -139,18 +139,26 @@ export function resolvePackSoundPath(extensionPath: string, soundFile: string): 
     }
 
     const packsRoot = path.resolve(extensionPath, 'resources', 'packs');
-    const candidates = [
-        path.resolve(packsRoot, 'default', baseName),
-        path.resolve(packsRoot, 'success', baseName)
-    ];
+    const packDirs = ['default', 'success'];
 
-    for (const candidate of candidates) {
-        const rel = path.relative(packsRoot, candidate);
-        if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    for (const dir of packDirs) {
+        const dirPath = path.resolve(packsRoot, dir);
+        if (!fs.existsSync(dirPath)) {
             continue;
         }
-        if (fs.existsSync(candidate)) {
-            return candidate;
+        try {
+            const files = fs.readdirSync(dirPath);
+            const lowerBase = baseName.toLowerCase();
+            const matched = files.find(f => f.toLowerCase() === lowerBase);
+            if (matched) {
+                return path.resolve(dirPath, matched);
+            }
+        } catch {
+            // Fallback to existsSync below
+        }
+        const exactPath = path.resolve(dirPath, baseName);
+        if (fs.existsSync(exactPath)) {
+            return exactPath;
         }
     }
     return null;
