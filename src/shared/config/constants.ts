@@ -144,8 +144,8 @@ export const DEFAULTS = {
     /** Default AI provider */
     AI_PROVIDER: 'copilot',
     
-    /** Default OpenRouter model */
-    MODEL: 'meta-llama/llama-3.2-3b-instruct:free',
+    /** Default model (empty = use active provider's default model) */
+    MODEL: '',
     
     /** Default branch patterns (empty = all branches) */
     BRANCH_PATTERNS: [],

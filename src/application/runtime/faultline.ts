@@ -59,7 +59,8 @@ export class FaultLineRuntime {
         this.statusBar = new StatusBarManager(
             configFn,
             this.logger,
-            () => this.stateStore.getDailyFailCount()
+            () => this.stateStore.getDailyFailCount(),
+            () => this.scheduler.isSnoozing()
         );
         this.history = new HistoryManager(configFn, this.logger, ctx.globalState);
 
@@ -99,8 +100,12 @@ export class FaultLineRuntime {
             for (const file of files) {
                 if (file.startsWith('faultline_play_') && file.endsWith('.vbs')) {
                     try {
-                        await fs.promises.unlink(path.join(tmpDir, file));
-                        cleaned++;
+                        const fullPath = path.join(tmpDir, file);
+                        const stats = await fs.promises.stat(fullPath);
+                        if (Date.now() - stats.mtimeMs > 60_000) {
+                            await fs.promises.unlink(fullPath);
+                            cleaned++;
+                        }
                     } catch {
                         // File may have been removed by another instance; ignore.
                     }
@@ -252,7 +257,7 @@ export class FaultLineRuntime {
 
             if (config.ui.showNotification) {
                 const message = `FaultLine: [${source}] ${sanitizedLabel}`;
-                const buttons = ['Configure', 'Explain Error'];
+                const buttons = config.ai.errorExplanationEnabled ? ['Configure', 'Explain Error'] : ['Configure'];
                 void Promise.resolve(
                     this.notifyByLevel(config.ui.notificationLevel, message, buttons)
                 )

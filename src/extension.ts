@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { FaultLineRuntime } from './application/runtime/faultline';
 import { registerCommands } from './presentation/commands/index';
 import { WelcomePanel } from './presentation/ui/welcome';
+import { WhatsNewPanel } from './presentation/ui/whatsNew';
 import { setLanguage } from './shared/utils/i18n';
 
 let runtime: FaultLineRuntime | null = null;
@@ -110,7 +111,8 @@ function registerEmergencyCommands(ctx: vscode.ExtensionContext, reason: string)
         'faultline.resetSound',
         'faultline.pickSoundPack',
         'faultline.toggleWorkspace',
-        'faultline.testSound'
+        'faultline.testSound',
+        'faultline.whatsNew'
     ];
 
     for (const id of ids) {
@@ -150,12 +152,24 @@ async function maybeShowWelcomeOnInstall(
     const version = (ctx.extension.packageJSON as { version: string }).version;
     const lastVersion = rt.stateStore.getLastVersion();
 
-    if (shouldShowWelcome(lastVersion, version)) {
+    if (!lastVersion) {
         try {
             WelcomePanel.createOrShow(ctx.extensionUri, true);
         } catch (err) {
             rt.logger.error('Welcome panel failed on install', err);
         }
+    } else if (lastVersion !== version) {
+        void vscode.window.showInformationMessage(
+            `FaultLine updated to v${version}! ⚡ Check out what's new.`,
+            "What's New",
+            'Configure'
+        ).then(selection => {
+            if (selection === "What's New") {
+                WhatsNewPanel.createOrShow(ctx.extensionUri, version);
+            } else if (selection === 'Configure') {
+                void vscode.commands.executeCommand('faultline.openSettings');
+            }
+        });
     }
 
     await migrateApiKeys(ctx, rt, lastVersion);
@@ -205,13 +219,4 @@ async function migrateApiKeys(
     }
 
     await rt.stateStore.setMigrationCompleted(true);
-}
-
-function shouldShowWelcome(lastVersion: string | undefined, currentVersion: string): boolean {
-    if (!lastVersion) {
-        return true;
-    }
-    const v1 = Number(lastVersion.split('.')[0]);
-    const v2 = Number(currentVersion.split('.')[0]);
-    return v1 !== v2;
 }

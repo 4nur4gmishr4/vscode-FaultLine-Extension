@@ -45,7 +45,8 @@ export class StatusBarManager {
     public constructor(
         private readonly config: () => FaultLineConfig,
         private readonly logger: Logger,
-        private readonly getFailCount: () => number = () => 0
+        private readonly getFailCount: () => number = () => 0,
+        private readonly isSnoozing: () => boolean = () => false
     ) {}
 
     /**
@@ -116,14 +117,20 @@ export class StatusBarManager {
             }
 
             const enabled = config.core.enabled;
+            const snoozed = this.isSnoozing();
             const count = this.getFailCount();
             const counterBadge = cfg.statusBarCounter && count > 0 ? ` ($(error) ${count})` : '';
-            this.item.text = enabled
-                ? `$(pulse) FaultLine: ON${counterBadge}`
-                : `$(circle-slash) FaultLine: OFF`;
-            this.item.tooltip = enabled
-                ? `FaultLine is ON (debugger and fault explainer). Click to disable.${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`
-                : 'FaultLine is OFF. Click to enable.';
+
+            if (snoozed) {
+                this.item.text = `$(history) FaultLine: Snoozed`;
+                this.item.tooltip = 'FaultLine is snoozed. Click to toggle or configure.';
+            } else if (enabled) {
+                this.item.text = `$(pulse) FaultLine: ON${counterBadge}`;
+                this.item.tooltip = `FaultLine is ON (debugger and fault explainer). Click to disable.${cfg.statusBarCounter ? `\nFailures today: ${count}` : ''}`;
+            } else {
+                this.item.text = `$(circle-slash) FaultLine: OFF`;
+                this.item.tooltip = 'FaultLine is OFF. Click to enable.';
+            }
             this.item.show();
 
             const soundsEnabled = config.audio.soundsEnabled;
@@ -132,7 +139,7 @@ export class StatusBarManager {
                 ? 'Sounds ON (optional notifier). Click to disable.'
                 : 'Sounds OFF. Click to enable.';
 
-            if (enabled) {
+            if (enabled && !snoozed) {
                 this.soundsItem.show();
             } else {
                 this.soundsItem.hide();

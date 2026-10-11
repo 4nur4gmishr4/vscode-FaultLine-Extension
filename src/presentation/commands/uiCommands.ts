@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { FaultLineRuntime } from '../../application/runtime/faultline';
 import { WelcomePanel } from '../ui/welcome';
 import { SettingsPanel } from '../ui/settingsPanel';
+import { WhatsNewPanel } from '../ui/whatsNew';
 import { FailureEvent } from '../../domain/types/index';
 import { t } from '../../shared/utils/i18n';
 import { registerSafeCommand, runCommand } from '../../shared/utils/commandGuard';
@@ -49,6 +50,15 @@ export function registerUICommands(
             } else {
                 void vscode.window.showInformationMessage(t('noRecentErrors'));
             }
+        })
+    );
+
+    registerSafeCommand(disposables, 'faultline.whatsNew', () =>
+        runCommand('whatsNew', () => {
+            const version =
+                (vscode.extensions.getExtension('4nur4gmishr4.fahh')?.packageJSON as { version?: string })?.version ??
+                '3.5.1';
+            WhatsNewPanel.createOrShow(extensionUri, version);
         })
     );
 }
