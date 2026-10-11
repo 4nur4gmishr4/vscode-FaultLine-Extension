@@ -17,3 +17,9 @@ _vsix_check/
 # OS
 Thumbs.db
 .DS_Store
+
+# Temporary audit artifacts
+audit.json
+
+# Local agent & assistant notes
+CLAUDE.md

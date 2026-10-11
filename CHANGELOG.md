@@ -10,6 +10,38 @@ Plain language first, technical detail second.
 
 ---
 
+## [3.5.1] Zero-Bug Forensic Stability & Cross-Platform Hardening
+
+**Focus:** 100% stable runtime, 0-bug state across all operating systems (Windows / macOS / Linux), and bulletproof AI provider compatibility.
+
+### Reliability & Cross-Platform Fixes
+- **AI Cross-Provider Alignment**: Dynamically resolves provider default models when switching between Google Gemini, OpenAI, Groq, and Anthropic, preventing 404/400 model-not-found failures.
+- **Google Gemini Compatibility**: Stripped redundant `models/` prefix for Google Gemini chat endpoints.
+- **Copilot Authentication Guidance**: Added clear, actionable error toasts when GitHub Copilot Language Models are unauthenticated or unavailable.
+- **Diagnostic Event Batching**: Replaced single-event drop race conditions with accumulated URI set batching so simultaneous diagnostic changes across files are never lost.
+- **Active Typing Debounce**: Cooled down diagnostics while typing in active editors to prevent repetitive alert storms mid-keystroke.
+- **Terminal Execution Drain Safeguard**: Hardened terminal buffer reading with a 1500ms safety timeout race, preventing infinite hangs on unclosed subshell streams.
+- **Jira Cloud ADF Formatting**: Fully compliant Atlassian Document Format (ADF) multi-paragraph issue payloads, resolving API rejection on Jira Cloud.
+- **Windows Enterprise Audio Fallback**: Added PowerShell `Media.SoundPlayer` and COM audio fallbacks when Windows Script Host (WSH) / `cscript.exe` is disabled by enterprise group policies.
+- **Concurrent Windows Temp File Protection**: Added 60-second age threshold before cleaning orphaned `.vbs` temp scripts, preventing race conditions between concurrent VS Code windows.
+- **Path Quoting Sanitization**: Automatically strips accidental surrounding quotes from custom audio paths (`soundPath`, `soundFolder`, `successSound`) on Windows.
+- **Linux Case-Insensitive Sound Matching**: Case-insensitive sound resolver for pack files on case-sensitive filesystems.
+- **ANSI Escape Sequence Stripping**: Automatically scrubs terminal ANSI color and cursor codes from logs, error history, and AI prompts.
+- **Snooze Status Bar Indicator**: Status bar dynamically reflects `$(history) FaultLine: Snoozed` when quiet mode or snooze is active.
+- **Notification Toast Gating**: Gated `Explain Error` notification buttons to only appear when error explanation is enabled.
+- **Git Branch Process Caching**: Implemented 5-second TTL branch cache to prevent subprocess flooding during rapid test or build failure bursts.
+- **Complete NLS Localization**: Aligned all `package.json` configuration descriptions with `package.nls.json` `%config...%` tokens.
+- **Package Hygiene**: Blocked `audit.json` in `.vscodeignore` and `.gitignore` to ensure zero artifact leaks in production VSIX packages.
+
+### Cross-IDE Compatibility & Discoverability
+- **Cross-IDE Ready**: Verified compatibility with VS Code, Cursor, Windsurf, Antigravity IDE, and VSCodium using `extensionKind: ["workspace"]` and standard VS Code APIs only.
+- **Open VSX Publishing**: Added `package:openvsx` and `publish:openvsx` scripts for publishing to the Open VSX Registry (used by VSCodium, Gitpod, and others).
+- **SEO Hardened**: Expanded marketplace keywords, description, and categories for maximum search discoverability across all compatible IDE marketplaces.
+- **What's New Panel**: Update changelog popup shown with a clean webview when the extension upgrades to a new version.
+- **Changelog Viewer**: "View Full Changelog" in the What's New panel now opens the extension's own CHANGELOG.md (not the workspace folder).
+
+---
+
 ## [3.5.0] Production release
 
 **Focus:** debugger and fault explainer first; error notifier second.

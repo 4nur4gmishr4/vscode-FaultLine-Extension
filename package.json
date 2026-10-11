@@ -1,8 +1,8 @@
 {
   "name": "fahh",
   "displayName": "FaultLine",
-  "description": "Debugger and fault explainer for VS Code terminals and tasks. Optional sounds and notifications second.",
-  "version": "3.5.0",
+  "description": "AI-powered debugger, terminal fault explainer, error audio notifier & build failure analyzer for VS Code, Cursor, Windsurf, Antigravity IDE & VSCodium. Supports Copilot, Gemini, OpenAI, Groq, Anthropic.",
+  "version": "3.5.1",
   "publisher": "4nur4gmishr4",
   "author": "Anurag Mishra",
   "license": "MIT",
@@ -14,12 +14,14 @@
     "url": "https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues"
   },
   "homepage": "https://github.com/4nur4gmishr4/vscode-FaultLine-Extension#readme",
+  "qna": "https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/issues",
   "engines": {
     "vscode": "^1.93.0",
     "node": ">=18.0.0"
   },
   "categories": [
     "Debuggers",
+    "Testing",
     "Other",
     "Machine Learning"
   ],
@@ -27,19 +29,35 @@
     "FaultLine",
     "faultline",
     "fahh",
+    "antigravity",
+    "cursor",
+    "windsurf",
+    "vscodium",
     "ai",
     "debugger",
-    "fault explainer",
+    "debug",
     "error",
+    "fault explainer",
     "terminal",
     "build",
+    "build failure",
     "sound",
     "audio",
     "notification",
     "webhook",
     "pii",
     "copilot",
-    "fail"
+    "gemini",
+    "groq",
+    "openai",
+    "anthropic",
+    "testing",
+    "linter",
+    "jira",
+    "fail",
+    "error notification",
+    "error sound",
+    "error analysis"
   ],
   "icon": "resources/faultline-logo.png",
   "galleryBanner": {
@@ -68,7 +86,8 @@
     "onCommand:faultline.showWelcome",
     "onCommand:faultline.explainError",
     "onCommand:faultline.openSettings",
-    "onCommand:faultline.testSound"
+    "onCommand:faultline.testSound",
+    "onCommand:faultline.whatsNew"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -162,6 +181,11 @@
         "command": "faultline.testSound",
         "title": "%command.faultline.testSound%",
         "category": "FaultLine"
+      },
+      {
+        "command": "faultline.whatsNew",
+        "title": "%command.faultline.whatsNew%",
+        "category": "FaultLine"
       }
     ],
     "configuration": {
@@ -186,12 +210,12 @@
             "System Crash",
             "Quick Expletive"
           ],
-          "description": "Sound Pack to use for failure sounds"
+          "description": "%config.faultline.soundPack%"
         },
         "faultline.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable/disable FaultLine extension"
+          "description": "%config.faultline.enabled%"
         },
         "faultline.soundsEnabled": {
           "type": "boolean",
@@ -201,19 +225,19 @@
         "faultline.soundPath": {
           "type": "string",
           "default": "",
-          "description": "Path to custom sound file",
+          "description": "%config.faultline.soundPath%",
           "scope": "machine-overridable"
         },
         "faultline.soundFolder": {
           "type": "string",
           "default": "",
-          "description": "Folder containing random sound files",
+          "description": "%config.faultline.soundFolder%",
           "scope": "machine-overridable"
         },
         "faultline.successEnabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable success sounds"
+          "description": "%config.faultline.successEnabled%"
         },
         "faultline.successSound": {
           "type": "string",
@@ -250,7 +274,7 @@
             "shell",
             "terminal"
           ],
-          "description": "Sources to monitor for failures",
+          "description": "%config.faultline.sources%",
           "items": {
             "type": "string",
             "enum": [
@@ -419,12 +443,12 @@
         "faultline.errorExplanation.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable error explanations"
+          "description": "%config.faultline.errorExplanation.enabled%"
         },
         "faultline.errorExplanation.autoShow": {
           "type": "boolean",
           "default": false,
-          "description": "Auto-open AI error analysis on failure (off by default; uses Explain Error notification or command instead)"
+          "description": "%config.faultline.errorExplanation.autoShow%"
         },
         "faultline.branchPatterns": {
           "type": "array",
@@ -432,27 +456,27 @@
           "items": {
             "type": "string"
           },
-          "description": "Git branch patterns to trigger on (empty = all branches). Supports glob patterns like 'main', 'feature/*', 'release/*'"
+          "description": "%config.faultline.branchPatterns%"
         },
         "faultline.jiraEnabled": {
           "type": "boolean",
           "default": false,
-          "description": "Create a Jira issue on failure (requires URL, project, email, and API key in SecretStorage)"
+          "description": "%config.faultline.jiraEnabled%"
         },
         "faultline.jiraUrl": {
           "type": "string",
           "default": "",
-          "description": "Jira instance URL (e.g., https://yourcompany.atlassian.net)"
+          "description": "%config.faultline.jiraUrl%"
         },
         "faultline.jiraProject": {
           "type": "string",
           "default": "",
-          "description": "Jira project key (e.g., PROJ)"
+          "description": "%config.faultline.jiraProject%"
         },
         "faultline.jiraEmail": {
           "type": "string",
           "default": "",
-          "description": "Jira account email for API authentication"
+          "description": "%config.faultline.jiraEmail%"
         },
         "faultline.language": {
           "type": "string",
@@ -485,7 +509,7 @@
             "Italian",
             "Dutch"
           ],
-          "description": "Interface language for the extension"
+          "description": "%config.faultline.language%"
         },
         "faultline.webhookFormat": {
           "type": "string",
@@ -500,12 +524,12 @@
             "Slack webhook format",
             "Discord webhook format"
           ],
-          "description": "Webhook payload format for notifications"
+          "description": "%config.faultline.webhookFormat%"
         },
         "faultline.ai.model": {
           "type": "string",
-          "default": "meta-llama/llama-3.2-3b-instruct:free",
-          "description": "The AI model to use for the selected provider (e.g., gpt-4o, gemini-1.5-pro)."
+          "default": "",
+          "description": "%config.faultline.ai.model%"
         }
       }
     }
@@ -525,7 +549,9 @@
     "prebuild": "npm run clean",
     "build": "npm run compile",
     "package": "vsce package",
-    "package:prod": "npm run clean && npm run vendor:sync && npm run compile && vsce package"
+    "package:prod": "npm run clean && npm run vendor:sync && npm run compile && vsce package",
+    "package:openvsx": "npm run clean && npm run vendor:sync && npm run compile && npx -y ovsx package",
+    "publish:openvsx": "npm run clean && npm run vendor:sync && npm run compile && npx -y ovsx publish"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

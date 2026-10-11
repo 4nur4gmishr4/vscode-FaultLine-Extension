@@ -5,7 +5,7 @@
 <h1 align="center">FaultLine</h1>
 
 <p align="center">
-  <strong>Debugger and fault explainer for VS Code.</strong><br/>
+  <strong>AI-powered debugger and fault explainer for VS Code, Cursor, Windsurf, Antigravity IDE & VSCodium.</strong><br/>
   Understand terminal and task failures first. Optional sounds and notifications second.
 </p>
 
@@ -18,9 +18,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.5.0-blue?style=flat-square" alt="3.5.0" />
+  <img src="https://img.shields.io/badge/version-3.5.1-blue?style=flat-square" alt="3.5.1" />
   <img src="https://img.shields.io/badge/id-4nur4gmishr4.fahh-informational?style=flat-square" alt="4nur4gmishr4.fahh" />
   <img src="https://img.shields.io/badge/VS_Code-%5E1.93-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
+  <img src="https://img.shields.io/badge/Cursor-Compatible-FF6B6B?style=flat-square" alt="Cursor" />
+  <img src="https://img.shields.io/badge/Windsurf-Compatible-00B4D8?style=flat-square" alt="Windsurf" />
+  <img src="https://img.shields.io/badge/VSCodium-Compatible-2F80ED?style=flat-square" alt="VSCodium" />
   <img src="https://img.shields.io/badge/by-Anurag_Mishra-lightgrey?style=flat-square" alt="Anurag Mishra" />
 </p>
 
@@ -93,8 +96,22 @@ Marketplace page: [FaultLine on Visual Studio Marketplace](https://marketplace.v
 
 ### GitHub Release (VSIX)
 
-1. Download `fahh-3.5.0.vsix` or `faultline.vsix` from [Releases v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)  
-2. Extensions view, menu, **Install from VSIX…**  
+1. Download `fahh-3.5.1.vsix` or `faultline.vsix` from [Releases](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases)  
+2. Extensions view, menu, **Install from VSIX…**
+
+### Compatible IDEs
+
+FaultLine uses standard VS Code Extension APIs and works natively on:
+
+| IDE | Install Method |
+|-----|----------------|
+| **VS Code** | Marketplace or VSIX |
+| **Cursor** | Marketplace (Extensions tab) or VSIX |
+| **Windsurf** | Marketplace (Extensions tab) or VSIX |
+| **VSCodium** | Open VSX Registry (`npx ovsx publish`) or VSIX |
+| **Antigravity IDE** | VSIX install via Extensions panel |
+
+> FaultLine uses `extensionKind: ["workspace"]` and standard APIs only, so it runs identically on any VS Code fork with engine `^1.93.0`.  
 
 ### First install
 
@@ -168,16 +185,15 @@ Details: [SECURITY.md](./SECURITY.md)
 
 ---
 
-## What is new in 3.5.0
+## What is new in 3.5.1
 
-- Reliable terminal and task failure capture  
-- Fault explainer with last-failure context and optional providers  
-- Safer defaults for auto-open analysis and Jira  
-- Stronger outbound URL checks (HTTPS, DNS, IP pin)  
-- Slim VSIX, automated tests, multi-OS CI, GitHub Releases  
-- First-install greeting with Skip  
+- **Cross-IDE compatibility**: Verified on VS Code, Cursor, Windsurf, Antigravity IDE, and VSCodium  
+- **What's New popup**: Clean update changelog shown on version upgrade  
+- **17 zero-bug fixes**: AI provider mismatch, race conditions, audio fallbacks, ANSI stripping  
+- **Open VSX ready**: Publish to VSCodium/alternative registries with `npm run publish:openvsx`  
+- **SEO hardened**: Searchable across all VS Code-compatible IDE marketplaces  
 
-Full notes: [CHANGELOG.md](./CHANGELOG.md) · [Release v3.5.0](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0)
+Full notes: [CHANGELOG.md](./CHANGELOG.md) · [Releases](https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases)
 
 ---
 
@@ -290,7 +306,8 @@ Regenerate: `npm run docs:gifs`
 ---
 
 <p align="center">
-  <strong>FaultLine 3.5.0</strong><br/>
-  Debugger and fault explainer first. Notifier second.<br/>
+  <strong>FaultLine 3.5.1</strong><br/>
+  AI-powered debugger and fault explainer first. Notifier second.<br/>
+  Works on VS Code, Cursor, Windsurf, Antigravity IDE & VSCodium.<br/>
   Made by Anurag Mishra for developers everywhere · MIT
 </p>

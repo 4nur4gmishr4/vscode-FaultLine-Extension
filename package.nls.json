@@ -17,6 +17,7 @@
   "command.faultline.openSettings": "Open Configuration",
   "command.faultline.explainError": "Analyze Last Failure",
   "command.faultline.testSound": "Test Sound",
+  "command.faultline.whatsNew": "What's New in FaultLine",
   "config.faultline.title": "FaultLine",
   "config.faultline.enabled": "Turn FaultLine on or off. If off, no sounds will play.",
   "config.faultline.soundsEnabled": "Master switch for all sounds (Success and Error sounds).",
@@ -50,6 +51,17 @@
   "config.faultline.historyMax": "How many recent errors to remember in history.",
   "config.faultline.webhookUrl": "Send error info to another app (via Webhook). Must be https://.",
   "config.faultline.webhookAllowedDomains": "Optional allowlist of host names for the Webhook URL. Empty array means any public domain is allowed (private hosts still blocked unless listed).",
+  "config.faultline.soundPack": "Sound Pack to use for failure sounds.",
   "config.faultline.aiSummary.enabled": "Use AI to summarize failures in the output log.",
-  "config.faultline.aiProvider": "Which AI service to ask. 'Copilot' uses your existing Copilot subscription; the rest need their own free or paid API key."
+  "config.faultline.aiProvider": "Which AI service to ask. 'Copilot' uses your existing Copilot subscription; the rest need their own free or paid API key.",
+  "config.faultline.ai.model": "Custom model identifier override for the selected AI provider. Leave empty to use provider default.",
+  "config.faultline.errorExplanation.enabled": "Enable error explanations.",
+  "config.faultline.errorExplanation.autoShow": "Auto-open AI error analysis on failure (off by default; uses Explain Error notification or command instead).",
+  "config.faultline.branchPatterns": "Git branch patterns to trigger on (empty = all branches). Supports glob patterns like 'main', 'feature/*', 'release/*'.",
+  "config.faultline.jiraEnabled": "Create a Jira issue on failure (requires URL, project, email, and API key in SecretStorage).",
+  "config.faultline.jiraUrl": "Jira instance URL (e.g., https://yourcompany.atlassian.net).",
+  "config.faultline.jiraProject": "Jira project key (e.g., PROJ).",
+  "config.faultline.jiraEmail": "Jira account email for API authentication.",
+  "config.faultline.language": "Interface language for the extension.",
+  "config.faultline.webhookFormat": "Webhook payload format for notifications."
 }

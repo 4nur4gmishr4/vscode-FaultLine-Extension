@@ -41,3 +41,5 @@ out/**/*.spec.js
 _vsix_check/**
 *.vsix
 *.zip
+audit.json
+CLAUDE.md
