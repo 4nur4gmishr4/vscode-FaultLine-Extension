@@ -27,7 +27,7 @@ function mockContext() {
         },
         extensionPath: '/fake/extension',
         extensionUri: vscode.Uri.file('/fake/extension'),
-        extension: { packageJSON: { version: '3.5.0' } },
+        extension: { packageJSON: { version: '3.5.1' } },
         subscriptions: [] as { dispose: () => void }[],
         _secrets: secrets,
         _mem: mem

@@ -9,7 +9,7 @@ import { registerCommands } from '../../presentation/commands/index';
 
 function mockContext() {
     const mem = new Map<string, unknown>();
-    mem.set('lastVersion', '3.5.0');
+    mem.set('lastVersion', '3.5.1');
     mem.set('apiKeyMigrationCompleted', true);
     return {
         secrets: {
@@ -29,7 +29,7 @@ function mockContext() {
         },
         extensionPath: path.join(__dirname, '..', '..', '..'),
         extensionUri: vscode.Uri.file('/fake/extension'),
-        extension: { packageJSON: { version: '3.5.0' } },
+        extension: { packageJSON: { version: '3.5.1' } },
         subscriptions: [] as { dispose: () => void }[]
     };
 }

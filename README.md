@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=4nur4gmishr4.fahh"><img src="https://img.shields.io/badge/VS_Code-FaultLine-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="FaultLine for VS Code" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/actions"><img src="https://img.shields.io/github/actions/workflow/status/4nur4gmishr4/vscode-FaultLine-Extension/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI" /></a>
-  <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.0"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge&label=Release" alt="Release" /></a>
+  <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/releases/tag/v3.5.1"><img src="https://img.shields.io/github/v/release/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge&label=Release" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge" alt="License" /></a>
   <a href="https://github.com/4nur4gmishr4/vscode-FaultLine-Extension/stargazers"><img src="https://img.shields.io/github/stars/4nur4gmishr4/vscode-FaultLine-Extension?style=for-the-badge" alt="Stars" /></a>
 </p>
